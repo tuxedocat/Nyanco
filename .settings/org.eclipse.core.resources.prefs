@@ -1,0 +1,7 @@
+eclipse.preferences.version=1
+encoding//src/classifier.py=utf-8
+encoding//src/corpusreader.py=utf-8
+encoding//src/lm_counter.py=utf-8
+encoding//src/nyanco.py=utf-8
+encoding//src/preprocessor.py=utf-8
+encoding//src/preprocessor_fce.py=utf-8
