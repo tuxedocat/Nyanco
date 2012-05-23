@@ -1,0 +1,36 @@
+#! /usr/bin/python
+# coding: utf-8
+'''
+Nyanco/preprocessor.py
+Created on 10 Jan 2011
+
+This module handles a list of lists:
+    [[script1], [script2],...]
+        [script n] = ["This cat", ("is", "was", "TV"), "born yesterday."]
+@author: Yu Sawai
+@version: 0.001
+'''
+
+try:
+    import os
+    import subprocess
+    import re
+except ImportError:
+    print("You'd better find valid libraries")
+
+
+def finderror(script):
+    '''
+    RETURNS: the index of error element
+    '''
+    errorindex = [i for i, elem in enumerate(script) if not hasattr(elem, "lower")]
+    pass
+
+
+def concat_context():
+    '''
+    RETURNS: tuples of base query
+    '''
+    pass
+
+    
