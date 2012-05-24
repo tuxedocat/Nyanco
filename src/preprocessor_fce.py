@@ -17,6 +17,7 @@ import glob
 import pickle
 import json
 import nltk
+import copy
 
 
 # in case lxml.etree isn't available...
@@ -225,13 +226,14 @@ class CorpusFileHandler(object):
 
 
 class CLCPreprocessor(object):
-    def __init__(self, corpus):
+    def __init__(self, xmllist, corpus):
         import nltk
         from nltk import sent_tokenize
         from nltk import word_tokenize
         self.corpus = [d for d in corpus]
         self.scripts = []
         self.annotations = []
+        self.docs = xmllist
 
 
     def preprocess(self):
@@ -253,18 +255,14 @@ class CLCPreprocessor(object):
         sents = nltk.sent_tokenize(script)
         sents_tokenized = [nltk.wordpunct_tokenize(sent) for sent in sents]
         processed_sents = []
-        processed_sents_correction = []
         annotations = [a for a in annotations_list]
         for sent in sents_tokenized:
-            sent_correct = sent
-#            print sent
             for index, word in enumerate(sent):
-#                print word
                 if word == "{++}":
-#                    print annotations
                     _annotation = annotations.pop(0)
+                    len_i = len(_annotation[0])
+                    len_c = len(_annotation[1])
                     sent.pop(index)
-                    sent_correct.pop(index)
                     if mode == "Gold":
                         _correct_word = _annotation[1]
                         sent.insert(index, _correct_word)
@@ -277,27 +275,29 @@ class CLCPreprocessor(object):
                             sent.insert(index, _replacement)
                     elif mode == "Incorrect_RV_check_main":
                         if _annotation[2] == "RV":
-                            _replacement = "{RV}" + _annotation[0] + "{RV}"
+                            if len_i > len_c:
+                                _replacement = "{incorrect!}" + _annotation[0] + "{incorrect!}"
+                            else:
+                                _replacement = "{incorrect!}" + _annotation[0] + " "*(len_c-len_i) + "{incorrect!}"
                             sent.insert(index, _replacement)
                         else:
                             _replacement = _annotation[1]
                             sent.insert(index, _replacement)
                     elif mode == "Incorrect_RV_check_correct":
                         if _annotation[2] == "RV":
-                            _correction = "{correction}" + _annotation[1] + "{correction}"
-                            sent_correct.insert(index, _correction)
+                            if len_c > len_i:
+                                _replacement = "{correction}" + _annotation[1] + "{correction}"
+                            else:
+                                _replacement = "{correction}" + _annotation[1] + " "*(len_i-len_c) + "{correction}"
+                            sent.insert(index, _replacement)
                         else:
                             _replacement = _annotation[1]
-                            sent_correct.insert(index, "w"*len(_replacement))
+                            sent.insert(index, _replacement)
                     elif mode == "Incorrect":
                         _replacement = _annotation[0]
                         sent.insert(index, _replacement)
             processed_sents.append(sent)
-            processed_sents_correction.append(sent)
-        if mode == "Incorrect_RV_check_correct":
-            return processed_sents_correction
-        else:
-            return processed_sents
+        return processed_sents
 
 
     def retrieve(self, mode):
@@ -322,7 +322,7 @@ class CLCPreprocessor(object):
      
      
     def output_raw(self, dest): 
-        with open(dest, "w+") as f:
+        with open(dest, "w") as f:
             if "gold" in dest:
                 for doc in self.goldwords[0:-100]:
                     for sent in doc:
@@ -342,15 +342,17 @@ class CLCPreprocessor(object):
                         f.write(s.encode("utf-8") + "\n")
                     f.write("\n")
             elif "RV_check" in dest:
-                for (doc1,doc2) in zip(self.incorr_RV_test_main, self.incorr_RV_test_correct):
-                    for (sent1, sent2) in (doc1, doc2):
+                for i_doc, (doc1,doc2) in enumerate(zip(self.incorr_RV_test_main, self.incorr_RV_test_correct)):
+                    docname = self.docs[i_doc]
+                    for i_sent, (sent1, sent2) in enumerate(zip(doc1, doc2)):
                         s_main = self._concat_words(sent1)
                         s_correct = self._concat_words(sent2)
-                        f.write(s_main.encode("utf-8") + "\n")
-                        f.write(s_correct.encode("utf-8") + "\n")
-                        f.write("\n")
-                    f.write("\n")
-
+                        if "{incorrect!}" in s_main and "{correction}" in s_correct:
+                            f.write("Doc: %s    Sentence: %d \n"%(docname[-24:], i_sent))
+                            f.write(s_main.encode("utf-8") + "\n")
+                            f.write(s_correct.encode("utf-8") + "\n")
+                            f.write("\n")
+       
        
 class NUCLEReader(object):
     def __init__(self):
@@ -364,11 +366,11 @@ def read():
     C.read()
 #    print(C.all_sents[0:10])
 #    print(C.listindexdict)
-    return C.all_sents
+    return C.allxml, C.all_sents
 
 
-def preprocess(corpus_as_list, *args):
-    processor = CLCPreprocessor(corpus_as_list)
+def preprocess(xmllist, corpus_as_list, *args):
+    processor = CLCPreprocessor(xmllist, corpus_as_list)
     processor.preprocess()
     for mode in args:
         processor.retrieve(mode)
@@ -383,7 +385,7 @@ def preprocess(corpus_as_list, *args):
 if __name__ == "__main__":
     import time
     total =time.time()
-    corpus = read()
-    preprocess(corpus, "Gold", "Incorrect", "Incorrect_RV", "Incorrect_RV_check_main", "Incorrect_RV_check_correct")
+    xmllist, corpus = read()
+    preprocess(xmllist, corpus, "Gold", "Incorrect", "Incorrect_RV", "Incorrect_RV_check_main", "Incorrect_RV_check_correct")
     endtime = time.time()
     print("\n\nOverall time %5.3f[sec.]"%(endtime - total))
