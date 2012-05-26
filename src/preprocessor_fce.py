@@ -195,6 +195,8 @@ class IfElem(object):
         except AttributeError:
             pass
         correction_pair = (original,correction, errortype)
+        if errortype == "RV":
+            print "%s  \t  %s  \t  %s"%(original,correction,errortype)
         return(correction_pair)
 
 
