@@ -13,3 +13,17 @@ class Importer(object):
         pass
 
 
+
+class LSA(object):
+    def __init__(self):
+        pass
+
+
+def main():
+    import logging
+    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+
+
+if __name__=='__main__':
+    main()
+
