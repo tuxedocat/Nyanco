@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 # coding: utf-8
 '''
 Nyanco/preprocessor_fce.py
@@ -326,13 +326,13 @@ class CLCPreprocessor(object):
     def output_raw(self, dest): 
         with open(dest, "w") as f:
             if "gold" in dest:
-                for doc in self.goldwords[0:-100]:
+                for doc in self.goldwords:
                     for sent in doc:
                         s = self._concat_words(sent)
                         f.write(s.encode("utf-8") + "\n")
                     f.write("\n")
             elif "test" in dest:
-                for doc in self.incorrwords[-99:]:
+                for doc in self.incorrwords:
                     for sent in doc:
                         s = self._concat_words(sent)
                         f.write(s.encode("utf-8") + "\n")
@@ -378,9 +378,10 @@ def preprocess(xmllist, corpus_as_list, *args):
         processor.retrieve(mode)
 #    print processor.goldwords[0:10]
 #    print processor.incorrwords[0:10]
-#    dest = os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-gold-raw.txt")
+#    dest = os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-gold-raw_all.txt")
 #    dest = os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-RVtest-last100docs.txt")
-    dest = os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-RV_check-all.txt")
+#    dest = os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-RV_check-all.txt")
+    dest = os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-incorr-test_all.txt")
     processor.output_raw(dest)
     
 
