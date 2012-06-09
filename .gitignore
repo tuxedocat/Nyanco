@@ -28,3 +28,10 @@ pip-log.txt
 .mr.developer.cfg
 
 machg.mchg
+
+
+# LSA related files
+*.coocdoc
+*.gensimdict
+*.npy
+
