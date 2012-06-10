@@ -34,4 +34,5 @@ machg.mchg
 *.coocdoc
 *.gensimdict
 *.npy
+*.pkl
 

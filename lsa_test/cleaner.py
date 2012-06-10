@@ -1,10 +1,10 @@
 # /usr/bin/env python
-# -*- coding: utf-8 -*-
+# coding: utf-8
 
 import logging
 import re
 import os
-
+import sys
 
 re_table = re.compile(r'(\t{1,})')
 re_numnum = re.compile(r'(\d{2,})')
@@ -45,9 +45,9 @@ def is_all_ok(line):
     if notable(line) and noscore(line) and nospaces(line) and noshortsent(line): return True
     else: return False
 
-def filter():
-    with open('afp_eng_2010_raw_clean.txt', 'w') as out:
-        with open('afp_eng_2010_raw_cat', 'r') as infile:
+def filter(inputfile, outputfile):
+    with open(outputfile, 'w') as out:
+        with open(inputfile, 'r') as infile:
             for i, line in enumerate(infile):
                 print "processing document #%d"%(i)
                 if is_all_ok(line):
@@ -56,3 +56,15 @@ def filter():
                         out.write(tmp)
 
 
+def main():
+    '''
+    Usage:
+    $ python cleaner.py inputfile outputfile
+    '''
+    input = sys.argv[1]
+    output = sys.argv[2]
+    filter(input, output)
+
+
+if __name__=='__main__':
+    main()
