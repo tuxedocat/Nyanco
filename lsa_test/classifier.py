@@ -15,7 +15,7 @@ class LSAconverter(object):
     Then convert them using given LSA model 
     
     Usage:
-        >>>LSAconverter(modelpath, trainingdata_path, testdata_path)
+        >>>LSAconverter(modelpath, modeldictpath, trainingdata_path, testdata_path)
     FIXME:
         Currently gensim.models.Lsimodel.load() doesn't work correctly so Pickle will be used
         But it is inefficient
@@ -29,6 +29,7 @@ class LSAconverter(object):
         self.LSAmodel = pkl.load(open(modelpath,'rb'))
         self.modeldict = corpora.Dictionary.load(dictpath)
 
+
     def readRawdata(self):
         traindatalist = glob.glob(os.path.join(self.tr_dir,'*.txt'))
         self.labeldict = {id: os.path.split(f)[-1].strip('.txt') for id, f in enumerate(traindatalist)}
@@ -36,8 +37,9 @@ class LSAconverter(object):
         self.tr_docs = {id: [l.strip('\n') for l in open(f,'r').readlines()] for id, f in enumerate(traindatalist)}
 
 
-    def _line_preprocess(self, string):
-        return utils.simple_preprocess(string.strip('\n')) 
+    def _line_preprocess(self, string, blankword):
+        return utils.simple_preprocess(string.strip('\n').replace(' '+blankword+' ', ' ')) 
+
 
     def preprocess(self):
         '''
@@ -46,7 +48,8 @@ class LSAconverter(object):
         '''
         self.tr_docs_bow = {}
         for k in self.tr_docs:
-            self.tr_docs_bow[k] = [self.modeldict.doc2bow(self._line_preprocess(l)) for l in self.tr_docs[k]]
+            blankword = self.labeldict[k].lower()
+            self.tr_docs_bow[k] = [self.modeldict.doc2bow(self._line_preprocess(l, blankword)) for l in self.tr_docs[k]]
 
 
     def convert2LSAVector(self):
@@ -95,18 +98,28 @@ class SvmLightCorpusH(object):
 class Classifier(object):
    pass 
 
-# def main():
-    # '''
-    # usage:
-
-    # $ python extract_trainingtexts.py afp_eng_2009_raw_clean.txt
-    # '''
-    # docpath = sys.argv[1]
-    # L = WordsFinder(docpath)
-    # L.finddoc4words()
-    # L.output()
 
 
-# if __name__=='__main__':
-    # main()
+def main():
+    '''
+    usage:
+
+    $ python classifier.py Path2Modelfile Path2Modeldictionary Path2traindir Path2testdir
+    '''
+    MODELPATH = sys.argv[1]
+    MODELDICPATH = sys.argv[2]
+    TRAINDIR = sys.argv[3]
+    TESTDIR = sys.argv[4]
+    SVMDDIR = TRAINDIR
+    LSC = LSAconverter(MODELPATH, MODELDICPATH, TRAINDIR, TESTDIR)
+    LSC.readRawdata()
+    LSC.preprocess()
+    LSC.convert2LSAVector()
+    LSC.save2SVMlight()
+    SVMLH = SvmLightCorpusH(SVMDDIR)
+    SVMLH.label()
+
+
+if __name__=='__main__':
+    main()
 
