@@ -1,0 +1,8 @@
+	 precision    recall  f1-score   support
+
+	 KNOW	 0.32	0.34	0.33	 100
+	LEARN	 0.32	0.40	0.36	 100
+	 READ	 0.49	0.33	0.40	 100
+	STUDY	 0.24	0.24	0.24	 100
+
+avg / total	 0.34	0.33	0.33	 400
