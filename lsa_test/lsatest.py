@@ -51,6 +51,9 @@ class LexicalLoA_CoocMatrix(object):
         corpora.SvmLightCorpus.serialize(os.path.join('corpora/',self.CORPUSNAME+'_LexicalLoA.svmlight'), corpus_bow)
 
 def main():
+    '''
+    $python ./lsatest.py ./dictionaries/afp_eng_2010.gensimdict ./dictionaries/afp_eng_2010.gensimdict ./cooc
+    '''
     row_dicpath = sys.argv[1]
     column_dicpath = sys.argv[2]
     coocdir_path = sys.argv[3]

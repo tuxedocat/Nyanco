@@ -7,7 +7,7 @@ This extract training text (raw) from given cooccurrence data
 There're lots to be done...
 '''
 import os, sys
-from gensim import corpora, models, utils
+# from gensim import corpora, models, utils
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 import cPickle as pickle
