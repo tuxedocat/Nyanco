@@ -35,4 +35,7 @@ machg.mchg
 *.gensimdict
 *.npy
 *.pkl
+cooc
+test
+train
 
