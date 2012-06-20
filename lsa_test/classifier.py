@@ -2,7 +2,6 @@
 # coding: utf-8
 import os, sys
 from gensim import corpora, models, utils
-import scikits.learn as sklearn
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 import pickle as pkl
@@ -94,9 +93,86 @@ class SvmLightCorpusH(object):
 
 # =============================================================================
 # =============================================================================
-
+from sklearn.datasets import load_svmlight_file, load_svmlight_files
+from sklearn import metrics, svm, multiclass
+import random
+import glob
+from collections import defaultdict
+import numpy
+import time
 class Classifier(object):
-   pass 
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self.labeldict = pkl.load(open(os.path.join(filepath,'labeldict.pkl'), 'rb'))
+        self.results = defaultdict(list) 
+        self.instances = {}
+        self.texts = {}
+        self.report = {}
+
+    def readinstances(self):
+        for key, value in self.labeldict.iteritems():
+            _x , _y = load_svmlight_file(os.path.join(self.filepath, value+'.labelled'))
+            self.instances[value] = {'x': _x.toarray(), 'y': _y}
+            with open(os.path.join(self.filepath, value + '.txt'),'r') as rf:
+                _text = rf.readlines()
+                self.texts[value] = _text
+
+
+    def classify(self, NUM_TRAIN=1000):
+        self.NUM_TRAIN = NUM_TRAIN
+        _xtrain = []
+        _ytrain = []
+        _xtest = []
+        _ytest = []
+        self._testtexts = []
+        for k, xypair in self.instances.iteritems():
+            x, y = xypair['x'], xypair['y']
+            _xtrain.append(x[:NUM_TRAIN])
+            _ytrain.append(y[:NUM_TRAIN])
+            _xtest.append(x[NUM_TRAIN:NUM_TRAIN+200])
+            _ytest.append(y[NUM_TRAIN:NUM_TRAIN+200])
+            self._testtexts += self.texts[k][NUM_TRAIN:NUM_TRAIN+200]
+        xtrain = numpy.concatenate(_xtrain)
+        ytrain = numpy.concatenate(_ytrain)
+        xtest = numpy.concatenate(_xtest)
+        ytest = numpy.concatenate(_ytest)
+        self.output = multiclass.OneVsRestClassifier(svm.LinearSVC()).fit(xtrain,ytrain).predict(xtest)
+        self.testlabel = ytest
+        _labels = [self.labeldict[k] for k in self.labeldict]
+        self.report['table'] = metrics.classification_report(self.testlabel, self.output, target_names=_labels)
+        print self.report['table'] 
+        self.accuracy = float(len([t for t in zip(self.testlabel, self.output) if t[0] == t[1] ])) / len(self.output)
+        print self. accuracy
+
+
+    def failedcases(self):
+        print self._testtexts
+        self.report['fails'] = []
+        for elemnum, (true, pred) in enumerate(zip(self.testlabel, self.output)):
+            if not pred == true:
+                try:
+                    print self._testtexts[elemnum]
+                    self.report['fails'].append(self._testtexts[elemnum]) 
+                except:
+                    print 'no _testtexts element'
+
+
+def classificationtest(path):
+    import datetime
+    CLS = Classifier(path)
+    CLS.readinstances()
+    CLS.classify(NUM_TRAIN=5000)
+    d = datetime.datetime.today() 
+    exp_time = d.strftime("%Y%m%d_%H%M")
+    with open(os.path.join(path, 'classification_'+exp_time+'.log'), 'w') as f:
+        f.write(CLS.report['table'])
+        f.write('\n\n')
+        f.write('Accuracy over the instances:\t %3.4f'%CLS.accuracy)
+    CLS.failedcases()
+    with open(os.path.join(path, 'errors_'+exp_time+'.log'), 'w') as f:
+        for elem in CLS.report['fails']:
+            f.write(elem + '\n')
+ 
 
 
 
