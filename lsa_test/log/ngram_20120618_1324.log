@@ -1,0 +1,13 @@
+WORD: 	provide
+Accuracy: 	 0.5820WORD: 	offer
+Accuracy: 	 0.6662WORD: 	give
+Accuracy: 	 0.6425
+================================================================================
+
+             precision    recall  f1-score   support
+
+       give       0.75      0.64      0.69     14574
+    provide       0.58      0.57      0.58      9548
+      offer       0.50      0.66      0.57      7503
+
+avg / total       0.64      0.62      0.63     31625
