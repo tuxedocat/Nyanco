@@ -6,5 +6,7 @@
 <pydev_property name="org.python.pydev.PYTHON_PROJECT_VERSION">python 2.7</pydev_property>
 <pydev_pathproperty name="org.python.pydev.PROJECT_SOURCE_PATH">
 <path>/Nyanco/src</path>
+<path>/Nyanco/lsa_test</path>
+<path>/Nyanco/classify</path>
 </pydev_pathproperty>
 </pydev_project>
