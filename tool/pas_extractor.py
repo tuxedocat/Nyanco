@@ -53,7 +53,7 @@ class PasExtractor(object):
                         args.append((tags[1], tags[12], int(tags[13])))
                 except:
                     logging.debug("error")
-            logging.debug(('Arguments::',args)) 
+            logging.info(('Arguments::',args)) 
             # loop for ARGS #
             # Look the index, if an ARG is for the ROOT (idx == ROOT_idx), 
             # add it as correct ARG
@@ -68,8 +68,7 @@ class PasExtractor(object):
             return pasdic
 
         else:
-            return None
-
+            pass
 
     def extract(self):
         """
@@ -78,103 +77,80 @@ class PasExtractor(object):
             self.raw :: a list of ['1\tWORD\t\t\t\t',...] (line for each sentence)
         """
         pasdiclist = [self._extract(sent) for sent in self.raw]
-        self.paslist = [(pdic['ROOT'], pdic['ARG0'], pdic['ARG1']) for pdic in pasdiclist]
-        print self.paslist
+        self.paslist = [(pdic['ROOT'], pdic['ARG0'], pdic['ARG1']) for pdic in pasdiclist
+                        if pdic['ROOT'] and pdic['ARG0'] and pdic['ARG1'] ]
         return self.paslist
 
 
-def extract(input_dir, output_prefix):
+def output2file(input_prefix, output_prefix, counter_obj):
+    import cPickle as pickle
+    # Store the Counter object into cPickle binary
+    with open(os.path.join(input_prefix, output_prefix + 'PAS.pickle'), 'wb') as pkl:
+        pickle.dump(counter_obj, pkl)
+
+    # Output as tab-separated plain text file
+    # format is...
+    # PRED_SURFACE\tARG0_SURFACE\tARG1_SURFACE\tCOUNT
+    # Will be sorted by count
+    with open(os.path.join(input_prefix, output_prefix + 'PAS.tsv'), 'w') as tsv:
+        for k, v in sorted(counter_obj.iteritems(), key=lambda x: x[1], reverse=True):
+            outstr = '\t'.join(k) + '\t' + str(v) + '\n'
+            tsv.write(outstr)
+
+
+def extract(input_prefix, output_prefix):
+    """
+    Wrapper function of whole process.
+
+    @takes
+        input_prefix :: string of path-to-files, e.g. '../../cl/EnglishGigaword/raw/afp_eng'
+        (files are assumed to have '.parsed' suffix)
+
+        output_prefix :: string of prefix of the output file name, e.g. 'afp_eng_' 
+        ('PAS.tsv' will be added automatically)
+        (the output will be saved as tab-separated text and python pickle file)
+    """
     import glob
-    files = glob.glob(input_dir)
+    files = glob.glob(os.path.join(input_prefix,'*.parsed'))
     pastriples_counter = collections.Counter()
     for f in files:
         pax = PasExtractor(f)
-        pastriples_counter += pax.extract()
-    return pastriples_counter
+        tmpc = collections.Counter(pax.extract())
+        pastriples_counter = pastriples_counter + tmpc
+        output2file(input_prefix, output_prefix, pastriples_counter)
 
 
-#===============================================================================
-
-class TestPasExtractor:
-    def setUp(self):
-        import os, sys
-        import glob
-        import collections
-        relpath = '../sandbox/pas/testdat*'
-        self.testfile = glob.glob(relpath)
-        self.eg1 = '../sandbox/pas/afp_eng_201012_raw.parsed'
-
-    def test_extract1(self):
-        pax = PasExtractor(self.testfile[0])
-        result = pax.extract()
-        triples = collections.Counter(result)
-        expected = collections.Counter([('loved', 'We', 'cat')])
-        assert triples == expected
-
-    def test_extract2(self):
-        pax = PasExtractor(self.testfile[1])
-        result = pax.extract()
-        triples = collections.Counter(result)
-        expected = collections.Counter([('loved', 'We', 'cat'),('loved', 'We', 'cat'),('loved', 'We', 'cat'),('loved', 'We', 'cat'),
-                                        ('loved', 'We', 'cat'),('loved', 'We', 'cat'),('loved', 'We', 'cat'),('loved', 'We', 'cat'),
-                                        ('loved', 'We', 'cat'),('loved', 'We', 'dog')])
-        assert triples == expected
-
-    def test_extract3(self):
-        '''
-        test for complicated structure (which will be ignored)
-        '''
-        pax = PasExtractor(self.testfile[2])
-        result = pax.extract()
-        triples = collections.Counter(result)
-        expected = collections.Counter([('urged', 'Royce', 'House'), ('insisted', 'Burns', 'doing')])
-        assert triples == expected
-
-    def test_extract456(self):
-        '''
-        test for multiple files
-        '''
-        triples = collections.Counter()
-        for f in self.testfile[3:7]:
-            pax = PasExtractor(f)
-            result = pax.extract()
-            tmpc = collections.Counter(result)
-            triples = triples + tmpc
-        expected = collections.Counter([('urged', 'Royce', 'House'), ('insisted', 'Burns', 'doing'), ('loved', 'We', 'cat'),
-                                        ('loved', 'We', 'cat'),('loved', 'We', 'cat')])
-        assert triples == expected
-
-    def test_extract_gigaword(self):
-        pax = PasExtractor(self.eg1)
-        result = pax.extract()
-        triples = collections.Counter(result)
-        print triples.most_common(1)
-        assert False
 
 if __name__=='__main__':
     import sys
     argv = sys.argv
     argc = len(argv)
-
+    logging.disable('debug')
     USAGE = """
-                $python pas_extractor.py -i input_filename -o output_filename
+            python pas_extractor.py -i ../../cl/EnglishGigaword/raw/afp_eng -o afp_eng_
+
+            -i --input_prefix :: string of path-to-files
+            (files are assumed to have '.parsed' suffix)
+
+            -o --output_prefix :: string of prefix of the output file name, e.g. 'afp_eng_' 
+            ('PAS.tsv' will be added automatically)
+            (the output will be saved as tab-separated text and python pickle file)
             """
 
     import optparse
     optp = optparse.OptionParser(usage=USAGE)
-    optp.add_option('-i', dest = 'input_filename', action = "append", default = [])
-    optp.add_option('-o', dest = 'output_filename')
-    optp.add_option('-p', dest = 'prefix')
+    optp.add_option('-i', '--input_prefix', dest = 'input_prefix')
+    optp.add_option('-o', '--output_prefix', dest = 'output_prefix')
+    # optp.add_option('-p', dest = 'prefix')
 
     (opts, args) = optp.parse_args()
-    if len(opts.input_filename)==0:
-        opts.input_filename = None
-    elif len(opts.input_filename)==1:
-        opts.input_filename = opts.input_filename[0]
-    
-    if (opts.input_filename and  opts.output_filename and opts.prefix):
-        #extract(opts.input_filename, opts.output_filename)
-        cicp_extract(opts.input_filename, opts.output_filename, opts.prefix)
+    if len(opts.input_prefix)==0:
+        opts.input_prefix = None
+    elif len(opts.input_prefix)==1:
+        opts.input_prefix = opts.input_prefix[0]
+
+    if (opts.input_prefix and  opts.output_prefix):
+        extract(opts.input_prefix, opts.output_prefix)
     else:
         optp.print_help()
     quit()
