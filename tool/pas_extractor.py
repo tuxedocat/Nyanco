@@ -52,8 +52,9 @@ class PasExtractor(object):
                     elif 'ARG' in tags[12]:
                         args.append((tags[1], tags[12], int(tags[13])))
                 except:
-                    logging.debug("error")
-            logging.info(('Arguments::',args)) 
+                    logging.debug("Couldn't find the triple in sentence")
+            # logging.info(('Arguments::',args)) 
+
             # loop for ARGS #
             # Look the index, if an ARG is for the ROOT (idx == ROOT_idx), 
             # add it as correct ARG
@@ -112,8 +113,10 @@ def extract(input_prefix, output_prefix):
     """
     import glob
     files = glob.glob(os.path.join(input_prefix,'*.parsed'))
+    num_f = len(files)
     pastriples_counter = collections.Counter()
-    for f in files:
+    for i, f in enumerate(files):
+        logging.debug(('Processing file no. %d (%d remaining...)'%(i+1,(num_f-i-1))))
         pax = PasExtractor(f)
         tmpc = collections.Counter(pax.extract())
         pastriples_counter = pastriples_counter + tmpc
@@ -125,7 +128,7 @@ if __name__=='__main__':
     import sys
     argv = sys.argv
     argc = len(argv)
-    logging.disable('debug')
+    # logging.disable('debug')
     USAGE = """
             python pas_extractor.py -i ../../cl/EnglishGigaword/raw/afp_eng -o afp_eng_
 
