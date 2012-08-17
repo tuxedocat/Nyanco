@@ -52,7 +52,10 @@ class PasExtractor(object):
                     elif 'ARG' in tags[12]:
                         args.append((tags[1], tags[12], int(tags[13])))
                 except:
-                    logging.debug("Couldn't find the triple in sentence")
+                    if sent == "":
+                        pass
+                    else:
+                        logging.debug("Couldn't find the triple in sentence")
             # logging.info(('Arguments::',args)) 
 
             # loop for ARGS #
@@ -123,6 +126,27 @@ def extract(input_prefix, output_prefix):
         output2file(input_prefix, output_prefix, pastriples_counter)
 
 
+def cicp_extract(input_prefix, output_prefix):
+    native_list = open('Native.txt', 'r').readlines()
+    native_list = [fn.strip('\n') for fn in native_list]
+    foreign_list = open('Foreign.txt'. 'r').readlines()
+    foreign_list = [fn.strip('\n') for fn in foreign_list]
+
+    for i, f in enumerate(native_list):
+        logging.debug(('Native:  Processing file no.\t %d (%d remaining...)'%(i+1,(num_f-i-1))))
+        pax = PasExtractor(f + ".txt.parsed")
+        tmpc = collections.Counter(pax.extract())
+        pastriples_counter = pastriples_counter + tmpc
+        output2file(input_prefix, output_prefix, pastriples_counter)
+
+    for i, f in enumerate(foreign_list):
+        logging.debug(('Foreign: Processing file no.\t %d (%d remaining...)'%(i+1,(num_f-i-1))))
+        pax = PasExtractor(f + ".txt.parsed")
+        tmpc = collections.Counter(pax.extract())
+        pastriples_counter = pastriples_counter + tmpc
+        output2file(input_prefix, output_prefix, pastriples_counter)
+
+    
 
 if __name__=='__main__':
     import sys
@@ -138,13 +162,15 @@ if __name__=='__main__':
             -o --output_prefix :: string of prefix of the output file name, e.g. 'afp_eng_' 
             ('PAS.tsv' will be added automatically)
             (the output will be saved as tab-separated text and python pickle file)
+
+            -m --mode :: if this is used for cicp
             """
 
     import optparse
     optp = optparse.OptionParser(usage=USAGE)
     optp.add_option('-i', '--input_prefix', dest = 'input_prefix')
     optp.add_option('-o', '--output_prefix', dest = 'output_prefix')
-    # optp.add_option('-p', dest = 'prefix')
+    optp.add_option('-m', '--mode', dest = 'mode')
 
     (opts, args) = optp.parse_args()
     if len(opts.input_prefix)==0:
@@ -152,8 +178,10 @@ if __name__=='__main__':
     elif len(opts.input_prefix)==1:
         opts.input_prefix = opts.input_prefix[0]
 
-    if (opts.input_prefix and  opts.output_prefix):
+    if (opts.input_prefix and opts.output_prefix):
         extract(opts.input_prefix, opts.output_prefix)
+    elif (opts.input_prefix and opts.output_prefix and opts.mode == "cicp"):
+        cicp_extract(opts.input_prefix, opts.output_prefix)
     else:
         optp.print_help()
     quit()
