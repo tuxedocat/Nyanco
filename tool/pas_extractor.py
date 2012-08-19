@@ -140,14 +140,14 @@ def cicp_extract(input_prefix, output_prefix):
         logging.debug(('Native:  Processing file no.\t %d (%d remaining...)'%(i+1,(num_nf-i-1))))
         pax = PasExtractor(os.path.join(input_prefix, f + ".txt.parsed"))
         tmpc = collections.Counter(pax.extract())
-        pastriples_counter = pastriples_counter + tmpc
+        pastriples_counter_native = pastriples_counter_native + tmpc
         output2file(input_prefix, output_prefix+"Native", pastriples_counter)
 
     for i, f in enumerate(foreign_list):
         logging.debug(('Foreign: Processing file no.\t %d (%d remaining...)'%(i+1,(num_ff-i-1))))
         pax = PasExtractor(os.path.join(input_prefix, f + ".txt.parsed"))
         tmpc = collections.Counter(pax.extract())
-        pastriples_counter = pastriples_counter + tmpc
+        pastriples_counter_foreign = pastriples_counter_foreign + tmpc
         output2file(input_prefix, output_prefix+"Foreign", pastriples_counter)
 
 
