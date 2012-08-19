@@ -52,10 +52,7 @@ class PasExtractor(object):
                     elif 'ARG' in tags[12]:
                         args.append((tags[1], tags[12], int(tags[13])))
                 except:
-                    if sent == "":
-                        pass
-                    else:
-                        print sent
+                    pass
             # logging.info(('Arguments::',args)) 
 
             # loop for ARGS #
@@ -70,7 +67,6 @@ class PasExtractor(object):
                 if arg_idx == root_idx:
                     pasdic[arg_type] = (arg_surface)
             return pasdic
-
         else:
             pass
 
