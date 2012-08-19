@@ -128,9 +128,9 @@ def extract(input_prefix, output_prefix):
 
 def cicp_extract(input_prefix, output_prefix):
     native_list = open('./Native.txt', 'r').readlines()
-    native_list = [fn.strip('\n') for fn in native_list]
+    native_list = [fn.strip('\n')[2:] for fn in native_list]
     foreign_list = open('./Foreign.txt', 'r').readlines()
-    foreign_list = [fn.strip('\n') for fn in foreign_list]
+    foreign_list = [fn.strip('\n')[2:] for fn in foreign_list]
 
     for i, f in enumerate(native_list):
         logging.debug(('Native:  Processing file no.\t %d (%d remaining...)'%(i+1,(num_f-i-1))))
