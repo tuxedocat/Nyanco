@@ -123,7 +123,7 @@ def extract(input_prefix, output_prefix):
         pax = PasExtractor(f)
         tmpc = collections.Counter(pax.extract())
         pastriples_counter = pastriples_counter + tmpc
-        output2file(input_prefix, output_prefix, pastriples_counter)
+    output2file(input_prefix, output_prefix, pastriples_counter)
 
 
 def cicp_extract(input_prefix, output_prefix):
@@ -138,17 +138,24 @@ def cicp_extract(input_prefix, output_prefix):
     pastriples_counter_foreign = collections.Counter()
     for i, f in enumerate(native_list):
         logging.debug(('Native:  Processing file no.\t %d (%d remaining...)'%(i+1,(num_nf-i-1))))
-        pax = PasExtractor(os.path.join(input_prefix, f + ".txt.parsed"))
-        tmpc = collections.Counter(pax.extract())
-        pastriples_counter_native = pastriples_counter_native + tmpc
-        output2file(input_prefix, output_prefix+"Native", pastriples_counter_native)
+        try:
+            pax = PasExtractor(os.path.join(input_prefix, f + ".txt.parsed"))
+            tmpc = collections.Counter(pax.extract())
+            pastriples_counter_native = pastriples_counter_native + tmpc
+        except IOError:
+            logging.debug(('Native: "No such file exists" at file no.\t %d (%d remaining...)'%(i+1,(num_nf-i-1))))
+            pass
+    output2file(input_prefix, output_prefix+"Native", pastriples_counter_native)
 
     for i, f in enumerate(foreign_list):
         logging.debug(('Foreign: Processing file no.\t %d (%d remaining...)'%(i+1,(num_ff-i-1))))
-        pax = PasExtractor(os.path.join(input_prefix, f + ".txt.parsed"))
-        tmpc = collections.Counter(pax.extract())
-        pastriples_counter_foreign = pastriples_counter_foreign + tmpc
-        output2file(input_prefix, output_prefix+"Foreign", pastriples_counter_foreign)
+        try:
+            pax = PasExtractor(os.path.join(input_prefix, f + ".txt.parsed"))
+            tmpc = collections.Counter(pax.extract())
+            pastriples_counter_foreign = pastriples_counter_foreign + tmpc
+        except IOError:
+            logging.debug(('Foreign: "No such file exists" at file no.\t %d (%d remaining...)'%(i+1,(num_nf-i-1))))
+    output2file(input_prefix, output_prefix+"Foreign", pastriples_counter_foreign)
 
 
 
