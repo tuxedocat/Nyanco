@@ -129,20 +129,19 @@ def extract(input_prefix, output_prefix):
 def cicp_extract(input_prefix, output_prefix):
     native_list = open(os.path.join(input_prefix, 'Native.txt'), 'r').readlines()
     native_list = [fn.strip('\n')[2:] for fn in native_list]
-    print native_list
     foreign_list = open(os.path.join(input_prefix, 'Foreign.txt'), 'r').readlines()
     foreign_list = [fn.strip('\n')[2:] for fn in foreign_list]
-    print foreign_list
-
+    num_nf = len(native_list)
+    num_ff = len(foreign_list)
     for i, f in enumerate(native_list):
-        logging.debug(('Native:  Processing file no.\t %d (%d remaining...)'%(i+1,(num_f-i-1))))
+        logging.debug(('Native:  Processing file no.\t %d (%d remaining...)'%(i+1,(num_nf-i-1))))
         pax = PasExtractor(os.path.join(input_prefix, f + ".txt.parsed"))
         tmpc = collections.Counter(pax.extract())
         pastriples_counter = pastriples_counter + tmpc
         output2file(input_prefix, output_prefix+"Native", pastriples_counter)
 
     for i, f in enumerate(foreign_list):
-        logging.debug(('Foreign: Processing file no.\t %d (%d remaining...)'%(i+1,(num_f-i-1))))
+        logging.debug(('Foreign: Processing file no.\t %d (%d remaining...)'%(i+1,(num_ff-i-1))))
         pax = PasExtractor(os.path.join(input_prefix, f + ".txt.parsed"))
         tmpc = collections.Counter(pax.extract())
         pastriples_counter = pastriples_counter + tmpc
