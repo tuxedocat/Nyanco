@@ -55,7 +55,7 @@ class PasExtractor(object):
                     if sent == "":
                         pass
                     else:
-                        logging.debug("Couldn't find the triple in sentence")
+                        print sent
             # logging.info(('Arguments::',args)) 
 
             # loop for ARGS #
@@ -143,7 +143,7 @@ def cicp_extract(input_prefix, output_prefix):
             tmpc = collections.Counter(pax.extract())
             pastriples_counter_native = pastriples_counter_native + tmpc
         except IOError:
-            logging.debug(('Native: "No such file exists" at file no.\t %d (%d remaining...)'%(i+1,(num_nf-i-1))))
+            logging.debug(('Native: "No such file exists" at file  %s '%(f)))
             pass
     output2file(input_prefix, output_prefix+"Native", pastriples_counter_native)
 
@@ -154,7 +154,7 @@ def cicp_extract(input_prefix, output_prefix):
             tmpc = collections.Counter(pax.extract())
             pastriples_counter_foreign = pastriples_counter_foreign + tmpc
         except IOError:
-            logging.debug(('Foreign: "No such file exists" at file no.\t %d (%d remaining...)'%(i+1,(num_nf-i-1))))
+            logging.debug(('Foreign: "No such file exists" at file  %s '%(f)))
     output2file(input_prefix, output_prefix+"Foreign", pastriples_counter_foreign)
 
 
