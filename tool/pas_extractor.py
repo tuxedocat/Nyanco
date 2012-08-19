@@ -179,7 +179,7 @@ if __name__=='__main__':
         opts.input_prefix = None
     elif len(opts.input_prefix)==1:
         opts.input_prefix = opts.input_prefix[0]
-
+    print opts.mode
     if (opts.input_prefix and opts.output_prefix):
         extract(opts.input_prefix, opts.output_prefix)
     elif (opts.input_prefix and opts.output_prefix and opts.mode == "cicp"):
