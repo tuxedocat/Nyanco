@@ -133,6 +133,9 @@ def cicp_extract(input_prefix, output_prefix):
     foreign_list = [fn.strip('\n')[2:] for fn in foreign_list]
     num_nf = len(native_list)
     num_ff = len(foreign_list)
+
+    pastriples_counter_native = collections.Counter()
+    pastriples_counter_foreign = collections.Counter()
     for i, f in enumerate(native_list):
         logging.debug(('Native:  Processing file no.\t %d (%d remaining...)'%(i+1,(num_nf-i-1))))
         pax = PasExtractor(os.path.join(input_prefix, f + ".txt.parsed"))
@@ -145,7 +148,7 @@ def cicp_extract(input_prefix, output_prefix):
         pax = PasExtractor(os.path.join(input_prefix, f + ".txt.parsed"))
         tmpc = collections.Counter(pax.extract())
         pastriples_counter = pastriples_counter + tmpc
-        output2file(input_prefix, output_prefix+"NonNative", pastriples_counter)
+        output2file(input_prefix, output_prefix+"Foreign", pastriples_counter)
 
 
 
