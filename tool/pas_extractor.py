@@ -180,10 +180,10 @@ if __name__=='__main__':
     elif len(opts.input_prefix)==1:
         opts.input_prefix = opts.input_prefix[0]
     print opts.mode
-    if (opts.input_prefix and opts.output_prefix):
-        extract(opts.input_prefix, opts.output_prefix)
-    elif (opts.input_prefix and opts.output_prefix and opts.mode == "cicp"):
+    if (opts.input_prefix and opts.output_prefix and opts.mode == "cicp"):
         cicp_extract(opts.input_prefix, opts.output_prefix)
+    elif (opts.input_prefix and opts.output_prefix):
+        extract(opts.input_prefix, opts.output_prefix)
     else:
         optp.print_help()
     quit()
