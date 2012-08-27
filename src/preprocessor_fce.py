@@ -3,6 +3,9 @@
 '''
 Nyanco/preprocessor_fce.py
 Created on 4 May 2012
+Updated on 24 Aug 2012
+
+REPLACES "preprocessor.py" in the future
 
 This will read FCE released dataset XMLs and output them as python list object.
 For stanford-coreNLP POS/Dependency annotator, this class have simple sentence
