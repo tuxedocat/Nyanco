@@ -21,48 +21,66 @@ try:
     from lxml import etree
     print("running with lxml.etree")
 except ImportError:
-    try:
-        # Python 2.5
-        import xml.etree.cElementTree as etree
-        print("running with cElementTree on Python 2.5+")
-    except ImportError:
-        print("Import error")
+    print("Import error")
+    quit()
+# ----------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------
+
+def make_filelist(path="", prefix="", filetype=""):
+    """
+    @args
+        path:: string of path to the directory
+        prefix :: string of the prefix of files
+        filetype:: stringf of the extension without a dot
+    @returns 
+        files:: a list of matched files in the path
+    """
+    import fnmatch
+    if path and filetype:
+        files = []
+        for root, dirnames, filenames in os.walk(path):
+            for filename in fnmatch.filter(filenames, prefix + "*." + filetype):
+                files.append(os.path.join(root,filename))
+        return files
+    else:
+        return None
 
 
 class CLCReader(object):
     '''
     Extracting error-tagged items from CLC-FCE dataset.
     xpath expressions are used to locate certain errors, mainly related verbs.
-                    
-    TODO: hand extracted sentences to preprocessor 
-    TODO: make a version for NUCLE corpus, BNC 
     '''
     
-    def __init__(self):
-        self.tagset = []
-        try:
-            self.workingdir = os.path.join(os.environ["WORKDIR"], 'Nyancodat/')
-            print "WORKINGDIR: ", self.workingdir
-        except:
-            self.workingdir = os.path.join(os.environ["HOME"], 'cl/Nyancodat/')
-            print "WORKINGDIR: ", self.workingdir
-        try:
-            self.CORPUS_DIR_ROOT = os.path.join(os.environ["WORKDIR"], 'cl/nldata/')
-            print "Reading corpus from: ", self.CORPUS_DIR_ROOT
-        except:
-            self.CORPUS_DIR_ROOT = os.path.join(os.environ["HOME"], 'cl/nldata/')
-            print "Reading corpus from: ", self.CORPUS_DIR_ROOT
+    def __init__(self, corpus_dir_root=None, workingdir=None):
+        # try:
+        #     self.workingdir = os.path.join(os.environ["WORKDIR"], 'Nyancodat/')
+        #     print "WORKINGDIR: ", self.workingdir
+        # except:
+        #     self.workingdir = os.path.join(os.environ["HOME"], 'cl/Nyancodat/')
+        #     print "WORKINGDIR: ", self.workingdir
+        # try:
+        #     self.CORPUS_DIR_ROOT = os.path.join(os.environ["WORKDIR"], 'cl/nldata/')
+        #     print "Reading corpus from: ", self.CORPUS_DIR_ROOT
+        # except:
+        #     self.CORPUS_DIR_ROOT = os.path.join(os.environ["HOME"], 'cl/nldata/')
+        #     print "Reading corpus from: ", self.CORPUS_DIR_ROOT
+        if workingdir and corpus_dir_root:
+            self.WORKINGDIR = workingdir
+            self.CORPUS_DIR_ROOT = corpus_dir_root
+        else:
+            raise IOError
+        # self.allxml = CorpusFileHandler(self.CORPUS_DIR_ROOT, "clc").mklist()
+        self.xmlfiles = glob.glob()
         self.rawdata = []
-        self.allxml = CorpusFileHandler(self.CORPUS_DIR_ROOT, "clc").mklist()
         self.processed_sentences = []
         self.allincorrect_sents = []
         self.incorrect_verb_sents = []
         self.incorrect_RV_sents = []
         self.allcorrect_sents = []
         self.all_sents = []
-        self.verberrors_all = ["RV", "TV", "FV", "MV", "UV", "IV", "DV", "AGV"]
-        self.verberrors_specific = ["RV"]
-        self.collocationerrors = ["CL"]
+        self.all_verberror = ["RV", "TV", "FV", "MV", "UV", "IV", "DV", "AGV"]
+        self.RV_error = ["RV"]
         self.outputname = "extracted.ertx"
 
 
@@ -74,10 +92,10 @@ class CLCReader(object):
                           in [self.get_annotations(script) 
                               for script 
                               in [self.extract_script(etree.parse(script)) 
-                                  for script in self.allxml]]]
+                                  for script in self.xmlfiles]]]
         self.listindexdict = dict((k,v) 
                                   for k,v 
-                                  in zip(range(len(self.allxml)), self.allxml))
+                                  in zip(range(len(self.xmlfiles)), self.xmlfiles))
         return self.all_sents, self.listindexdict
 
 
@@ -195,8 +213,9 @@ class IfElem(object):
             print "%s  \t  %s  \t  %s"%(original,correction,errortype)
         return(correction_pair)
 
+# ===================================================================================================
 
-
+# ===================================================================================================
 class CorpusFileHandler(object):
     '''
     This class gives a simple interface to access corpora.
@@ -359,8 +378,8 @@ class NUCLEReader(object):
         self.DATAPATH = os.path.join(os.environ['HOME'], self.CORPUS_PATH_RELATIVE)
     
 
-def read():
-    C = CLCReader()
+def read(corpus_dir=None, output_dir=None, working_dir=None):
+    C = CLCReader(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
     C.read()
 #    print(C.all_sents[0:10])
 #    print(C.listindexdict)
@@ -381,10 +400,47 @@ def preprocess(xmllist, corpus_as_list, *args):
     processor.output_raw(dest)
     
 
-if __name__ == "__main__":
+def main(corpus_dir=None, output_dir=None, working_dir=None):
+    xmllist, corpus = read(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
+
+
+
+# if __name__ == "__main__":
+#     import time
+#     total =time.time()
+#     xmllist, corpus = read()
+#     preprocess(xmllist, corpus, "Gold", "Incorrect", "Incorrect_RV", "Incorrect_RV_check_main", "Incorrect_RV_check_correct")
+#     endtime = time.time()
+#     print("\n\nOverall time %5.3f[sec.]"%(endtime - total))
+
+
+
+if __name__=='__main__':
     import time
-    total =time.time()
-    xmllist, corpus = read()
-    preprocess(xmllist, corpus, "Gold", "Incorrect", "Incorrect_RV", "Incorrect_RV_check_main", "Incorrect_RV_check_correct")
+    starttime = time.time()
+    import sys
+    argv = sys.argv
+    argc = len(argv)
+    USAGE = """
+            python corpusreader2.py -i corpusdir -d workingdir -o outputdir
+
+            -i --input_dir :: string of path-to-files
+
+            -d --directory_for_workfiles :: string to workingdir
+
+            -o --output_dir :: string of path to the dir  
+
+            """
+
+    import optparse
+    optp = optparse.OptionParser(usage=USAGE)
+    optp.add_option('-i', '--input_dir', dest = 'input_dir')
+    optp.add_option('-o', '--output_dir', dest = 'output_dir')
+    optp.add_option('-d', '--directory_for_workfiles', dest = 'working_dir')
+    (opts, args) = optp.parse_args()
+    if (opts.input_dir and opts.output_dir and opts.working_dir):
+        main(corpus_dir=opts.input_dir, output_dir=opts.output_dir, working_dir=opts.working_dir)
+    else:
+        optp.print_help()
     endtime = time.time()
-    print("\n\nOverall time %5.3f[sec.]"%(endtime - total))
+    quit()
