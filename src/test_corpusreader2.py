@@ -9,6 +9,7 @@ __version__ = "0.1"
 __status__ = "Prototyping"
 
 import logging
+from pprint import pformat
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 from corpusreader2 import *
 #=====================================================================================================
@@ -32,3 +33,10 @@ class TestCorpusReader:
                      '../sandbox/fce/doc1006.xml',
                      '../sandbox/fce/doc1008.xml']
         assert obtained == expected
+
+
+    def mainrun_test(self):
+        corpus_list, fileindexlist = read(corpus_dir=self.corpus_dir, output_dir=self.output_dir, working_dir=self.working_dir)
+        print pformat(corpus_list[0:3])
+        print pformat(fileindexlist)
+        raise Exception

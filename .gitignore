@@ -1,7 +1,7 @@
 *.py[co]
 *.*~
 .DS_Store
-
+log/*
 
 # Packages
 *.egg

@@ -6,7 +6,7 @@ Created on 29 Aug 2012
 '''
 __author__ = "Yu Sawai"
 __copyright__ = "Copyright 2012, Yu Sawai"
-__version__ = "0.1"
+__version__ = "2.1"
 __status__ = "Prototyping"
 
 
@@ -14,8 +14,13 @@ import os
 import glob
 import pickle
 import json
-import nltk
-import copy
+from pprint import pformat
+from datetime import datetime
+logfilename = datetime.now().strftime("corpusreader2_log_%Y%m%d_%H%M.log")
+# import copy
+import logging
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
+                    filename='../log/'+logfilename)
 # in case lxml.etree isn't available...
 try:
     from lxml import etree
@@ -46,32 +51,36 @@ def make_filelist(path="", prefix="", filetype=""):
         return None
 
 
+
+def store_to_pickle(path="", textlist=None):
+    '''
+    store obtained various grained sentence lists using pickles.
+    
+    '''
+    if textlist:
+        fname = path + datetime.now().strftime("_%Y%m%d_%H%M") + ".pickle"
+        with open(fname, 'wb') as f:
+            pickle.dump(textlist, f)
+        return True
+    else:
+        return False
+
+
 class CLCReader(object):
     '''
     Extracting error-tagged items from CLC-FCE dataset.
     xpath expressions are used to locate certain errors, mainly related verbs.
     '''
     
-    def __init__(self, corpus_dir_root=None, workingdir=None):
-        # try:
-        #     self.workingdir = os.path.join(os.environ["WORKDIR"], 'Nyancodat/')
-        #     print "WORKINGDIR: ", self.workingdir
-        # except:
-        #     self.workingdir = os.path.join(os.environ["HOME"], 'cl/Nyancodat/')
-        #     print "WORKINGDIR: ", self.workingdir
-        # try:
-        #     self.CORPUS_DIR_ROOT = os.path.join(os.environ["WORKDIR"], 'cl/nldata/')
-        #     print "Reading corpus from: ", self.CORPUS_DIR_ROOT
-        # except:
-        #     self.CORPUS_DIR_ROOT = os.path.join(os.environ["HOME"], 'cl/nldata/')
-        #     print "Reading corpus from: ", self.CORPUS_DIR_ROOT
-        if workingdir and corpus_dir_root:
-            self.WORKINGDIR = workingdir
-            self.CORPUS_DIR_ROOT = corpus_dir_root
+    def __init__(self, corpus_dir="", output_dir="", working_dir=""):
+        if working_dir and corpus_dir:
+            self.work_dir = working_dir
+            self.corpus_dir = corpus_dir
+            self.output_dir = output_dir
         else:
             raise IOError
-        # self.allxml = CorpusFileHandler(self.CORPUS_DIR_ROOT, "clc").mklist()
-        self.xmlfiles = glob.glob()
+        self.xmlfiles = make_filelist(path=self.corpus_dir, prefix="doc", filetype="xml")
+        self.outputname = "FCE-dict"
         self.rawdata = []
         self.processed_sentences = []
         self.allincorrect_sents = []
@@ -81,12 +90,17 @@ class CLCReader(object):
         self.all_sents = []
         self.all_verberror = ["RV", "TV", "FV", "MV", "UV", "IV", "DV", "AGV"]
         self.RV_error = ["RV"]
-        self.outputname = "extracted.ertx"
 
 
     def read(self):
         '''
         A wrapper function
+
+        @args
+            none
+        @returns
+            all_sents :: flattened text as a list
+            listindexdict :: a dictionary of {index<int>: filename<str>}
         '''
         self.all_sents = [correction_pairs for correction_pairs 
                           in [self.get_annotations(script) 
@@ -97,15 +111,6 @@ class CLCReader(object):
                                   for k,v 
                                   in zip(range(len(self.xmlfiles)), self.xmlfiles))
         return self.all_sents, self.listindexdict
-
-
-    def store_to_pickle(self, textlist):
-        '''
-        store obtained various grained sentence lists using pickles.
-        
-        '''
-        with open(self.workingdir + self.outputname, 'wb') as f:
-            pickle.dump(textlist, f)
 
 
     def extract_script(self, certain_etree):
@@ -176,7 +181,6 @@ class IfElem(object):
     '''
     
     def __init__(self, etree_element):
-        errortype = u""
         self.elem = etree_element
         
 
@@ -185,7 +189,7 @@ class IfElem(object):
             errortype = etelem.values()[0]
             return(errortype)
         except IndexError, AttributeError:
-            print "can't get errortype"
+            logging.debug(pformat("Couldn't get error type"))
             return(errortype)
 
 
@@ -210,38 +214,12 @@ class IfElem(object):
             pass
         correction_pair = (original,correction, errortype)
         if errortype == "RV":
-            print "%s  \t  %s  \t  %s"%(original,correction,errortype)
+            print pformat((original,correction,errortype))
         return(correction_pair)
 
 # ===================================================================================================
 
 # ===================================================================================================
-class CorpusFileHandler(object):
-    '''
-    This class gives a simple interface to access corpora.
-    Absolute path to the parent directory to the corpora is needed.
-    corpora_parent_dir = /home/hoge/somedir/     (NUCLE, CLC,...)
-    '''
-    def __init__(self, corpus_parent_dir, corpus_name):
-        import os
-        self.CORPORA = {"clc":os.path.join(corpus_parent_dir,"fce-released-dataset/dataset/"),
-                        "nucle":os.path.join(corpus_parent_dir,"NUCLE/shaped/")}
-        self.filelist = []
-        self.corpus_dir = ''
-        try:
-            self.corpus_dir = self.CORPORA[corpus_name]
-        except KeyError:
-            print("Not found. %s"%corpus_name)
-
-    def mklist(self):
-        try:
-            self.filelist = glob.glob(self.corpus_dir+"*/*.xml")
-            filelist = self.filelist
-        except:
-            print("Errors occured in mklist")
-        return filelist
-
-
 class CLCPreprocessor(object):
     def __init__(self, xmllist, corpus):
         import nltk
@@ -371,19 +349,10 @@ class CLCPreprocessor(object):
                             f.write("\n")
        
        
-class NUCLEReader(object):
-    def __init__(self):
-        self.tagset = []
-        self.CORPUS_PATH_RELATIVE = 'usr/share/NUCLE/shaped'
-        self.DATAPATH = os.path.join(os.environ['HOME'], self.CORPUS_PATH_RELATIVE)
-    
-
-def read(corpus_dir=None, output_dir=None, working_dir=None):
+def read(corpus_dir="", output_dir="", working_dir=""):
     C = CLCReader(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
     C.read()
-#    print(C.all_sents[0:10])
-#    print(C.listindexdict)
-    return C.allxml, C.all_sents
+    return C.all_sents, C.listindexdict
 
 
 def preprocess(xmllist, corpus_as_list, *args):
@@ -400,47 +369,38 @@ def preprocess(xmllist, corpus_as_list, *args):
     processor.output_raw(dest)
     
 
-def main(corpus_dir=None, output_dir=None, working_dir=None):
-    xmllist, corpus = read(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
-
-
-
-# if __name__ == "__main__":
-#     import time
-#     total =time.time()
-#     xmllist, corpus = read()
-#     preprocess(xmllist, corpus, "Gold", "Incorrect", "Incorrect_RV", "Incorrect_RV_check_main", "Incorrect_RV_check_correct")
-#     endtime = time.time()
-#     print("\n\nOverall time %5.3f[sec.]"%(endtime - total))
-
+def main(corpus_dir="", output_dir="", working_dir="", preprocess=False):
+    corpus, filedict = read(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
 
 
 if __name__=='__main__':
     import time
-    starttime = time.time()
     import sys
+    import argparse
+    starttime = time.time()
     argv = sys.argv
     argc = len(argv)
-    USAGE = """
-            python corpusreader2.py -i corpusdir -d workingdir -o outputdir
-
-            -i --input_dir :: string of path-to-files
-
-            -d --directory_for_workfiles :: string to workingdir
-
-            -o --output_dir :: string of path to the dir  
-
-            """
-
-    import optparse
-    optp = optparse.OptionParser(usage=USAGE)
-    optp.add_option('-i', '--input_dir', dest = 'input_dir')
-    optp.add_option('-o', '--output_dir', dest = 'output_dir')
-    optp.add_option('-d', '--directory_for_workfiles', dest = 'working_dir')
-    (opts, args) = optp.parse_args()
-    if (opts.input_dir and opts.output_dir and opts.working_dir):
-        main(corpus_dir=opts.input_dir, output_dir=opts.output_dir, working_dir=opts.working_dir)
+    description =   """This script will read and parse xml files of FCE dataset, 
+                        and store them into python dictionary.
+                    """
+    ap = argparse.ArgumentParser(description=description)
+    ap.add_argument("-p", "--preprocess", action="store_true", 
+                    help="put this if you need preprocessing for generating dictionary-formed corpus")
+    ap.add_argument('-i', '--input_dir', action="store",
+                    help="string of path to FCE corpus dir")
+    ap.add_argument('-o', '--output_dir', action="store",
+                    help="string of path-to-dir")
+    ap.add_argument('-d', '--working_dir', action="store",
+                    help="string of path working directory")
+    args = ap.parse_args()
+    if (args.input_dir and args.output_dir and args.working_dir and args.preprocess):
+        main(corpus_dir=args.input_dir, output_dir=args.output_dir, working_dir=args.working_dir, preprocess=True)
+        endtime = time.time()
+        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+    elif (args.input_dir and args.output_dir and args.working_dir):
+        main(corpus_dir=args.input_dir, output_dir=args.output_dir, working_dir=args.working_dir, preprocess=False)
+        endtime = time.time()
+        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
     else:
-        optp.print_help()
-    endtime = time.time()
+        ap.print_help()
     quit()
