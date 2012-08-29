@@ -41,3 +41,8 @@ cooc
 test
 train
 
+
+# sandbox test files
+sandbox/afp_eng_199405_raw.cleaned
+sandbox/pas/afp_eng_201012_1*
+
