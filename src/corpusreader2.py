@@ -1,8 +1,11 @@
 #! /usr/bin/env python
 # coding: utf-8
 '''
-Nyanco/src/preprocessor2.py
+Nyanco/src/corpusreader2.py
 Created on 29 Aug 2012
+
+LOG:
+    Sep 5: preprocessor has been moved to preprocessor2.py
 '''
 __author__ = "Yu Sawai"
 __copyright__ = "Copyright 2012, Yu Sawai"
@@ -11,25 +14,21 @@ __status__ = "Prototyping"
 
 
 import os
-import glob
-import pickle
+import cPickle as pickle
 import json
 from pprint import pformat
 from datetime import datetime
 logfilename = datetime.now().strftime("corpusreader2_log_%Y%m%d_%H%M.log")
-# import copy
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
                     filename='../log/'+logfilename)
-# in case lxml.etree isn't available...
 try:
     from lxml import etree
     print("running with lxml.etree")
 except ImportError:
     print("Import error")
     quit()
-# ----------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------
+
 
 def make_filelist(path="", prefix="", filetype=""):
     """
@@ -51,10 +50,11 @@ def make_filelist(path="", prefix="", filetype=""):
         return None
 
 
-
 def store_to_pickle(path="", textlist=None):
     '''
     store obtained various grained sentence lists using pickles.
+    TODO:
+        this has never been used, remove?
     
     '''
     if textlist:
@@ -169,7 +169,10 @@ class IfStr(object):
         
         
     def corrpair(self):
-        return(self.inputstring)
+        if self.inputstring:
+            return(self.inputstring)
+        else:
+            return("")
 
 
 class IfElem(object):
@@ -186,9 +189,12 @@ class IfElem(object):
 
     def check_errortype(self, etelem):
         try:
-            errortype = etelem.values()[0]
-            return(errortype)
-        except IndexError, AttributeError:
+            errortype = unicode(etelem.values()[0])
+            if errortype:
+                return(errortype)
+            else:
+                return(u"")
+        except :
             logging.debug(pformat("Couldn't get error type"))
             return(errortype)
 
@@ -197,7 +203,7 @@ class IfElem(object):
         original = u""
         correction = u""
         try:
-            errortype = unicode(self.check_errortype(self.elem))
+            errortype = self.check_errortype(self.elem)
         except:
             errortype = u""
         try:
@@ -205,171 +211,37 @@ class IfElem(object):
         except AttributeError:
             raise AttributeError
         try:
-            original = unicode(self.elem.find("i").text)
+            if self.elem.find("i").text:
+                original = unicode(self.elem.find("i").text)
+            else:
+                original = u""
         except AttributeError:
-            pass
+            original = u""
         try:
-            correction = unicode(self.elem.find("c").text)
+            correction = unicode()
+            if self.elem.find("c").text:
+                correction = unicode(self.elem.find("c").text)
+            else:
+                correction = u""
         except AttributeError:
-            pass
+            correction = u""
         correction_pair = (original,correction, errortype)
-        if errortype == "RV":
-            print pformat((original,correction,errortype))
+        if errortype == u"RV":
+            if original=="" and correction=="" and self.elem.text != None:
+                correction_pair = (unicode(self.elem.text), unicode(self.elem.text), errortype, "M")
+                print pformat(correction_pair)
         return(correction_pair)
 
 # ===================================================================================================
 
-# ===================================================================================================
-class CLCPreprocessor(object):
-    def __init__(self, xmllist, corpus):
-        import nltk
-        from nltk import sent_tokenize
-        from nltk import word_tokenize
-        self.corpus = [d for d in corpus]
-        self.scripts = []
-        self.annotations = []
-        self.docs = xmllist
-
-
-    def preprocess(self):
-        docs = [d for d in self.corpus]
-        for doc in docs:
-            entiredoc = ""
-            annotations = [elem for elem in doc if isinstance(elem, tuple)]
-            while doc:
-                chunk = doc.pop(0)
-                try:
-                    entiredoc += chunk + " "
-                except TypeError:
-                    entiredoc += " {++} "
-            self.scripts.append(entiredoc)
-            self.annotations.append(annotations)
-
-
-    def _retrieve(self, script, annotations_list, mode):
-        sents = nltk.sent_tokenize(script)
-        sents_tokenized = [nltk.wordpunct_tokenize(sent) for sent in sents]
-        processed_sents = []
-        annotations = [a for a in annotations_list]
-        for sent in sents_tokenized:
-            for index, word in enumerate(sent):
-                if word == "{++}":
-                    _annotation = annotations.pop(0)
-                    len_i = len(_annotation[0])
-                    len_c = len(_annotation[1])
-                    sent.pop(index)
-                    if mode == "Gold":
-                        _correct_word = _annotation[1]
-                        sent.insert(index, _correct_word)
-                    elif mode == "Incorrect_RV":
-                        if _annotation[2] == "RV":
-                            _replacement = _annotation[0]
-                            sent.insert(index, _replacement)
-                        else:
-                            _replacement = _annotation[1]
-                            sent.insert(index, _replacement)
-                    elif mode == "Incorrect_RV_check_main":
-                        if _annotation[2] == "RV":
-                            if len_i > len_c:
-                                _replacement = "{incorrect!}" + _annotation[0] + "{incorrect!}"
-                            else:
-                                _replacement = "{incorrect!}" + _annotation[0] + " "*(len_c-len_i) + "{incorrect!}"
-                            sent.insert(index, _replacement)
-                        else:
-                            _replacement = _annotation[1]
-                            sent.insert(index, _replacement)
-                    elif mode == "Incorrect_RV_check_correct":
-                        if _annotation[2] == "RV":
-                            if len_c > len_i:
-                                _replacement = "{correction}" + _annotation[1] + "{correction}"
-                            else:
-                                _replacement = "{correction}" + _annotation[1] + " "*(len_i-len_c) + "{correction}"
-                            sent.insert(index, _replacement)
-                        else:
-                            _replacement = _annotation[1]
-                            sent.insert(index, _replacement)
-                    elif mode == "Incorrect":
-                        _replacement = _annotation[0]
-                        sent.insert(index, _replacement)
-            processed_sents.append(sent)
-        return processed_sents
-
-
-    def retrieve(self, mode):
-        docs = [doc for doc in self.scripts]
-        annotations_list = [annotation for annotation in self.annotations]
-        wordlist =  [ self._retrieve(script, annotations, mode) for (script, annotations) in zip(docs, annotations_list)]
-        if mode == "Gold":
-            self.goldwords = wordlist
-        elif mode == "Incorrect":
-            self.incorrwords = wordlist
-        elif mode == "Incorrect_RV":
-            self.incorr_RV = wordlist
-        elif mode == "Incorrect_RV_check_main":
-            self.incorr_RV_test_main = wordlist
-        elif mode == "Incorrect_RV_check_correct":
-            self.incorr_RV_test_correct = wordlist
-        return True
-    
-    
-    def _concat_words(self, wordlist):
-        return reduce(lambda x, y: x + " " + y, wordlist)
-     
-     
-    def output_raw(self, dest): 
-        with open(dest, "w") as f:
-            if "gold" in dest:
-                for doc in self.goldwords:
-                    for sent in doc:
-                        s = self._concat_words(sent)
-                        f.write(s.encode("utf-8") + "\n")
-                    f.write("\n")
-            elif "test" in dest:
-                for doc in self.incorrwords:
-                    for sent in doc:
-                        s = self._concat_words(sent)
-                        f.write(s.encode("utf-8") + "\n")
-                    f.write("\n")
-            elif "RVtest" in dest:
-                for doc in self.incorr_RV[-99:]:
-                    for sent in doc:
-                        s = self._concat_words(sent)
-                        f.write(s.encode("utf-8") + "\n")
-                    f.write("\n")
-            elif "RV_check" in dest:
-                for i_doc, (doc1,doc2) in enumerate(zip(self.incorr_RV_test_main, self.incorr_RV_test_correct)):
-                    docname = self.docs[i_doc]
-                    for i_sent, (sent1, sent2) in enumerate(zip(doc1, doc2)):
-                        s_main = self._concat_words(sent1)
-                        s_correct = self._concat_words(sent2)
-                        if "{incorrect!}" in s_main and "{correction}" in s_correct:
-                            f.write("Doc: %s    Sentence: %d \n"%(docname[-24:], i_sent))
-                            f.write(s_main.encode("utf-8") + "\n")
-                            f.write(s_correct.encode("utf-8") + "\n")
-                            f.write("\n")
-       
-       
 def read(corpus_dir="", output_dir="", working_dir=""):
     C = CLCReader(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
     C.read()
     return C.all_sents, C.listindexdict
 
 
-def preprocess(xmllist, corpus_as_list, *args):
-    processor = CLCPreprocessor(xmllist, corpus_as_list)
-    processor.preprocess()
-    for mode in args:
-        processor.retrieve(mode)
-#    print processor.goldwords[0:10]
-#    print processor.incorrwords[0:10]
-#    dest = os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-gold-raw_all.txt")
-#    dest = os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-RVtest-last100docs.txt")
-#    dest = os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-RV_check-all.txt")
-    dest = os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-incorr-test_all.txt")
-    processor.output_raw(dest)
-    
-
 def main(corpus_dir="", output_dir="", working_dir="", preprocess=False):
+    import preprocessor2
     corpus, filedict = read(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
 
 
@@ -386,11 +258,11 @@ if __name__=='__main__':
     ap = argparse.ArgumentParser(description=description)
     ap.add_argument("-p", "--preprocess", action="store_true", 
                     help="put this if you need preprocessing for generating dictionary-formed corpus")
-    ap.add_argument('-i', '--input_dir', action="store",
+    ap.add_argument("-i", '--input_dir', action="store",
                     help="string of path to FCE corpus dir")
-    ap.add_argument('-o', '--output_dir', action="store",
+    ap.add_argument("-o", '--output_dir', action="store",
                     help="string of path-to-dir")
-    ap.add_argument('-d', '--working_dir', action="store",
+    ap.add_argument("-d", '--working_dir', action="store",
                     help="string of path working directory")
     args = ap.parse_args()
     if (args.input_dir and args.output_dir and args.working_dir and args.preprocess):
