@@ -21,11 +21,11 @@ class CLCPreprocessor(object):
     pleces marked with {++} are corresponding to error tuples (<i>, <c>, <type>, <extra info>)
 
     """
-    def __init__(self, xmllist, corpus):
+    def __init__(self, corpus, filenamelist):
         self.corpus = [d for d in corpus] # copy elements in argument, create another object of the corpus
         self.scripts = []
         self.annotations = []
-        self.docs = xmllist
+        self.docs = filenamelist
 
 
     def preprocess(self):
@@ -158,8 +158,22 @@ class CLCPreprocessor(object):
                                 f.write("\n")
 
 
-def preprocess(xmllist, corpus_as_list, *args):
-    pp = CLCPreprocessor(xmllist, corpus_as_list)
+def preprocess(corpus_as_list, filenamelist, *args):
+    """
+    Wrapper function of preprocessor2
+
+    @ARGS:
+        corpus_as_list:: [[chunks and annotation-tuples], [each list is corresponded to a document], 
+                            [existing file is the same as its index in filenamelist]]
+        filenamelist:: a dictionary of {index: "file path"}
+        *args:: modes in CLCPreprocessor
+            "Gold", "Incorrect_RV", "Incorrect", "Incorrect_RV_check_main", "Incorrect_RV_check_correct" 
+
+    @TODO:
+        * take args as a list by argparse
+        * destlist will be moved to corpusreader2
+    """
+    pp = CLCPreprocessor(corpus_as_list, filenamelist)
     pp.preprocess()
     for mode in args:
         pp.retrieve(mode)

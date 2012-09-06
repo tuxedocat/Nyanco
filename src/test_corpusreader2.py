@@ -12,9 +12,10 @@ import logging
 from pprint import pformat
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 from corpusreader2 import *
+import preprocessor2
 #=====================================================================================================
 
-class TestCorpusReader:
+class TestCorpusReader2:
     def setUp(self):
         import os, sys
         import glob
@@ -40,3 +41,16 @@ class TestCorpusReader:
         print pformat(corpus_list[0:3])
         print pformat(fileindexlist)
         raise Exception
+
+class TestPreprocessor2:
+    def setUp(self):
+        import os, sys
+        import cPickle as pickle
+        import nltk
+        self.corpus_dir = '../sandbox/fce2'
+        self.working_dir = '../sandbox/fce2'
+        self.output_dir = '../sandbox/fce2'
+        self.corpus_as_list, self.fileindexdict = read(corpus_dir=self.corpus_dir, output_dir=self.output_dir, working_dir=self.working_dir)
+
+    def test_preprocess1(self):
+        preprocessor2.CLCPreprocessor(self.corpus_as_list, self.fileindexdict.values())
