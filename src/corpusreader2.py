@@ -53,9 +53,6 @@ def make_filelist(path="", prefix="", filetype=""):
 def store_to_pickle(path="", textlist=None):
     '''
     store obtained various grained sentence lists using pickles.
-    TODO:
-        this has never been used, remove?
-    
     '''
     if textlist:
         fname = path + datetime.now().strftime("_%Y%m%d_%H%M") + ".pickle"
@@ -237,12 +234,16 @@ class IfElem(object):
 def read(corpus_dir="", output_dir="", working_dir=""):
     C = CLCReader(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
     C.read()
+    store_to_pickle(path=output_dir+"/all_sents", textlist=C.all_sents)
+    store_to_pickle(path=output_dir+"/index", textlist=C.listindexdict)
     return C.all_sents, C.listindexdict
 
 
 def main(corpus_dir="", output_dir="", working_dir="", preprocess=False):
     import preprocessor2
     corpus, filedict = read(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
+    if preprocess:
+        preprocessor2.preprocess(filedict.values(), corpus)
 
 
 if __name__=='__main__':
