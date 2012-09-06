@@ -36,10 +36,16 @@ class TestCorpusReader2:
         assert obtained == expected
 
 
-    def mainrun_test(self):
-        corpus_list, fileindexlist = read(corpus_dir=self.corpus_dir, output_dir=self.output_dir, working_dir=self.working_dir)
-        print pformat(corpus_list[0:3])
-        print pformat(fileindexlist)
+    def test_mainrun(self):
+        corpus_list, fileindexdict = read(corpus_dir=self.corpus_dir, output_dir=self.output_dir, working_dir=self.working_dir)
+        # print pformat(corpus_list[0:3])
+        # print pformat(fileindexdict)
+        # raise Exception
+
+    def test_recursive(self):
+        cd = '../sandbox/fce2'
+        corpus_list, fileindexdict = read(corpus_dir=cd, output_dir=cd, working_dir=cd)
+        print pformat(corpus_list)
         raise Exception
 
 class TestPreprocessor2:
@@ -54,3 +60,4 @@ class TestPreprocessor2:
 
     def test_preprocess1(self):
         preprocessor2.CLCPreprocessor(self.corpus_as_list, self.fileindexdict.values())
+        raise Exception
