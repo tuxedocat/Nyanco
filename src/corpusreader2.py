@@ -117,6 +117,7 @@ class CLCReader(object):
         '''
         try:
             script = certain_etree.xpath('//coded_answer//p/text()|.//NS')
+            # script = certain_etree.xpath('//coded_answer//p/text()|//coded_answer//p/NS')
             return(script)
         except:
             print("perhaps the given tree isn't actually a Element tree...")
@@ -182,7 +183,8 @@ class IfElem(object):
     
     def __init__(self, etree_element):
         self.elem = etree_element
-        
+        # print pformat(etree.tostring(self.elem))
+        print pformat(etree_element.values())
 
     def check_errortype(self, etelem):
         try:
@@ -192,7 +194,8 @@ class IfElem(object):
             else:
                 return(u"")
         except :
-            logging.debug(pformat("Couldn't get error type"))
+            # logging.debug(pformat("Couldn't get error type", etree.tounicode(etelem)))
+            print pformat(etree.tounicode(etelem))
             return(errortype)
 
 
