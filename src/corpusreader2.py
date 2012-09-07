@@ -87,6 +87,7 @@ class CLCReader(object):
         self.all_sents = []
         self.all_verberror = ["RV", "TV", "FV", "MV", "UV", "IV", "DV", "AGV"]
         self.RV_error = ["RV"]
+        self.skip_recursive = True
 
 
     def read(self):
@@ -110,14 +111,52 @@ class CLCReader(object):
         return self.all_sents, self.listindexdict
 
 
+    def _extract(self, et):
+        """
+        returns ElementTree of <NS> if given etree element of <p> has NS element,
+        and checks if the given <p> tree has recursive tree, just reject it.
+        """
+        plist = et.xpath("./text()|./NS") # this gives ["text", <NS>, "text"...] sometimes <NS> contains recursion
+        paragraph = []
+        for e in plist:
+            if isinstance(e, str):
+                paragraph.append(unicode(e))
+            elif isinstance(e, etree._Element):
+                check = e.xpath(".//NS")
+                if check:  # Element which has recursive correction.... reject entire paragraph
+                    if self.skip_recursive:
+                        paragraph = None
+                        return paragraph 
+                    else:
+                        paragraph.append(e)
+                else:
+                    paragraph.append(e)
+        return paragraph
+
+
     def extract_script(self, certain_etree):
         '''
         A method to obtain an element tree of exam-script of learner itself.
         returns listed script: ["some text", <NS element>, ...]
         '''
         try:
-            script = certain_etree.xpath('//coded_answer//p/text()|.//NS')
-            # script = certain_etree.xpath('//coded_answer//p/text()|//coded_answer//p/NS')
+            script = []
+            answers = certain_etree.xpath("//coded_answer")
+            for ans in answers:
+                paragraphs = ans.findall("p")
+                answer = []
+                for p in paragraphs:
+                    tmp = self._extract(p)
+                    if tmp == None:
+                        logging.debug(pformat("recursive annotation is detected, rejected an answer script"))
+                        answer = []
+                        break
+                        # logging.debug(pformat("recursive annotation is detected, added marker"))
+                        # tmp = "{RECURSIVE_ANNOTATION}"
+                        # answer.append(tmp)
+                    else:
+                        answer += tmp
+                script += answer
             return(script)
         except:
             print("perhaps the given tree isn't actually a Element tree...")
@@ -184,7 +223,7 @@ class IfElem(object):
     def __init__(self, etree_element):
         self.elem = etree_element
         # print pformat(etree.tostring(self.elem))
-        print pformat(etree_element.values())
+        # print pformat(etree_element.values())
 
     def check_errortype(self, etelem):
         try:
@@ -195,7 +234,7 @@ class IfElem(object):
                 return(u"")
         except :
             # logging.debug(pformat("Couldn't get error type", etree.tounicode(etelem)))
-            print pformat(etree.tounicode(etelem))
+            # print pformat(etree.tounicode(etelem))
             return(errortype)
 
 
@@ -227,14 +266,18 @@ class IfElem(object):
             correction = u""
         correction_pair = (original,correction, errortype)
         if errortype == u"RV":
+            print pformat(correction_pair)
             if original=="" and correction=="" and self.elem.text != None:
                 correction_pair = (unicode(self.elem.text), unicode(self.elem.text), errortype, "M")
-                print pformat(correction_pair)
         return(correction_pair)
 
 # ===================================================================================================
 
 def read(corpus_dir="", output_dir="", working_dir=""):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    if not os.path.exists(working_dir):
+        os.makedirs(working_dir)
     C = CLCReader(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
     C.read()
     store_to_pickle(path=output_dir+"/all_sents", textlist=C.all_sents)

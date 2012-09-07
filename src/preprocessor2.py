@@ -11,6 +11,7 @@ __status__ = "Prototyping"
 
 import os
 import nltk
+from pprint import pformat
 
 class CLCPreprocessor(object):
     """
@@ -25,10 +26,11 @@ class CLCPreprocessor(object):
         self.corpus = [d for d in corpus] # copy elements in argument, create another object of the corpus
         self.scripts = []
         self.annotations = []
-        self.docs = filenamelist
+        self.docnamelist = [os.path.split(fn)[-1] for fn in filenamelist]
+        self.corpusdict = {}
 
 
-    def preprocess(self):
+    def addmarkers(self):
         """
         Put markers {++} into raw sentences, and corresponding annotations into a list
         """
@@ -53,9 +55,11 @@ class CLCPreprocessor(object):
         *_check_* modes will be omitted 
         """
         sents = nltk.sent_tokenize(script)
-        sents_tokenized = [nltk.wordpunct_tokenize(sent) for sent in sents]
+        # sents_tokenized = [nltk.wordpunct_tokenize(sent) for sent in sents]
+        sents_tokenized = [sent.split() for sent in sents]
         processed_sents = []
         annotations = [a for a in annotations_list]
+        offset_list = []
         for sent in sents_tokenized:
             for index, word in enumerate(sent):
                 if word == "{++}":
@@ -106,7 +110,7 @@ class CLCPreprocessor(object):
         """
         docs = [doc for doc in self.scripts]
         annotations_list = [annotation for annotation in self.annotations]
-        wordlist =  [ self._retrieve(script, annotations, mode) for (script, annotations) in zip(docs, annotations_list)]
+        wordlist = [ self._retrieve(script, annotations, mode) for (script, annotations) in zip(docs, annotations_list)]
         if mode == "Gold":
             self.goldwords = wordlist
         elif mode == "Incorrect":
@@ -118,11 +122,40 @@ class CLCPreprocessor(object):
         elif mode == "Incorrect_RV_check_correct":
             self.incorr_RV_test_correct = wordlist
         return True
-    
+
+
+    def create_corpus(self):
+        self.dict_corpus = {}
+        for docname in self.docnamelist:
+            self.dict_corpus[docname] = {}
+
+            for script in self.goldwords:
+                self.dict_corpus[docname]["gold_words"] = script
+                self.dict_corpus[docname]["gold_text"] = []
+                for sent in script:
+                    cats = self._concat_words(sent)
+                    if cats:
+                        self.dict_corpus[docname]["gold_text"].append(cats)
+                    else:
+                        self.dict_corpus[docname]["gold_text"].append("")
+
+            for script in self.incorr_RV:
+                self.dict_corpus[docname]["RVtest_words"] = script
+                self.dict_corpus[docname]["RVtest_text"] = []
+                for sent in script:
+                    cats = self._concat_words(sent)
+                    if cats:
+                        self.dict_corpus[docname]["RVtest_text"].append(cats)
+                    else:
+                        self.dict_corpus[docname]["RVtest_text"].append("")
+        print pformat(self.dict_corpus)
+
     
     def _concat_words(self, wordlist):
-        return reduce(lambda x, y: x + " " + y, wordlist)
-     
+        if wordlist != [] and wordlist != [[]]:
+            return reduce(lambda x, y: x + " " + y, wordlist)
+        else:
+            return None
      
     def output_raw(self, destlist): 
         for dest in destlist: 
@@ -134,7 +167,7 @@ class CLCPreprocessor(object):
                             f.write(s.encode("utf-8") + "\n")
                         f.write("\n")
                 elif "test" in dest:
-                    for doc in self.incorrwords:
+                    for doc in self.incorr_RV:
                         for sent in doc:
                             s = self._concat_words(sent)
                             f.write(s.encode("utf-8") + "\n")
@@ -147,7 +180,7 @@ class CLCPreprocessor(object):
                         f.write("\n")
                 elif "RV_check" in dest:
                     for i_doc, (doc1,doc2) in enumerate(zip(self.incorr_RV_test_main, self.incorr_RV_test_correct)):
-                        docname = self.docs[i_doc]
+                        docname = self.docnamelist[i_doc]
                         for i_sent, (sent1, sent2) in enumerate(zip(doc1, doc2)):
                             s_main = self._concat_words(sent1)
                             s_correct = self._concat_words(sent2)
@@ -158,7 +191,7 @@ class CLCPreprocessor(object):
                                 f.write("\n")
 
 
-def preprocess(corpus_as_list, filenamelist, *args):
+def preprocess(corpus_as_list=[], filenamelist=[], modelist=[], destlist=[]):
     """
     Wrapper function of preprocessor2
 
@@ -166,7 +199,7 @@ def preprocess(corpus_as_list, filenamelist, *args):
         corpus_as_list:: [[chunks and annotation-tuples], [each list is corresponded to a document], 
                             [existing file is the same as its index in filenamelist]]
         filenamelist:: a dictionary of {index: "file path"}
-        *args:: modes in CLCPreprocessor
+        modelist:: list of modes in CLCPreprocessor
             "Gold", "Incorrect_RV", "Incorrect", "Incorrect_RV_check_main", "Incorrect_RV_check_correct" 
 
     @TODO:
@@ -174,14 +207,15 @@ def preprocess(corpus_as_list, filenamelist, *args):
         * destlist will be moved to corpusreader2
     """
     pp = CLCPreprocessor(corpus_as_list, filenamelist)
-    pp.preprocess()
-    for mode in args:
+    pp.addmarkers()
+    for mode in modelist:
         pp.retrieve(mode)
-#    print processor.goldwords[0:10]
-#    print processor.incorrwords[0:10]
-    destlist = [os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-gold-raw_all.txt"),
-                os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-RVtest-last100docs.txt"),
-                os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-RV_check-all.txt"),
-                os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-incorr-test_all.txt")]
-    pp.output_raw(destlist)
+    # pp.output_raw(destlist)
+    pp.create_corpus()
+    # print pp.goldwords
+    # destlist = [os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-gold-raw_all.txt"),
+    #             os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-RVtest-last100docs.txt"),
+    #             os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-RV_check-all.txt"),
+    #             os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-incorr-test_all.txt")]
+    # pp.output_raw(destlist)
 
