@@ -38,13 +38,20 @@ class TestCorpusReader2:
 
     def test_mainrun(self):
         corpus_list, fileindexdict = read(corpus_dir=self.corpus_dir, output_dir=self.output_dir, working_dir=self.working_dir)
-        # print pformat(corpus_list[0:3])
+        # print pformat(corpus_list)
         # print pformat(fileindexdict)
-        # raise Exception
+        raise Exception
 
     def test_recursive(self):
         cd = '../sandbox/fce2'
         corpus_list, fileindexdict = read(corpus_dir=cd, output_dir=cd, working_dir=cd)
+        # print pformat(corpus_list)
+        raise Exception
+
+    def test_full(self):
+        cd = '/Users/tuxedocat/cl/nldata/fce'
+        od_wd = '../sandbox/fce3'
+        corpus_list, fileindexdict = read(corpus_dir=cd, output_dir=od_wd, working_dir=od_wd)
         print pformat(corpus_list)
         raise Exception
 
@@ -53,11 +60,11 @@ class TestPreprocessor2:
         import os, sys
         import cPickle as pickle
         import nltk
-        self.corpus_dir = '../sandbox/fce2'
-        self.working_dir = '../sandbox/fce2'
-        self.output_dir = '../sandbox/fce2'
+        self.corpus_dir = '../sandbox/fce'
+        self.working_dir = '../sandbox/fce'
+        self.output_dir = '../sandbox/fce'
         self.corpus_as_list, self.fileindexdict = read(corpus_dir=self.corpus_dir, output_dir=self.output_dir, working_dir=self.working_dir)
 
     def test_preprocess1(self):
-        preprocessor2.CLCPreprocessor(self.corpus_as_list, self.fileindexdict.values())
+        preprocessor2.preprocess(self.corpus_as_list, self.fileindexdict.values(), modelist=["Incorrect_RV", "Gold"], destlist=[self.output_dir+"/gold.txt", self.output_dir+"/test.txt"])
         raise Exception

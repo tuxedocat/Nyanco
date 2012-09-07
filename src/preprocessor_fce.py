@@ -18,22 +18,14 @@ processing feature using NLTK.
 import os
 import glob
 import pickle
-import json
 import nltk
-import copy
 
 
-# in case lxml.etree isn't available...
 try:
     from lxml import etree
-    print("running with lxml.etree")
+    print "running with lxml.etree"
 except ImportError:
-    try:
-        # Python 2.5
-        import xml.etree.cElementTree as etree
-        print("running with cElementTree on Python 2.5+")
-    except ImportError:
-        print("Import error")
+    print "lxml not found"
 
 
 class CLCReader(object):
