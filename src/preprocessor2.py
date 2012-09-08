@@ -55,18 +55,19 @@ class CLCPreprocessor(object):
         *_check_* modes will be omitted 
         """
         sents = nltk.sent_tokenize(script)
-        # sents_tokenized = [nltk.wordpunct_tokenize(sent) for sent in sents]
         sents_tokenized = [sent.split() for sent in sents]
         processed_sents = []
         annotations = [a for a in annotations_list]
-        offset_list = []
+        errorposition_list = []  # list of list of tuples (position, incorrect, correct, extra info.)
         for sent in sents_tokenized:
+            tmplist_ep = []
             for index, word in enumerate(sent):
                 if word == "{++}":
                     _annotation = annotations.pop(0)
                     len_i = len(_annotation[0])
                     len_c = len(_annotation[1])
                     sent.pop(index)
+                    tmplist_ep.append((index, _annotation[0], _annotation[1], _annotation[2]))
                     if mode == "Gold":
                         _correct_word = _annotation[1]
                         sent.insert(index, _correct_word)
@@ -100,8 +101,9 @@ class CLCPreprocessor(object):
                     elif mode == "Incorrect":
                         _replacement = _annotation[0]
                         sent.insert(index, _replacement)
+            errorposition_list.append(tmplist_ep)
             processed_sents.append(sent)
-        return processed_sents
+        return processed_sents, errorposition_list
 
 
     def retrieve(self, mode):
@@ -110,17 +112,24 @@ class CLCPreprocessor(object):
         """
         docs = [doc for doc in self.scripts]
         annotations_list = [annotation for annotation in self.annotations]
-        wordlist = [ self._retrieve(script, annotations, mode) for (script, annotations) in zip(docs, annotations_list)]
+        # list_of_words = [ self._retrieve(script, annotations, mode) for (script, annotations) in zip(docs, annotations_list)]
+        list_of_words = []
+        list_of_errorposition = []
+        for (script, annotations) in zip(docs, annotations_list):
+            words, errorposition = self._retrieve(script, annotations, mode)
+            list_of_words.append(words)
+            list_of_errorposition.append(errorposition)
+        self.errorposition_list = list_of_errorposition
         if mode == "Gold":
-            self.goldwords = wordlist
+            self.goldwords = list_of_words
         elif mode == "Incorrect":
-            self.incorrwords = wordlist
+            self.incorrwords = list_of_words
         elif mode == "Incorrect_RV":
-            self.incorr_RV = wordlist
+            self.incorr_RV = list_of_words
         elif mode == "Incorrect_RV_check_main":
-            self.incorr_RV_test_main = wordlist
+            self.incorr_RV_test_main = list_of_words
         elif mode == "Incorrect_RV_check_correct":
-            self.incorr_RV_test_correct = wordlist
+            self.incorr_RV_test_correct = list_of_words
         return True
 
 
@@ -148,12 +157,16 @@ class CLCPreprocessor(object):
                         self.dict_corpus[docname]["RVtest_text"].append(cats)
                     else:
                         self.dict_corpus[docname]["RVtest_text"].append("")
-        print pformat(self.dict_corpus)
+
+            for errorlist in self.errorposition_list:
+                self.dict_corpus[docname]["errorposition"] = errorlist
+        return self.dict_corpus
 
     
     def _concat_words(self, wordlist):
         if wordlist != [] and wordlist != [[]]:
-            return reduce(lambda x, y: x + " " + y, wordlist)
+            return u" ".join(wordlist)
+        #     return reduce(lambda x, y: unicode(x) + u" " + unicode(y), wordlist)
         else:
             return None
      
@@ -211,7 +224,8 @@ def preprocess(corpus_as_list=[], filenamelist=[], modelist=[], destlist=[]):
     for mode in modelist:
         pp.retrieve(mode)
     # pp.output_raw(destlist)
-    pp.create_corpus()
+    corpus = pp.create_corpus()
+    return corpus
     # print pp.goldwords
     # destlist = [os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-gold-raw_all.txt"),
     #             os.path.join(os.environ['HOME'], "cl/FCE-processed/fce-RVtest-last100docs.txt"),

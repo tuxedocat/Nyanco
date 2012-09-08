@@ -50,14 +50,14 @@ def make_filelist(path="", prefix="", filetype=""):
         return None
 
 
-def store_to_pickle(path="", textlist=None):
+def store_to_pickle(path="", obj=None):
     '''
     store obtained various grained sentence lists using pickles.
     '''
-    if textlist:
+    if obj:
         fname = path + datetime.now().strftime("_%Y%m%d_%H%M") + ".pickle"
         with open(fname, 'wb') as f:
-            pickle.dump(textlist, f)
+            pickle.dump(obj, f)
         return True
     else:
         return False
@@ -280,8 +280,8 @@ def read(corpus_dir="", output_dir="", working_dir=""):
         os.makedirs(working_dir)
     C = CLCReader(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
     C.read()
-    store_to_pickle(path=output_dir+"/all_sents", textlist=C.all_sents)
-    store_to_pickle(path=output_dir+"/index", textlist=C.listindexdict)
+    store_to_pickle(path=output_dir+"/all_sents", obj=C.all_sents)
+    store_to_pickle(path=output_dir+"/index", obj=C.listindexdict)
     return C.all_sents, C.listindexdict
 
 
@@ -289,7 +289,8 @@ def main(corpus_dir="", output_dir="", working_dir="", preprocess=False):
     import preprocessor2
     corpus, filedict = read(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
     if preprocess:
-        preprocessor2.preprocess(filedict.values(), corpus)
+        corpus_as_dict = preprocessor2.preprocess(corpus, filedict.values(), modelist=["Incorrect_RV", "Gold"])
+        store_to_pickle(output_dir+"/corpusdict_", corpus_as_dict)
 
 
 if __name__=='__main__':
@@ -312,14 +313,17 @@ if __name__=='__main__':
     ap.add_argument("-d", '--working_dir', action="store",
                     help="string of path working directory")
     args = ap.parse_args()
+
     if (args.input_dir and args.output_dir and args.working_dir and args.preprocess):
         main(corpus_dir=args.input_dir, output_dir=args.output_dir, working_dir=args.working_dir, preprocess=True)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+
     elif (args.input_dir and args.output_dir and args.working_dir):
         main(corpus_dir=args.input_dir, output_dir=args.output_dir, working_dir=args.working_dir, preprocess=False)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+
     else:
         ap.print_help()
     quit()
