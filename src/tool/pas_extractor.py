@@ -15,7 +15,6 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 import cPickle as pickle
 import collections
 
-
 class PasExtractor(object):
     """extract PAS from the parsed output of fanseparser"""
     def __init__(self, fname_in = None, fname_out = None):
@@ -23,7 +22,9 @@ class PasExtractor(object):
         self.fname_out = fname_out
         with open(self.fname_in, 'r') as f:
             self.raw = [line.split('\n') for line in f.read().split('\n\n')]
-
+        self.col_root = 7
+        self.col_arg = 12
+        self.col_argdepID = 13
 
     def _extract(self, sent):
         """
@@ -41,16 +42,15 @@ class PasExtractor(object):
         root = ""
         args = []           # in some case, there're multiple args
         root_idx = -100     # set default index for root, in case it doesn't exist
-        tagtuples = [tuple(l.split('\t')) for l in sent]
-
+        tagtuples = [tuple(l.split('\t')) for l in sent] 
         if tagtuples:
             for tags in tagtuples:
                 try:
-                    if tags[7] == "ROOT":
+                    if tags[self.col_root] == "ROOT":
                         root = tags[1]
                         root_idx = int(tags[0])
-                    elif 'ARG' in tags[12]:
-                        args.append((tags[1], tags[12], int(tags[13])))
+                    elif 'ARG' in tags[self.col_arg]:
+                        args.append((tags[1], tags[self.col_arg], int(tags[self.col_argdepID])))
                 except:
                     pass
             # logging.info(('Arguments::',args)) 
@@ -73,8 +73,8 @@ class PasExtractor(object):
     def extract(self):
         """
         wrapper func. of extract 
-        @takes
-            self.raw :: a list of ['1\tWORD\t\t\t\t',...] (line for each sentence)
+        @returns
+            self.paslist :: a list of tuples (ROOT, ARG0, ARG1)
         """
         pasdiclist = [self._extract(sent) for sent in self.raw]
         self.paslist = [(pdic['ROOT'], pdic['ARG0'], pdic['ARG1']) for pdic in pasdiclist
@@ -152,6 +152,33 @@ def cicp_extract(input_prefix, output_prefix):
         except IOError:
             logging.debug(('Foreign: "No such file exists" at file  %s '%(f)))
     output2file(input_prefix, output_prefix+"Foreign", pastriples_counter_foreign)
+
+
+class PEmod(PasExtractor):
+    def __init__(self, fname=""):
+        if fname:
+            self.fname_in = fname
+            self.fname_out = ""
+        with open(self.fname_in, "r") as f:
+            self.raw = [line for line in f.read().split("\n") if line]
+        self.col_root = 3
+        self.col_arg = 6
+        self.col_argdepID = 7
+
+
+    def extract(self):
+        """
+        wrapper func. of extract 
+        @returns
+            self.paslist :: a list of tuples (ROOT, ARG0, ARG1)
+        """
+        pasdiclist = [self._extract(self.raw)] 
+        if pasdiclist:
+            self.paslist = [(pdic['ROOT'], pdic['ARG0'], pdic['ARG1']) for pdic in pasdiclist
+                            if pdic and (pdic['ROOT'] and pdic['ARG0'] and pdic['ARG1']) ]
+            return self.paslist
+        else:
+            pass
 
 
 

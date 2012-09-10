@@ -31,5 +31,12 @@ class TestCorpusHandler:
     @attr("full", "parse")
     def test_parse_pre(self):
         self.handler.filter()
-        self.handler.parse_eachsents()
+        self.handler.parse_eachsent_pre()
+        raise Exception
+
+    @attr("full", "parse_read")
+    def test_parse_read(self):
+        self.handler.filter()
+        self.handler.parse_eachsent_read()
+        logging.debug(pformat(self.handler.processedcorpus.items()[0:10]))
         raise Exception
