@@ -155,15 +155,18 @@ def cicp_extract(input_prefix, output_prefix):
 
 
 class PEmod(PasExtractor):
+    """
+    Another version of PasExtractor, for reduced tags of fanseparser_mod
+    """
     def __init__(self, fname=""):
         if fname:
             self.fname_in = fname
             self.fname_out = ""
         with open(self.fname_in, "r") as f:
             self.raw = [line for line in f.read().split("\n") if line]
-        self.col_root = 3
-        self.col_arg = 6
-        self.col_argdepID = 7
+        self.col_root = 7 #3 
+        self.col_arg = 12 #6
+        self.col_argdepID = 13 #7
 
 
     def extract(self):
