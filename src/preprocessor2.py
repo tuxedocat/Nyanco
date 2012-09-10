@@ -12,6 +12,12 @@ __status__ = "Prototyping"
 import os
 import nltk
 from pprint import pformat
+from collections import defaultdict
+from datetime import datetime
+logfilename = datetime.now().strftime("preprocessor2_log_%Y%m%d_%H%M.log")
+import logging
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
+                    filename='../log/'+logfilename)
 
 class CLCPreprocessor(object):
     """
@@ -23,18 +29,19 @@ class CLCPreprocessor(object):
 
     """
     def __init__(self, corpus, filenamelist):
-        self.corpus = [d for d in corpus] # copy elements in argument, create another object of the corpus
+        self.corpus = corpus[0:] # copy elements in argument, create another object of the corpus
         self.scripts = []
         self.annotations = []
         self.docnamelist = [os.path.split(fn)[-1] for fn in filenamelist]
-        self.corpusdict = {}
+        self.corpusdict = {} # keys: filename, values: dictionaries which have attributes of the corpus
 
 
     def addmarkers(self):
         """
         Put markers {++} into raw sentences, and corresponding annotations into a list
         """
-        docs = [d for d in self.corpus]
+        # docs = [d for d in self.corpus]
+        docs = self.corpus[0:]
         for doc in docs:
             entiredoc = ""
             annotations = [elem for elem in doc if isinstance(elem, tuple)]
@@ -110,8 +117,10 @@ class CLCPreprocessor(object):
         """
         A wrapper function for retrieving annotations
         """
-        docs = [doc for doc in self.scripts]
-        annotations_list = [annotation for annotation in self.annotations]
+        # docs = [doc for doc in self.scripts]
+        docs = self.scripts[0:]
+        # annotations_list = [annotation for annotation in self.annotations]
+        annotations_list = self.annotations[0:]
         # list_of_words = [ self._retrieve(script, annotations, mode) for (script, annotations) in zip(docs, annotations_list)]
         list_of_words = []
         list_of_errorposition = []
@@ -119,54 +128,56 @@ class CLCPreprocessor(object):
             words, errorposition = self._retrieve(script, annotations, mode)
             list_of_words.append(words)
             list_of_errorposition.append(errorposition)
-        self.errorposition_list = list_of_errorposition
+        self.errorposition_list = list_of_errorposition[0:]
         if mode == "Gold":
-            self.goldwords = list_of_words
+            self.goldwords = list_of_words[0:]
         elif mode == "Incorrect":
-            self.incorrwords = list_of_words
+            self.incorrwords = list_of_words[0:]
         elif mode == "Incorrect_RV":
-            self.incorr_RV = list_of_words
+            self.incorr_RV = list_of_words[0:]
         elif mode == "Incorrect_RV_check_main":
-            self.incorr_RV_test_main = list_of_words
+            self.incorr_RV_test_main = list_of_words[0:]
         elif mode == "Incorrect_RV_check_correct":
-            self.incorr_RV_test_correct = list_of_words
+            self.incorr_RV_test_correct = list_of_words[0]
         return True
 
 
     def create_corpus(self):
-        self.dict_corpus = {}
+        self.dict_corpus = defaultdict(dict) 
         for docname in self.docnamelist:
-            self.dict_corpus[docname] = {}
+            self.dict_corpus[docname] = defaultdict(list)
 
-            for script in self.goldwords:
-                self.dict_corpus[docname]["gold_words"] = script
-                self.dict_corpus[docname]["gold_text"] = []
-                for sent in script:
-                    cats = self._concat_words(sent)
-                    if cats:
-                        self.dict_corpus[docname]["gold_text"].append(cats)
-                    else:
-                        self.dict_corpus[docname]["gold_text"].append("")
+        for idx, script in enumerate(self.goldwords):
+            docname = self.docnamelist[idx]
+            self.dict_corpus[docname]["gold_words"] = script
+            self.dict_corpus[docname]["gold_text"] = []
+            for sent in script:
+                cats = self._concat_words(sent)
+                if cats:
+                    self.dict_corpus[docname]["gold_text"].append(cats)
+                else:
+                    self.dict_corpus[docname]["gold_text"].append("")
 
-            for script in self.incorr_RV:
-                self.dict_corpus[docname]["RVtest_words"] = script
-                self.dict_corpus[docname]["RVtest_text"] = []
-                for sent in script:
-                    cats = self._concat_words(sent)
-                    if cats:
-                        self.dict_corpus[docname]["RVtest_text"].append(cats)
-                    else:
-                        self.dict_corpus[docname]["RVtest_text"].append("")
+        for idx, script in enumerate(self.incorr_RV):
+            docname = self.docnamelist[idx]
+            self.dict_corpus[docname]["RVtest_words"] = script
+            self.dict_corpus[docname]["RVtest_text"] = []
+            for sent in script:
+                cats = self._concat_words(sent)
+                if cats:
+                    self.dict_corpus[docname]["RVtest_text"].append(cats)
+                else:
+                    self.dict_corpus[docname]["RVtest_text"].append("")
 
-            for errorlist in self.errorposition_list:
-                self.dict_corpus[docname]["errorposition"] = errorlist
+        for idx, errorlist in enumerate(self.errorposition_list):
+            docname = self.docnamelist[idx]
+            self.dict_corpus[docname]["errorposition"] = errorlist
         return self.dict_corpus
 
     
     def _concat_words(self, wordlist):
         if wordlist != [] and wordlist != [[]]:
             return u" ".join(wordlist)
-        #     return reduce(lambda x, y: unicode(x) + u" " + unicode(y), wordlist)
         else:
             return None
      
@@ -211,7 +222,7 @@ def preprocess(corpus_as_list=[], filenamelist=[], modelist=[], destlist=[]):
     @ARGS:
         corpus_as_list:: [[chunks and annotation-tuples], [each list is corresponded to a document], 
                             [existing file is the same as its index in filenamelist]]
-        filenamelist:: a dictionary of {index: "file path"}
+        filenamelist:: a list of filenames
         modelist:: list of modes in CLCPreprocessor
             "Gold", "Incorrect_RV", "Incorrect", "Incorrect_RV_check_main", "Incorrect_RV_check_correct" 
 
