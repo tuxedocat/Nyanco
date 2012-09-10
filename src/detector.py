@@ -18,3 +18,26 @@ logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
                     filename='../log/'+logfilename)
+
+
+class DetectorBase(object):
+    def __init__(self, corpusdict):
+        self.corpus = corpusdict
+
+    def make_cases(self):
+        raise NotImplementedError
+
+    def detect(self):
+        raise NotImplementedError
+
+    def evaluate(self):
+        raise NotImplementedError
+
+
+
+class LM_Detector(DetectorBase):
+    def read_LM_and_PASLM(self, path):
+        pass
+
+    def detect(self):
+        pass
