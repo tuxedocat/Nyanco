@@ -98,17 +98,16 @@ class CLCReader(object):
             none
         @returns
             all_sents :: flattened text as a list
-            listindexdict :: a dictionary of {index<int>: filename<str>}
         '''
         self.all_sents = [correction_pairs for correction_pairs 
                           in [self.get_annotations(script) 
                               for script 
                               in [self.extract_script(etree.parse(script)) 
                                   for script in self.xmlfiles]]]
-        self.listindexdict = dict((k,v) 
-                                  for k,v 
-                                  in zip(range(len(self.xmlfiles)), self.xmlfiles))
-        return self.all_sents, self.listindexdict
+        # self.listindexdict = dict((k,v) 
+        #                           for k,v 
+        #                           in zip(range(len(self.xmlfiles)), self.xmlfiles))
+        return self.all_sents, self.xmlfiles #self.listindexdict
 
 
     def _extract(self, et):
@@ -281,15 +280,16 @@ def read(corpus_dir="", output_dir="", working_dir=""):
     C = CLCReader(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
     C.read()
     store_to_pickle(path=output_dir+"/all_sents", obj=C.all_sents)
-    store_to_pickle(path=output_dir+"/index", obj=C.listindexdict)
-    return C.all_sents, C.listindexdict
+    store_to_pickle(path=output_dir+"/index", obj=C.xmlfiles)
+    logging.debug(pformat(C.all_sents[0:3]))
+    return C.all_sents, C.xmlfiles
 
 
 def main(corpus_dir="", output_dir="", working_dir="", preprocess=False):
     import preprocessor2
-    corpus, filedict = read(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
+    corpus, filelist = read(corpus_dir=corpus_dir, output_dir=output_dir, working_dir=working_dir)
     if preprocess:
-        corpus_as_dict = preprocessor2.preprocess(corpus, filedict.values(), modelist=["Incorrect_RV", "Gold"])
+        corpus_as_dict = preprocessor2.preprocess(corpus, filelist, modelist=["Incorrect_RV", "Gold"])
         store_to_pickle(output_dir+"/corpusdict_", corpus_as_dict)
 
 
