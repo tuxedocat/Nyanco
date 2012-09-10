@@ -26,6 +26,7 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
                     filename='../log/'+logfilename)
 from collections import defaultdict
+from tool import pas_extractor
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -43,9 +44,24 @@ class CorpusHandler(object):
             print "File doesn't exist"
             raise IOError
         self.path = corpuspath
+        self.tmppath = os.path.join(os.path.dirname(self.path), "tmp")
+        self.parsedpath = os.path.join(os.path.dirname(self.path), "parsed")
         self.docnames = sorted(self.corpus.keys())
         self.processedcorpus = defaultdict(dict)
         self.cp_tags = [u"RV",] # Extensible if tags other than RV are needed
+
+
+    def main(self):
+        self.filter()
+        if not (os.path.exists(self.tmppath) and len(self.processedcorpus.keys()) == len(os.listdir(self.tmppath))):
+            print "creating pre-parsing data..."
+            self.parse_eachsent_pre()
+        if (os.path.exists(self.parsedpath) and len(self.processedcorpus.keys()) == len(os.listdir(self.parsedpath))):
+            print "reading post-parsing data"
+            self.parse_eachsent_read()
+        else:
+            print "parse .tmp files with fanseparser first!!!!"
+
 
     def _filter_checkpoints(self, dic_of_doc):
         """
@@ -55,7 +71,6 @@ class CorpusHandler(object):
         filtereddict = defaultdict(list)
         for idx, ls in enumerate(dic_of_doc["errorposition"]):
             if ls:
-                # print ls
                 for et in ls:
                     flag = et[3]
                     if flag in self.cp_tags:
@@ -66,24 +81,48 @@ class CorpusHandler(object):
                         filtereddict["gold_text"].append(dic_of_doc["gold_text"][idx])
                     else:
                         pass
-        # logging.debug(pformat(filtereddict))
         return filtereddict
 
     def filter(self):
         for fn in self.docnames:
-            # print self.corpus[fn].items()[0]
             self.processedcorpus[fn] = self._filter_checkpoints(self.corpus[fn])
 
-    def parse_eachsents(self):
+    def parse_eachsent_pre(self):
         """
-        This creates temporary files of sentences, parse it, then retrieve it back to the dictionary
+        This creates temporary files of sentences, parse it (currently, this is done manually by shell command)
         """
-        tmppath = os.path.join(os.path.dirname(self.path), "tmp")
-        if not os.path.exists(tmppath):
-            os.makedirs(tmppath)
+        if not os.path.exists(self.tmppath):
+            os.makedirs(self.tmppath)
+        if not os.path.exists(self.parsedpath):
+            os.makedirs(self.parsedpath)
         for name, doc in self.processedcorpus.iteritems():
             for idx, senttuple in enumerate(zip(doc["RVtest_text"], doc["gold_text"])): 
-                with open(os.path.join(tmppath, name+"_test_part"+str(idx)+".tmp"), "w") as tf_t:
+                with open(os.path.join(self.tmppath, name+"_test_part"+str(idx)+".tmp"), "w") as tf_t:
                     tf_t.write(senttuple[0])
-                with open(os.path.join(tmppath, name+"_gold_part"+str(idx)+".tmp"), "w") as tf_g:
+                with open(os.path.join(self.tmppath, name+"_gold_part"+str(idx)+".tmp"), "w") as tf_g:
                     tf_g.write(senttuple[1])
+        return True
+
+    def parse_eachsent_read(self):
+        """
+        Once the tempfiles created, this function reads parsed infomation into the corpus-dictionary
+
+        Assuming .tmp files have already been parsed by fanseparser, and put in './parsed' dirs
+        """
+        for name, doc in self.processedcorpus.iteritems():
+            for idx, senttuple in enumerate(zip(doc["RVtest_text"], doc["gold_text"])): 
+                fn_t = os.path.join(self.parsedpath, name+"_test_part"+str(idx)+".tmp.parsed")
+                fn_g = os.path.join(self.parsedpath, name+"_gold_part"+str(idx)+".tmp.parsed")
+                with open(fn_t, "r") as tf_t:
+                    rawtags = tf_t.readlines()
+                    doc["RVtest_tags"] = rawtags
+                with open(fn_g, "r") as tf_g:
+                    rawtags = tf_g.readlines()
+                    doc["gold_tags"] = rawtags
+                pe_t = pas_extractor.PEmod(fn_t)
+                pe_g = pas_extractor.PEmod(fn_g)
+                doc["RVtest_PAS"] = pe_t.extract()
+                doc["gold_PAS"] = pe_g.extract()
+                print pformat(doc["RVtest_PAS"])
+                print pformat(doc["gold_PAS"])
+        return True
