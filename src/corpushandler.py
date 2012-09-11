@@ -111,8 +111,8 @@ class CorpusHandler(object):
         """
         for name, doc in self.processedcorpus.iteritems():
             for idx, senttuple in enumerate(zip(doc["RVtest_text"], doc["gold_text"])): 
-                fn_t = os.path.join(self.parsedpath, name+"_test_part"+str(idx)+".tmp.parsed")
-                fn_g = os.path.join(self.parsedpath, name+"_gold_part"+str(idx)+".tmp.parsed")
+                fn_t = os.path.join(self.parsedpath, name+"_test_part"+str(idx)+".parsed")
+                fn_g = os.path.join(self.parsedpath, name+"_gold_part"+str(idx)+".parsed")
                 with open(fn_t, "r") as tf_t:
                     rawtags = tf_t.readlines()
                     doc["RVtest_tags"] = rawtags
@@ -125,4 +125,6 @@ class CorpusHandler(object):
                 doc["gold_PAS"] = pe_g.extract()
                 print pformat(doc["RVtest_PAS"])
                 print pformat(doc["gold_PAS"])
+        with open(os.path.join(os.path.dirname(self.path), "fce_processed.pickle"), "wb") as cf:
+            pickle.dump(self.processedcorpus, cf)
         return True
