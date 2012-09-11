@@ -17,6 +17,12 @@ import detector
 from nose.plugins.attrib import attr
 #=====================================================================================================
 
-class TestLMDetector:
+class TestLMDetector(object):
     def SetUp(self):
-        pass
+        self.corpuspath = "../sandbox/fce_corpus/fce_processed.pickle"
+        self.detector = detector.LM_Detector(self.corpuspath)
+
+    @attr("makecase")
+    def test_makecase(self):
+        self.detector.make_cases()
+

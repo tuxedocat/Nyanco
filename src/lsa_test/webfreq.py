@@ -2,12 +2,9 @@
 # coding:utf-8
 __author__ = 'yu-s'
 __version__ = '0.001'
-__licence__ = 'free4all'
 __description__ = '''
 Count freq. on LM
 '''
-# from gensim import corpora, models, similarities, utils
-# import cPickle as pickle
 from collections import defaultdict
 import random 
 from irstlm import getSentenceScore 
