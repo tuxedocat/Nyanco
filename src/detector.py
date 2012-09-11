@@ -27,6 +27,7 @@ class DetectorBase(object):
             with open(corpusdictpath, "rb") as f:
                 corpusdict = pickle.load(f)
                 self.corpus = corpusdict
+            self.experimentset = defaultdict(dict)
         else:
             raise IOError
 
@@ -54,7 +55,7 @@ class DetectorBase(object):
 
 
 class LM_Detector(DetectorBase):
-    def read_LM_and_PASLM(self, path):
+    def read_LM_and_PASLM(self, path_IRSTLM, path_PASLM):
         pass
 
     def detect(self):

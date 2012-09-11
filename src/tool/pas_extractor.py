@@ -14,6 +14,9 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 import cPickle as pickle
 import collections
+from collections import defaultdict
+from pprint import pformat
+
 
 class PasExtractor(object):
     """extract PAS from the parsed output of fanseparser"""
@@ -22,11 +25,14 @@ class PasExtractor(object):
         self.fname_out = fname_out
         with open(self.fname_in, 'r') as f:
             self.raw = [line.split('\n') for line in f.read().split('\n\n')]
-        self.col_root = 7
+        self.col_surface = 1
+        self.col_pos = 4
+        self.col_dep = 7
         self.col_arg = 12
         self.col_argdepID = 13
+        self.col_ne = 10
 
-    def _extract(self, sent):
+    def _extract_simple(self, sent):
         """
         Extract PAS structure '(PREDICATE, ARGUMENT1, ARGUMENT2)'
         for each sentences.
@@ -46,7 +52,7 @@ class PasExtractor(object):
         if tagtuples:
             for tags in tagtuples:
                 try:
-                    if tags[self.col_root] == "ROOT":
+                    if tags[self.col_dep] == "ROOT":
                         root = tags[1]
                         root_idx = int(tags[0])
                     elif 'ARG' in tags[self.col_arg]:
@@ -70,13 +76,89 @@ class PasExtractor(object):
         else:
             pass
 
+
+    def __format_preddic(self, preddict):
+        pasdic_list = []
+        for pkey in preddict:
+            out = {}
+            out["PRED"] = (pkey[self.col_surface], pkey[self.col_pos], pkey[self.col_dep], pkey[self.col_ne])
+            try:
+                a0 = preddict[pkey]["ARG0"]
+                out["ARG0"] = (a0[self.col_surface], a0[self.col_pos], a0[self.col_dep], a0[self.col_ne])
+            except KeyError:
+                out["ARG0"] = None
+            try:
+                a1 = preddict[pkey]["ARG1"]
+                out["ARG1"] = (a1[self.col_surface], a1[self.col_pos], a1[self.col_dep], a1[self.col_ne])
+            except KeyError:
+                out["ARG1"] = None
+
+            pasdic_list.append(out)
+        return pasdic_list
+
+    def _extract_full(self, sent, verb=""):
+        """
+        Extract PAS structure like Liu et.al 2010
+
+        'I have opened an American bank account in Boston.'
+            A0_I_opened
+            opened_A1_account
+            opened_AM-LOC_in
+
+        Firstly, filter the tags which contain ARG0, and ARG1 respectively.
+        Then, from self.col_argdepID, find each predicates
+        The output format will be like...
+        [a list of dicts {"PAS name":(<surface>, <POS>, <dep_tag>, <NE tag>)} ]
+                    column in files:          1      4        7           10
+
+                pasdic_list = [{"PRED":("have", "VBP","conj","have.03"), "ARG0":("we", "PRP", "nsubj", "_"), "ARG1":("right", "NN", "dobj", "_")},
+                        {"PRED":("sum", "VB", "ROOT", "sum.01"), "ARG0":None, "ARG1":("are", "VBP", "ccomp", "be.01")},
+                        {"PRED":("lead", "VB", "infmod", "lead.01"), "ARG0":None, "ARG1":("life", "NN", "dobj", "_") },
+                        {"PRED":("break", "VB", "infmod", "break.02"), "ARG0":None, "ARG1":("into", "IN", "prep", "_")} ]
+
+
+
+        """
+        tagtuples = [tuple(l.split('\t')) for l in sent] 
+        self.tmp_tt = tagtuples
+        self.tmp_ARG0 = []
+        self.tmp_ARG1 = []
+        self.tmp_PRED = defaultdict(dict)
+        self.relationslist = []
+        self.pasdic_list = [] # each list element is a dictionary
+        if tagtuples:
+            for tt in tagtuples:
+                try:
+                    if tt[self.col_arg] == "ARG0":
+                        self.tmp_ARG0.append(tt)
+                        predidx = int(tt[self.col_argdepID]) - 1
+                        self.tmp_PRED[tagtuples[predidx]].update({"ARG0":tt})
+                    elif tt[self.col_arg] == "ARG1":
+                        self.tmp_ARG1.append(tt)
+                        predidx = int(tt[self.col_argdepID]) - 1
+                        self.tmp_PRED[tagtuples[predidx]].update({"ARG1":tt})
+                except Exception as e:
+                    print e.string
+        self.pasdic_list = self.__format_preddic(self.tmp_PRED)
+        return self.pasdic_list
+            # self.tmp_ARG0 = [tt for tt in tagtuples if tt[self.col_arg] == "ARG0"]
+            # self.tmp_ARG1 = [tt for tt in tagtuples if tt[self.col_arg] == "ARG1"]
+        # for t_arg0 in self.tmp_ARG0:
+        #     relidx = int(t_arg0[self.col_argdepID]) - 1
+        #     self.relationslist.append(tagtuples[relidx])
+
+        # for t_arg1 in self.tmp_ARG1:
+        #     relidx = int(t_arg1[self.col_argdepID]) - 1
+        #     self.relationslist.append(tagtuples[relidx])
+
+
     def extract(self):
         """
         wrapper func. of extract 
         @returns
             self.paslist :: a list of tuples (ROOT, ARG0, ARG1)
         """
-        pasdiclist = [self._extract(sent) for sent in self.raw]
+        pasdiclist = [self._extract_simple(sent) for sent in self.raw]
         self.paslist = [(pdic['ROOT'], pdic['ARG0'], pdic['ARG1']) for pdic in pasdiclist
                         if pdic['ROOT'] and pdic['ARG0'] and pdic['ARG1'] ]
         return self.paslist
@@ -156,26 +238,30 @@ def cicp_extract(input_prefix, output_prefix):
 
 class PEmod(PasExtractor):
     """
-    Another version of PasExtractor, for reduced tags of fanseparser_mod
+    Another version of PasExtractor, for a sentence
     """
-    def __init__(self, fname=""):
+    def __init__(self, fname="", verb=""):
         if fname:
             self.fname_in = fname
             self.fname_out = ""
         with open(self.fname_in, "r") as f:
             self.raw = [line for line in f.read().split("\n") if line]
-        self.col_root = 7 #3 
-        self.col_arg = 12 #6
-        self.col_argdepID = 13 #7
+        self.col_surface = 1
+        self.col_pos = 4
+        self.col_dep = 7
+        self.col_arg = 12
+        self.col_argdepID = 13
+        self.col_ne = 10
+        self.verb = verb
 
 
     def extract(self):
         """
-        wrapper func. of extract 
+        wrapper func. of _extract_simple
         @returns
             self.paslist :: a list of tuples (ROOT, ARG0, ARG1)
         """
-        pasdiclist = [self._extract(self.raw)] 
+        pasdiclist = [self._extract_simple(self.raw)] 
         if pasdiclist:
             self.paslist = [(pdic['ROOT'], pdic['ARG0'], pdic['ARG1']) for pdic in pasdiclist
                             if pdic and (pdic['ROOT'] and pdic['ARG0'] and pdic['ARG1']) ]
@@ -183,6 +269,14 @@ class PEmod(PasExtractor):
         else:
             pass
 
+
+    def extract_full(self):
+        """
+        wrapper func. of _extract_full
+        @returns
+            self.paslist :: a list of dictionary 
+        """
+        return self._extract_full(self.raw)
 
 
 if __name__=='__main__':

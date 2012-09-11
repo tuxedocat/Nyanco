@@ -114,15 +114,15 @@ class CorpusHandler(object):
                 fn_t = os.path.join(self.parsedpath, name+"_test_part"+str(idx)+".parsed")
                 fn_g = os.path.join(self.parsedpath, name+"_gold_part"+str(idx)+".parsed")
                 with open(fn_t, "r") as tf_t:
-                    rawtags = tf_t.readlines()
+                    rawtags = [tuple(t.strip("\n").split("\t")) for t in tf_t.readlines() if t != "\n"]
                     doc["RVtest_tags"] = rawtags
                 with open(fn_g, "r") as tf_g:
-                    rawtags = tf_g.readlines()
+                    rawtags = [tuple(t.strip("\n").split("\t")) for t in tf_g.readlines() if t != "\n"]
                     doc["gold_tags"] = rawtags
                 pe_t = pas_extractor.PEmod(fn_t)
                 pe_g = pas_extractor.PEmod(fn_g)
-                doc["RVtest_PAS"] = pe_t.extract()
-                doc["gold_PAS"] = pe_g.extract()
+                doc["RVtest_PAS"] = pe_t.extract_full()
+                doc["gold_PAS"] = pe_g.extract_full()
                 print pformat(doc["RVtest_PAS"])
                 print pformat(doc["gold_PAS"])
         with open(os.path.join(os.path.dirname(self.path), "fce_processed.pickle"), "wb") as cf:
