@@ -169,10 +169,20 @@ class LM_Detector(DetectorBase):
             case = self.testcases[testid]
             self.testcases[testid]["LM_scores"] = {"org":[], "alt":[]}
             for org_q in case["LM_queries"]["org"]:
-                score = getSentenceScore(self.LM, org_q)
+                logging.debug(pformat(org_q))
+                try:
+                    score = getSentenceScore(self.LM, org_q)
+                    logging.debug(pformat(score))
+                except TypeError:
+                    score = -100
                 self.testcases[testid]["LM_scores"]["org"].append(score)
             for alt_q in case["LM_queries"]["alt"]:
-                score = getSentenceScore(self.LM, alt_q)
+                logging.debug(pformat(alt_q))
+                try:
+                    score = getSentenceScore(self.LM, alt_q)
+                    logging.debug(pformat(score))
+                except TypeError:
+                    score = -100
                 self.testcases[testid]["LM_scores"]["alt"].append(score)
 
 
