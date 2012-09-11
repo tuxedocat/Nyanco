@@ -79,6 +79,7 @@ class PasExtractor(object):
 
     def __format_preddic(self, preddict):
         pasdic_list = []
+        moc = ("","","","")
         for pkey in preddict:
             out = {}
             out["PRED"] = (pkey[self.col_surface], pkey[self.col_pos], pkey[self.col_dep], pkey[self.col_ne])
@@ -86,12 +87,12 @@ class PasExtractor(object):
                 a0 = preddict[pkey]["ARG0"]
                 out["ARG0"] = (a0[self.col_surface], a0[self.col_pos], a0[self.col_dep], a0[self.col_ne])
             except KeyError:
-                out["ARG0"] = None
+                out["ARG0"] = moc 
             try:
                 a1 = preddict[pkey]["ARG1"]
                 out["ARG1"] = (a1[self.col_surface], a1[self.col_pos], a1[self.col_dep], a1[self.col_ne])
             except KeyError:
-                out["ARG1"] = None
+                out["ARG1"] = moc 
 
             pasdic_list.append(out)
         return pasdic_list
@@ -138,18 +139,9 @@ class PasExtractor(object):
                         predidx = int(tt[self.col_argdepID]) - 1
                         self.tmp_PRED[tagtuples[predidx]].update({"ARG1":tt})
                 except Exception as e:
-                    print e.string
+                    logging.debug(pformat(e.string))
         self.pasdic_list = self.__format_preddic(self.tmp_PRED)
         return self.pasdic_list
-            # self.tmp_ARG0 = [tt for tt in tagtuples if tt[self.col_arg] == "ARG0"]
-            # self.tmp_ARG1 = [tt for tt in tagtuples if tt[self.col_arg] == "ARG1"]
-        # for t_arg0 in self.tmp_ARG0:
-        #     relidx = int(t_arg0[self.col_argdepID]) - 1
-        #     self.relationslist.append(tagtuples[relidx])
-
-        # for t_arg1 in self.tmp_ARG1:
-        #     relidx = int(t_arg1[self.col_argdepID]) - 1
-        #     self.relationslist.append(tagtuples[relidx])
 
 
     def extract(self):
