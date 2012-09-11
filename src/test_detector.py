@@ -13,6 +13,10 @@ from pprint import pformat
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 from detector import *
 from nose.plugins.attrib import attr
+try:
+    from lsa_test.irstlm import *
+except:
+    pass
 #=====================================================================================================
 
 class TestLMDetector:
@@ -33,4 +37,12 @@ class TestLMDetector:
         self.detector.read_LM_and_PASLM(path_IRSTLM=self.testlm_path)
         self.detector.LM_count()
         print pformat(self.detector.testcases)
+        raise Exception
+
+
+    @attr("preLM")
+    def test_preLM(self):
+        lm = initLM(5, self.testlm_path)
+        sc1 = getSentenceScore(lm, "the cat is black")
+        logging.debug(pformat(sc1))
         raise Exception
