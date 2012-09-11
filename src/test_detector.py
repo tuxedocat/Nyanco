@@ -31,6 +31,6 @@ class TestLMDetector:
     def test_LM(self):
         self.detector.make_cases()
         self.detector.read_LM_and_PASLM(path_IRSTLM=self.testlm_path)
-        self.detector_LM_count()
+        self.detector.LM_count()
         print pformat(self.detector.testcases)
         raise Exception
