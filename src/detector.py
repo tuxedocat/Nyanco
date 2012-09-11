@@ -102,10 +102,10 @@ class LM_Detector(DetectorBase):
                     tmpi = int((n - 1)/2)
                     tmp.pop(tmpi)
                     tmp.insert(tmpi, cand)
-                    alt_q.append(u" ".join(tmp))
+                    alt_q.append(str(" ".join(tmp)))
             else:
-                alt_q.append(u" ".join(query))
-            org_q.append(" ".join(query))
+                alt_q.append(str(" ".join(query)))
+            org_q.append(str(" ".join(query)))
         except Exception as nge:
             logging.debug(format(w_list, cp_pos))
             logging.debug(pformat(nge))
