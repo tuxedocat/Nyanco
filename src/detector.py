@@ -105,7 +105,7 @@ class LM_Detector(DetectorBase):
                     alt_q.append(u" ".join(tmp))
             else:
                 alt_q.append(u" ".join(query))
-            org_q = " ".join(query)
+            org_q.append(" ".join(query))
         except Exception as nge:
             logging.debug(format(w_list, cp_pos))
             logging.debug(pformat(nge))
