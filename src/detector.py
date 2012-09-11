@@ -37,6 +37,7 @@ class DetectorBase(object):
         Makes test instances entirely on the corpus, just a wrapper
         """
         self.testcases = defaultdict(dict)
+        self.case_keys = []
         for docname, doc in self.corpus.iteritems():
             try:
                 self._mk_cases(docname, doc)
@@ -120,6 +121,8 @@ class LM_Detector(DetectorBase):
                 org_pas_q.append(tmp)
             if PRED in alt_preds:
                 alt_pas_q.append(tmp)
+        org_pas_q = list(set(org_pas_q))
+        alt_pas_q = list(set(alt_pas_q))
         if org_pas_q and alt_pas_q:
             logging.debug(pformat(org_pas_q))
             logging.debug(pformat(alt_pas_q))
@@ -140,6 +143,7 @@ class LM_Detector(DetectorBase):
                 checkpoints = doc["errorposition"]
                 for cpid, cp in enumerate(checkpoints):
                     testkey = docname+"_checkpoint"+str(cpid)
+                    self.case_keys.append(testkey)
                     cp_pos = cp[0]
                     incorr = cp[1]
                     gold = cp[2]
@@ -156,6 +160,19 @@ class LM_Detector(DetectorBase):
                 logging.debug("error catched in _mk_cases")
                 logging.debug(pformat(testkey))
                 logging.debug(pformat(e))
+
+    def LM_count(self):
+        for testid in self.case_keys:
+            case = self.testcases[testid]
+            self.testcases[testid]["LM_scores"] = {"org":[], "alt":[]}
+            for org_q in case["LM_queries"]["org"]:
+                score = irstlm.getSentenceScore(self.LM, org_q)
+                self.testcases[testid]["LM_scores"]["org"].append(score)
+            for alt_q in case["LM_queries"]["alt"]:
+                score = irstlm.getSentenceScore(self.LM, alt_q)
+                self.testcases[testid]["LM_scores"]["alt"].append(score)
+            
+
 
 
     def detect(self):

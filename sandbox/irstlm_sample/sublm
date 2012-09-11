@@ -1,0 +1,3 @@
+2
+-slm=msb -str=adapt -sp=0
+-slm=msb -str=train.www -sp=0
