@@ -20,6 +20,10 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
                     filename='../log/'+logfilename)
 from nltk import ngrams
+try:
+    from lsa_test.irstlm import *
+except:
+    pass
 
 
 class DetectorBase(object):
@@ -58,9 +62,8 @@ class DetectorBase(object):
 
 class LM_Detector(DetectorBase):
     def read_LM_and_PASLM(self, path_IRSTLM="", path_PASLM=""):
-        import lsa_test.irstlm
         if path_IRSTLM:
-            self.LM = irstlm.initLM(5, path_IRSTLM)
+            self.LM = initLM(5, path_IRSTLM)
             logging.debug(pformat("IRSTLM's LM is loaded from %s"%path_IRSTLM))
         if path_PASLM:
             self.pasFreqDict = pickle.load(open(path_PASLM))
@@ -166,12 +169,12 @@ class LM_Detector(DetectorBase):
             case = self.testcases[testid]
             self.testcases[testid]["LM_scores"] = {"org":[], "alt":[]}
             for org_q in case["LM_queries"]["org"]:
-                score = irstlm.getSentenceScore(self.LM, org_q)
+                score = getSentenceScore(self.LM, org_q)
                 self.testcases[testid]["LM_scores"]["org"].append(score)
             for alt_q in case["LM_queries"]["alt"]:
-                score = irstlm.getSentenceScore(self.LM, alt_q)
+                score = getSentenceScore(self.LM, alt_q)
                 self.testcases[testid]["LM_scores"]["alt"].append(score)
-            
+
 
 
 
