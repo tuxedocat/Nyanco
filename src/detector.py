@@ -289,6 +289,10 @@ class LM_Detector(DetectorBase):
             testcase["Result_LM+PASLM_model"] = "alt"
         elif detect_flag_lm is False and detect_flag_pas is None:
             testcase["Result_LM+PASLM_model"] = "org"
+        elif detect_flag_lm is None and detect_flag_pas is True:
+            testcase["Result_LM+PASLM_model"] = "alt"
+        elif detect_flag_lm is None and detect_flag_pas is False:
+            testcase["Result_LM+PASLM_model"] = "org"
         else:
             testcase["Result_LM+PASLM_model"] = "none_result"
         pass
