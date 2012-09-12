@@ -10,7 +10,7 @@ __version__ = "0"
 __status__ = "Prototyping"
 
 import os
-# import nltk
+import nltk
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
@@ -20,7 +20,6 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
                     filename='../log/'+logfilename)
 from nltk import ngrams
-from nltk import metrics
 from numpy import array
 try:
     from lsa_test.irstlm import *
@@ -416,11 +415,11 @@ class LM_Detector(DetectorBase):
             # print clsrepo_lm_paslm
             # print clsrepo_lm
             # print clsrepo_paslm
-            acc_lm_paslm = metrics.accuracy(self.truelabels, self.syslabels_lm_paslm)
+            acc_lm_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm_paslm)
             print "accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm
-            acc_lm = metrics.accuracy(self.truelabels, self.syslabels_lm)
+            acc_lm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm)
             print "accuracy, 5gramLM: %3.4f"%acc_lm
-            acc_paslm = metrics.accuracy(self.truelabels, self.syslabels_paslm)
+            acc_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_paslm)
             print "accuracy, PAS_triples: %3.4f"%acc_paslm
             rf.write("RESULT: 5gramLM + PAS triples\n")
             rf.write("accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm)
