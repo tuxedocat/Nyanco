@@ -73,7 +73,8 @@ class LM_Detector(DetectorBase):
             logging.debug(pformat("PASLM is loaded"))
             self.paslm_c_sum = sum(self.pasCounter.values())
 
-
+    def cleanup(self):
+        deleteLM(self.LM)
 
     def _mk_ngram_queries(self, n=5, cp_pos=None, w_list=[], alt_candidates=[]):
         """
