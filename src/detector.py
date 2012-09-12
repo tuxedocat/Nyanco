@@ -378,7 +378,7 @@ class LM_Detector(DetectorBase):
         self.syslabels_lm = []
         self.syslabels_paslm = []
         self.report = []
-        names = ["org", "alt", "none_result"]
+        names = ["org", "alt"]
         for id, case in self.testcases.iteritems():
             tmpdic_r = {}
             truelabel = case["gold_label"]
