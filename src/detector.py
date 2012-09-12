@@ -263,14 +263,26 @@ class LM_Detector(DetectorBase):
                 o_s_lm, o_s_pas = o_tuple
                 for a_tuple in alt_scores:
                     a_s_lm, a_s_pas = a_tuple
+
                     if a_s_lm > o_s_lm:
                         detect_flag_lm = True
                     elif o_s_lm >= a_s_lm:
                         detect_flag_lm = False
+                   
                     if a_s_pas > o_s_pas:
                         detect_flag_pas = True
                     elif o_s_pas >= a_s_pas:
                         detect_flag_pas = False
+        elif testcase["LM_scores"]["org"] and testcase["LM_scores"]["alt"]:
+            o_scores = testcase["LM_scores"]["org"]
+            a_scores = testcase["LM_scores"]["alt"]
+            for o_s in o_scores:
+                for a_s in a_scores:
+                    if a_s > o_s:
+                        detect_flag_lm = True
+                    elif o_s >= a_s:
+                        detect_flag_lm = False
+
         if detect_flag_lm is True and detect_flag_pas is True:
             testcase["Result_LM+PASLM_model"] = "alt"
         elif detect_flag_lm is False and detect_flag_pas is True:
