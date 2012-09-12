@@ -405,9 +405,9 @@ class LM_Detector(DetectorBase):
             tmpdic_r["correction"] = truelabel
             self.report.append(tmpdic_r)
         with open(self.reportpath, "w") as rf:
-            clsrepo_lm_paslm = metrics.classification_report(self.truelabels, self.syslabels_lm_paslm, labels=labels, target_names=names)
-            clsrepo_lm = metrics.classification_report(self.truelabels, self.syslabels_lm, labels=labels, target_names=names)
-            clsrepo_paslm = metrics.classification_report(self.truelabels, self.syslabels_paslm, labels=labels, target_names=names)
+            clsrepo_lm_paslm = metrics.classification_report(self.truelabels, self.syslabels_lm_paslm)#, labels=labels, target_names=names)
+            clsrepo_lm = metrics.classification_report(self.truelabels, self.syslabels_lm)#, labels=labels, target_names=names)
+            clsrepo_paslm = metrics.classification_report(self.truelabels, self.syslabels_paslm)#, labels=labels, target_names=names)
             print clsrepo_lm_paslm
             print clsrepo_lm
             print clsrepo_paslm
