@@ -404,10 +404,13 @@ class LM_Detector(DetectorBase):
             tmpdic_r["original"] = incorrlabel
             tmpdic_r["correction"] = truelabel
             self.report.append(tmpdic_r)
+
+        logging.debug(pformat(self.truelabels))
+        logging.debug(pformat(self.syslabels_lm_paslm))
         with open(self.reportpath, "w") as rf:
-            clsrepo_lm_paslm = metrics.classification_report(self.truelabels, self.syslabels_lm_paslm)#, labels=labels, target_names=names)
-            clsrepo_lm = metrics.classification_report(self.truelabels, self.syslabels_lm)#, labels=labels, target_names=names)
-            clsrepo_paslm = metrics.classification_report(self.truelabels, self.syslabels_paslm)#, labels=labels, target_names=names)
+            clsrepo_lm_paslm = metrics.classification_report(self.truelabels, self.syslabels_lm_paslm, target_names=names)#, labels=labels, target_names=names)
+            clsrepo_lm = metrics.classification_report(self.truelabels, self.syslabels_lm, target_names=names)#, labels=labels, target_names=names)
+            clsrepo_paslm = metrics.classification_report(self.truelabels, self.syslabels_paslm, target_names=names)#, labels=labels, target_names=names)
             print clsrepo_lm_paslm
             print clsrepo_lm
             print clsrepo_paslm
@@ -418,11 +421,11 @@ class LM_Detector(DetectorBase):
             rf.write("\n\nRESULT: PAS triples model")
             rf.write(clsrepo_paslm)
             rf.write("\n\n\n\n")
-            try:
-                for repo in self.report:
-                    rf.write(pformat(repo))
-            except Exception as fileouterror:
-                logging.debug(pformat(fileouterror))
+            # try:
+            #     for repo in self.report:
+            #         rf.write(pformat(repo))
+            # except Exception as fileouterror:
+            #     logging.debug(pformat(fileouterror))
 
 
 
