@@ -254,8 +254,6 @@ class LM_Detector(DetectorBase):
 
 
     def _LM_PASLM_model(self, testcase, pasmodel_exclusive=True):
-        w_lm = div_lm_pas[0]
-        w_pas = div_lm_pas[1]
         org_scores = [t for t in zip(testcase["LM_scores"]["org"], testcase["PASLM_scores"]["org"])]
         alt_scores = [t for t in zip(testcase["LM_scores"]["alt"], testcase["PASLM_scores"]["alt"])]
         detect_flag_lm = None # True if one of alternatives' score is over the original, None means there's no valid comparison
