@@ -258,8 +258,8 @@ class LM_Detector(DetectorBase):
         w_pas = div_lm_pas[1]
         org_scores = [t for t in zip(testcase["LM_scores"]["org"], testcase["PASLM_scores"]["org"])]
         alt_scores = [t for t in zip(testcase["LM_scores"]["alt"], testcase["PASLM_scores"]["alt"])]
+        detect_flag = False # True if one of alternatives' score is over the original
         if org_scores and alt_scores:
-            detect_flag = False # True if one of alternatives' score is over the original
             for o_tuple in org_scores:
                 weighted_s_o = o_tuple[0]*w_lm + o_tuple[1]*w_pas
                 for a_tuple in alt_scores:
@@ -280,8 +280,8 @@ class LM_Detector(DetectorBase):
         """
         org_scores = [s for s in testcase["LM_scores"]["org"]]
         alt_scores = [s for s in testcase["LM_scores"]["alt"]]
+        detect_flag = False # True if one of alternatives' score is over the original
         if org_scores and alt_scores:
-            detect_flag = False # True if one of alternatives' score is over the original
             for o_s in org_scores:
                 for a_s in alt_scores:
                     if a_s > o_s:
@@ -295,8 +295,8 @@ class LM_Detector(DetectorBase):
     def _PASLM_model(self, testcase):
         org_scores = [s for s in testcase["PASLM_scores"]["org"]]
         alt_scores = [s for s in testcase["PASLM_scores"]["alt"]]
+        detect_flag = False # True if one of alternatives' score is over the original
         if org_scores and alt_scores:
-            detect_flag = False # True if one of alternatives' score is over the original
             for o_s in org_scores:
                 for a_s in alt_scores:
                     if a_s > o_s:
