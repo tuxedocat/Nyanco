@@ -368,7 +368,7 @@ class LM_Detector(DetectorBase):
 
 
     def mk_report(self):
-        from sklearn import metrics
+        from scikits.learn import metrics
         self.truelabels = []
         self.syslabels_lm_paslm = []
         self.syslabels_lm = []
