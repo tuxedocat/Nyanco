@@ -81,4 +81,6 @@ class TestLMDetector:
         self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
         self.detector.PASLM_count()
         print pformat(self.detector.testcases)
+        logging.debug(pfotmat(("Valid", self.detector.validnum_plm)))
+        logging.debug(pfotmat(("Invalid", self.detector.invalidnum_plm)))
         raise Exception        
