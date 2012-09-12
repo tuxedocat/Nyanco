@@ -27,7 +27,7 @@ except:
 
 
 class DetectorBase(object):
-    def __init__(self, corpusdictpath):
+    def __init__(self, corpusdictpath="", reportpath=""):
         if os.path.exists(corpusdictpath):
             with open(corpusdictpath, "rb") as f:
                 corpusdict = pickle.load(f)
@@ -35,6 +35,8 @@ class DetectorBase(object):
             self.experimentset = defaultdict(dict)
         else:
             raise IOError
+        self.reportpath = os.path.join(os.path.dirname(reportpath), 
+                                        datetime.now().strftime("detector_report_%Y%m%d_%H%M.log"))
 
     def make_cases(self):
         """
@@ -365,9 +367,65 @@ class LM_Detector(DetectorBase):
             logging.debug(pformat(tc))
 
 
+    def mk_report(self):
+        from sklearn import metrics
+        self.truelabels = []
+        self.syslabels_lm_paslm = []
+        self.syslabels_lm = []
+        self.syslabels_paslm = []
+        self.report = []
+        names = ["org", "alt", "none_result"]
+        for id, case in self.testcases.iteritems():
+            tmpdic_r = {}
+            truelabel = case["gold_label"]
+            incorrlabel = case["incorrect_label"]
+            lm_paslm_out = case["Result_LM+PASLM_model"]
+            lm_out = case["Result_LM_model"]
+            paslm_out = case["Result_PASLM_model"]
+            output_models = [lm_paslm_out, lm_out, paslm_out]
+            tmp_l = []
+            for output in output_models:
+                if output == "alt":
+                    tmp_l.append(truelabel)
+                else:
+                    tmp_l.append(incorrlabel)
+            # self.truelabels.append(truelabel)
+            self.truelabels.append("alt")
+            self.syslabels_lm_paslm.append(lm_paslm_out)
+            self.syslabels_lm.append(lm_out)
+            self.syslabels_paslm.append(paslm_out)
+            tmpdic_r["name"] = id
+            tmpdic_r["outputs"] = output_models
+            tmpdic_r["original"] = incorrlabel
+            tmpdic_r["correction"] = truelabel
+            self.report.append(tmpdic_r)
+        with open(self.reportpath, "w") as rf:
+            clsrepo_lm_paslm = metrics.classification_report(self.truelabels, self.syslabels_lm_paslm, target_names=names)
+            clsrepo_lm = metrics.classification_report(self.truelabels, self.syslabels_lm, target_names=names)
+            clsrepo_paslm = metrics.classification_report(self.truelabels, self.syslabels_paslm, target_names=names)
+            print clsrepo_lm_paslm
+            print clsrepo_lm
+            print clsrepo_paslm
+            rf.write("RESULT: 5gramLM + PAS triples\n")
+            rf.write(clsrepo_lm_paslm)
+            rf.write("\n\nRESULT: 5gramLM\n")
+            rf.write(clsrepo_lm)
+            rf.write("\n\nRESULT: PAS triples model")
+            rf.write(clsrepo_paslm)
+            rf.write("\n\n\n\n")
+            try:
+                for repo in self.report:
+                    rf.write(pformat(repo))
+            except Exception as fileouterror:
+                logging.debug(pformat(fileouterror))
+
+
+
+
+
 
 def detectmain(corpuspath="", lmpath="", paslmpath="", reportout=""):
-    detector = LM_Detector(corpuspath)
+    detector = LM_Detector(corpusdicpath=corpuspath, reportpath=reportout)
     detector.make_cases()
     detector.read_LM_and_PASLM(path_IRSTLM=lmpath, path_PASLM=paslmpath)
     if lmpath:
@@ -375,7 +433,7 @@ def detectmain(corpuspath="", lmpath="", paslmpath="", reportout=""):
     if paslmpath:
         detector.PASLM_count()
     detector.detect()
-    # detector.mk_report()
+    detector.mk_report()
 
 
 
