@@ -10,7 +10,7 @@ __version__ = "0"
 __status__ = "Prototyping"
 
 import os
-import nltk
+# import nltk
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
@@ -20,6 +20,7 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
                     filename='../log/'+logfilename)
 from nltk import ngrams
+from nltk import metrics
 from numpy import array
 try:
     from lsa_test.irstlm import *
@@ -409,18 +410,27 @@ class LM_Detector(DetectorBase):
         # logging.debug(pformat(self.truelabels))
         # logging.debug(pformat(self.syslabels_lm_paslm))
         with open(self.reportpath, "w") as rf:
-            clsrepo_lm_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm_paslm), target_names=names)#, labels=labels, target_names=names)
-            clsrepo_lm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
-            clsrepo_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_paslm), target_names=names)#, labels=labels, target_names=names)
-            print clsrepo_lm_paslm
-            print clsrepo_lm
-            print clsrepo_paslm
+            # clsrepo_lm_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm_paslm), target_names=names)#, labels=labels, target_names=names)
+            # clsrepo_lm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
+            # clsrepo_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_paslm), target_names=names)#, labels=labels, target_names=names)
+            # print clsrepo_lm_paslm
+            # print clsrepo_lm
+            # print clsrepo_paslm
+            acc_lm_paslm = metrics.accuracy(self.truelabels, self.syslabels_lm_paslm)
+            print "accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm
+            acc_lm = metrics.accuracy(self.truelabels, self.syslabels_lm)
+            print "accuracy, 5gramLM: %3.4f"%acc_lm
+            acc_paslm = metrics.accuracy(self.truelabels, self.syslabels_paslm)
+            print "accuracy, PAS_triples: %3.4f"%acc_paslm
             rf.write("RESULT: 5gramLM + PAS triples\n")
-            rf.write(clsrepo_lm_paslm)
-            rf.write("\n\nRESULT: 5gramLM\n")
-            rf.write(clsrepo_lm)
-            rf.write("\n\nRESULT: PAS triples model")
-            rf.write(clsrepo_paslm)
+            rf.write("accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm)
+            # rf.write(clsrepo_lm_paslm)
+            rf.write("\n\n\nRESULT: 5gramLM\n")
+            rf.write("accuracy, 5gramLM: %3.4f"%acc_lm)
+            # rf.write(clsrepo_lm)
+            rf.write("\n\n\nRESULT: PAS triples model\n")
+            rf.write("accuracy, PAS_triples: %3.4f"%acc_paslm)
+            # rf.write(clsrepo_paslm)
             rf.write("\n\n\n\n")
             # try:
             #     for repo in self.report:
