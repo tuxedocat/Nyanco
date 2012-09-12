@@ -130,9 +130,9 @@ class LM_Detector(DetectorBase):
                 alt_pas_q.append(tmp)
         org_pas_q = list(set(org_pas_q))
         alt_pas_q = list(set(alt_pas_q))
-        if org_pas_q and alt_pas_q:
-            logging.debug(pformat(org_pas_q))
-            logging.debug(pformat(alt_pas_q))
+        # if org_pas_q and alt_pas_q:
+            # logging.debug(pformat(org_pas_q))
+            # logging.debug(pformat(alt_pas_q))
         return org_pas_q, alt_pas_q
 
 
@@ -177,18 +177,18 @@ class LM_Detector(DetectorBase):
             case = self.testcases[testid]
             self.testcases[testid]["LM_scores"] = {"org":[], "alt":[]}
             for org_q in case["LM_queries"]["org"]:
-                logging.debug(pformat(org_q))
+                # logging.debug(pformat(org_q))
                 try:
                     score = getSentenceScore(self.LM, org_q)
-                    logging.debug(pformat(score))
+                    # logging.debug(pformat(score))
                 except TypeError:
                     score = -100
                 self.testcases[testid]["LM_scores"]["org"].append(score)
             for alt_q in case["LM_queries"]["alt"]:
-                logging.debug(pformat(alt_q))
+                # logging.debug(pformat(alt_q))
                 try:
                     score = getSentenceScore(self.LM, alt_q)
-                    logging.debug(pformat(score))
+                    # logging.debug(pformat(score))
                 except TypeError:
                     score = -100
                 self.testcases[testid]["LM_scores"]["alt"].append(score)
@@ -225,14 +225,14 @@ class LM_Detector(DetectorBase):
                     tmp.pop(1)
                     tmp.insert(1, "I")
                     org_pq = tuple(tmp)
-                logging.debug(pformat(org_pq))
+                # logging.debug(pformat(org_pq))
                 try:
                     score = self._getPASLMscore(self.pasCounter, org_pq)
                     if score == 0:
                         self.invalidnum_plm["org"] += 1
                     else:
                         self.validnum_plm["org"] += 1
-                    logging.debug(pformat(score))
+                    # logging.debug(pformat(score))
                 except TypeError:
                     score = -100
                 self.testcases[testid]["PASLM_scores"]["org"].append(score)
@@ -242,7 +242,7 @@ class LM_Detector(DetectorBase):
                     tmp.pop(1)
                     tmp.insert(1, "I")
                     alt_pq = tuple(tmp)
-                logging.debug(pformat(alt_pq))
+                # logging.debug(pformat(alt_pq))
                 try:
                     score = self._getPASLMscore(self.pasCounter, alt_pq)
                     if score == 0:
@@ -363,8 +363,8 @@ class LM_Detector(DetectorBase):
             self._LM_model(tc)
             self._PASLM_model(tc)
             self._LM_PASLM_model(tc)
-            logging.debug("Case %s"%(testid))
-            logging.debug(pformat(tc))
+            # logging.debug("Case %s"%(testid))
+            # logging.debug(pformat(tc))
 
 
     def mk_report(self):
