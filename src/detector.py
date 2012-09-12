@@ -249,7 +249,7 @@ class LM_Detector(DetectorBase):
                         self.invalidnum_plm["alt"] += 1
                     else:
                         self.validnum_plm["alt"] += 1
-                    logging.debug(pformat(score))
+                    # logging.debug(pformat(score))
                 except TypeError:
                     score = -100
                 self.testcases[testid]["PASLM_scores"]["alt"].append(score)
@@ -405,8 +405,8 @@ class LM_Detector(DetectorBase):
             tmpdic_r["correction"] = truelabel
             self.report.append(tmpdic_r)
 
-        logging.debug(pformat(self.truelabels))
-        logging.debug(pformat(self.syslabels_lm_paslm))
+        # logging.debug(pformat(self.truelabels))
+        # logging.debug(pformat(self.syslabels_lm_paslm))
         with open(self.reportpath, "w") as rf:
             clsrepo_lm_paslm = metrics.classification_report(self.truelabels, self.syslabels_lm_paslm, target_names=names)#, labels=labels, target_names=names)
             clsrepo_lm = metrics.classification_report(self.truelabels, self.syslabels_lm, target_names=names)#, labels=labels, target_names=names)
