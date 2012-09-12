@@ -74,7 +74,10 @@ class LM_Detector(DetectorBase):
             self.paslm_c_sum = sum(self.pasCounter.values())
 
     def cleanup(self):
+        print "Deleting LM...."
         deleteLM(self.LM)
+        logging.debug("IRSTLM_LM has been deleted from memory")
+        print "Deleting LM has been completed" 
 
     def _mk_ngram_queries(self, n=5, cp_pos=None, w_list=[], alt_candidates=[]):
         """
@@ -453,6 +456,7 @@ def detectmain(corpuspath="", lmpath="", paslmpath="", reportout=""):
         detector.PASLM_count()
     detector.detect()
     detector.mk_report()
+    detector.cleanup()
 
 
 
