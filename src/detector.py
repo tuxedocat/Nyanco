@@ -207,7 +207,7 @@ class LM_Detector(DetectorBase):
         try:
             count = pasCounter[pas_q]
         except KeyError:
-            count = 10^(-6)
+            count = 10**(-6)
         logscore = Logscore(count, self.paslm_c_sum)
         return logscore
 
@@ -216,6 +216,11 @@ class LM_Detector(DetectorBase):
             case = self.testcases[testid]
             self.testcases[testid]["PASLM_scores"] = {"org":[], "alt":[]}
             for org_pq in case["PASLM_queries"]["org"]:
+                if org_pq[1] == "":
+                    tmp = list(org_pq)
+                    tmp.pop(1)
+                    tmp.insert(1, "I")
+                    org_pq = tuple(tmp)
                 logging.debug(pformat(org_pq))
                 try:
                     score = self._getPASLMscore(self.pasCounter, org_pq)
@@ -224,6 +229,11 @@ class LM_Detector(DetectorBase):
                     score = -100
                 self.testcases[testid]["PASLM_scores"]["org"].append(score)
             for alt_pq in case["PASLM_queries"]["alt"]:
+                if alt_pq[1] == "":
+                    tmp = list(alt_pq)
+                    tmp.pop(1)
+                    tmp.insert(1, "I")
+                    alt_pq = tuple(tmp)
                 logging.debug(pformat(alt_pq))
                 try:
                     score = self._getPASLMscore(self.pasCounter, alt_pq)
