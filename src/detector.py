@@ -265,11 +265,11 @@ class LM_Detector(DetectorBase):
                     a_s_lm, a_s_pas = a_tuple
                     if a_s_lm > o_s_lm:
                         detect_flag_lm = True
-                    elif o_s_lm > a_s_lm:
+                    elif o_s_lm >= a_s_lm:
                         detect_flag_lm = False
                     if a_s_pas > o_s_pas:
                         detect_flag_pas = True
-                    elif o_s_pas > a_s_pas:
+                    elif o_s_pas >= a_s_pas:
                         detect_flag_pas = False
         if detect_flag_lm is True and detect_flag_pas is True:
             testcase["Result_LM+PASLM_model"] = "alt"
@@ -311,14 +311,14 @@ class LM_Detector(DetectorBase):
                 for a_s in alt_scores:
                     if a_s > o_s:
                         detect_flag = True
-                    elif o_s > a_s:
+                    elif o_s >= a_s:
                         detect_flag = False
         if detect_flag is True:
             testcase["Result_LM_model"] = "alt"
         elif detect_flag is False:
             testcase["Result_LM_model"] = "org"
         else:
-            testcase["Result_LM_model"] = "failed"
+            testcase["Result_LM_model"] = "none_result"
 
 
     def _PASLM_model(self, testcase):
@@ -330,14 +330,14 @@ class LM_Detector(DetectorBase):
                 for a_s in alt_scores:
                     if a_s > o_s:
                         detect_flag = True
-                    elif o_s > a_s:
+                    elif o_s >= a_s:
                         detect_flag = False
         if detect_flag is True:
             testcase["Result_PASLM_model"] = "alt"
         elif detect_flag is False:
             testcase["Result_PASLM_model"] = "org"
         else:
-            testcase["Result_PASLM_model"] = "failed"
+            testcase["Result_PASLM_model"] = "none_result"
 
 
     def detect(self):
