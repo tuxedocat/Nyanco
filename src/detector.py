@@ -425,7 +425,7 @@ class LM_Detector(DetectorBase):
 
 
 def detectmain(corpuspath="", lmpath="", paslmpath="", reportout=""):
-    detector = LM_Detector(corpusdicpath=corpuspath, reportpath=reportout)
+    detector = LM_Detector(corpusdictpath=corpuspath, reportpath=reportout)
     detector.make_cases()
     detector.read_LM_and_PASLM(path_IRSTLM=lmpath, path_PASLM=paslmpath)
     if lmpath:
