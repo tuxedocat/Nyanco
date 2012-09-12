@@ -253,5 +253,132 @@ class LM_Detector(DetectorBase):
                 self.testcases[testid]["PASLM_scores"]["alt"].append(score)
 
 
-    def detect(self):
+    def _LM_PASLM_model(self, testcase, div_lm_pas=(1,1)):
+        w_lm = div_lm_pas[0]
+        w_pas = div_lm_pas[1]
+        org_scores = [t for t in zip(testcase["LM_scores"]["org"], testcase["PASLM_scores"]["org"])]
+        alt_scores = [t for t in zip(testcase["LM_scores"]["alt"], testcase["PASLM_scores"]["alt"])]
+        if org_scores and alt_scores:
+            detect_flag = False # True if one of alternatives' score is over the original
+            for o_tuple in org_scores:
+                weighted_s_o = o_tuple[0]*w_lm + o_tuple[1]*w_pas
+                for a_tuple in alt_scores:
+                    weighted_s_a = a_tuple[0]*w_lm + a_tuple[1]*w_pas
+                    if weighted_s_a > weighted_s_o:
+                        detect_flag = True
+        if detect_flag is True:
+            testcase["Result_LM+PASLM_model"] = "alt"
+        else:
+            testcase["Result_LM+PASLM_model"] = "org"
         pass
+
+
+    def _LM_model(self, testcase):
+        """
+        Compare original's score and alternatives' score
+        then returns "org" or "alt" (in fce testset, "alt" is always right )
+        """
+        org_scores = [s for s in testcase["LM_scores"]["org"]]
+        alt_scores = [s for s in testcase["LM_scores"]["alt"]]
+        if org_scores and alt_scores:
+            detect_flag = False # True if one of alternatives' score is over the original
+            for o_s in org_scores:
+                for a_s in alt_scores:
+                    if a_s > o_s:
+                        detect_flag = True
+        if detect_flag is True:
+            testcase["Result_LM_model"] = "alt"
+        else:
+            testcase["Result_LM_model"] = "org"
+
+
+    def _PASLM_model(self, testcase):
+        org_scores = [s for s in testcase["PASLM_scores"]["org"]]
+        alt_scores = [s for s in testcase["PASLM_scores"]["alt"]]
+        if org_scores and alt_scores:
+            detect_flag = False # True if one of alternatives' score is over the original
+            for o_s in org_scores:
+                for a_s in alt_scores:
+                    if a_s > o_s:
+                        detect_flag = True
+        if detect_flag is True:
+            testcase["Result_PASLM_model"] = "alt"
+        else:
+            testcase["Result_PASLM_model"] = "org"
+            
+
+
+    def detect(self):
+        for testid in self.case_keys:
+            tc = self.testcases[testid]
+            tc["Result_LM+PASLM_model"] = defaultdict(list)
+            tc["Result_LM_model"] = defaultdict(list)
+            tc["Result_PASLM_model"] = defaultdict(list)
+            self._LM_model(tc)
+            self._PASLM_model(tc)
+            self._LM_PASLM_model(tc)
+            logging.debug("Case %s"%(testid))
+            logging.debug(pformat(tc))
+
+
+
+def detectmain(corpuspath="", lmpath="", paslmpath="", reportout=""):
+    detector = LM_Detector(corpuspath)
+    detector.make_cases()
+    detector.read_LM_and_PASLM(path_IRSTLM=lmpath, path_PASLM=paslmpath)
+    if lmpath:
+        detector.LM_count()
+    if paslmpath:
+        detector.PASLM_count()
+    detector.detect()
+    # detector.mk_report()
+
+
+
+
+
+if __name__=='__main__':
+    import time
+    import sys
+    import argparse
+    starttime = time.time()
+    argv = sys.argv
+    argc = len(argv)
+    description =   """
+                    Nyanco.detector
+
+                    this detects verb replacement errors (RV) in FCE dataset,
+                    using several methods.
+                    """
+    ap = argparse.ArgumentParser(description=description)
+    ap.add_argument("-p", "--pas_lm_path", action="store", 
+                    help="path to PAS_LM (python collections.Counter object, as pickle)")
+    ap.add_argument("-l", '--lm', action="store",
+                    help="path to IRSTLM Language model file")
+    ap.add_argument("-o", '--output_file', action="store",
+                    help="path of output report file")
+    ap.add_argument("-c", '--corpus_pickle_file', action="store",
+                    help="path of pickled corpus made by corpusreader2.py and test_corpushandler.py")
+    args = ap.parse_args()
+
+    if (args.corpus_pickle_file and args.output_file and args.lm and args.pas_lm_path):
+        print "Using both 5gramLM and PAS_triples"
+        detectmain(corpus_dir=args.corpus_pickle_file, output_dir=args.output_file, working_dir=args.lm, preprocess=True)
+        endtime = time.time()
+        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+
+    elif (args.corpus_pickle_file and args.output_file and args.lm):
+        print "Using only 5gramLM"
+        detectmain(corpus_dir=args.corpus_pickle_file, output_dir=args.output_file, working_dir=args.lm, preprocess=False)
+        endtime = time.time()
+        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+
+    elif (args.corpus_pickle_file and args.output_file and args.pas_lm_path):
+        print "Using only PAS_triples"
+        detectmain(corpus_dir=args.corpus_pickle_file, output_dir=args.output_file, working_dir=args.lm, preprocess=False)
+        endtime = time.time()
+        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+
+    else:
+        ap.print_help()
+    quit()

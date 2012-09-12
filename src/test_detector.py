@@ -25,6 +25,7 @@ class TestLMDetector:
         self.detector = LM_Detector(self.corpuspath)
         self.testlm_path = "../sandbox/irstlm_sample/testlm.gz"
         self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
+        self.reportpath = "../"
 
     @attr("makecase")
     def test_makecase(self):
@@ -64,7 +65,6 @@ class TestLMDetector:
         print pformat(self.detector.testcases)
         raise Exception      
 
-
     @attr("pasLM_eg")
     def test_pasLM_eg(self):
         paslm_path = "/work/yu-s/cl/nldata/PAS/eg_afp_apw_PAS.pickle"
@@ -83,4 +83,9 @@ class TestLMDetector:
         print pformat(self.detector.testcases)
         logging.debug(pformat(("Valid", self.detector.validnum_plm)))
         logging.debug(pformat(("Invalid", self.detector.invalidnum_plm)))
-        raise Exception        
+        raise Exception
+
+    @attr("detect_small")
+    def test_detect(self):
+        detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
+        raise Exception
