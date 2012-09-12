@@ -258,7 +258,7 @@ class LM_Detector(DetectorBase):
         w_pas = div_lm_pas[1]
         org_scores = [t for t in zip(testcase["LM_scores"]["org"], testcase["PASLM_scores"]["org"])]
         alt_scores = [t for t in zip(testcase["LM_scores"]["alt"], testcase["PASLM_scores"]["alt"])]
-        detect_flag = False # True if one of alternatives' score is over the original
+        detect_flag = None # True if one of alternatives' score is over the original, None means there's no valid comparison
         if org_scores and alt_scores:
             for o_tuple in org_scores:
                 weighted_s_o = o_tuple[0]*w_lm + o_tuple[1]*w_pas
@@ -266,10 +266,14 @@ class LM_Detector(DetectorBase):
                     weighted_s_a = a_tuple[0]*w_lm + a_tuple[1]*w_pas
                     if weighted_s_a > weighted_s_o:
                         detect_flag = True
+                    elif weighted_s_o > weighted_s_a:
+                        detect_flag = False
         if detect_flag is True:
             testcase["Result_LM+PASLM_model"] = "alt"
-        else:
+        elif detect_flag is False:
             testcase["Result_LM+PASLM_model"] = "org"
+        else:
+            testcase["Result_LM+PASLM_model"] = "failed"
         pass
 
 
@@ -280,32 +284,39 @@ class LM_Detector(DetectorBase):
         """
         org_scores = [s for s in testcase["LM_scores"]["org"]]
         alt_scores = [s for s in testcase["LM_scores"]["alt"]]
-        detect_flag = False # True if one of alternatives' score is over the original
+        detect_flag = None # True if one of alternatives' score is over the original
         if org_scores and alt_scores:
             for o_s in org_scores:
                 for a_s in alt_scores:
                     if a_s > o_s:
                         detect_flag = True
+                    elif o_s > a_s:
+                        detect_flag = False
         if detect_flag is True:
             testcase["Result_LM_model"] = "alt"
-        else:
+        elif detect_flag is False:
             testcase["Result_LM_model"] = "org"
+        else:
+            testcase["Result_LM_model"] = "failed"
 
 
     def _PASLM_model(self, testcase):
         org_scores = [s for s in testcase["PASLM_scores"]["org"]]
         alt_scores = [s for s in testcase["PASLM_scores"]["alt"]]
-        detect_flag = False # True if one of alternatives' score is over the original
+        detect_flag = None # True if one of alternatives' score is over the original
         if org_scores and alt_scores:
             for o_s in org_scores:
                 for a_s in alt_scores:
                     if a_s > o_s:
                         detect_flag = True
+                    elif o_s > a_s:
+                        detect_flag = False
         if detect_flag is True:
             testcase["Result_PASLM_model"] = "alt"
-        else:
+        elif detect_flag is False:
             testcase["Result_PASLM_model"] = "org"
-            
+        else:
+            testcase["Result_PASLM_model"] = "failed"
 
 
     def detect(self):
