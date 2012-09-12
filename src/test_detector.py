@@ -56,7 +56,7 @@ class TestLMDetector:
         raise Exception
 
     @attr("pasLM_ukwac")
-    def test_pasLM(self):
+    def test_pasLM_uk(self):
         paslm_path = "/work/yu-s/cl/nldata/PAS/ukwac_PAS.pickle"
         self.detector.make_cases()
         self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
@@ -66,8 +66,17 @@ class TestLMDetector:
 
 
     @attr("pasLM_eg")
-    def test_pasLM(self):
+    def test_pasLM_eg(self):
         paslm_path = "/work/yu-s/cl/nldata/PAS/eg_afp_apw_PAS.pickle"
+        self.detector.make_cases()
+        self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
+        self.detector.PASLM_count()
+        print pformat(self.detector.testcases)
+        raise Exception        
+
+    @attr("pasLM_eg+")
+    def test_pasLM_eguk(self):
+        paslm_path = "/work/yu-s/cl/nldata/PAS/eg_plus_ukwac_PAS.pickle"
         self.detector.make_cases()
         self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
         self.detector.PASLM_count()
