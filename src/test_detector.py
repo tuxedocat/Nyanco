@@ -62,4 +62,14 @@ class TestLMDetector:
         self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
         self.detector.PASLM_count()
         print pformat(self.detector.testcases)
-        raise Exception       
+        raise Exception      
+
+
+    @attr("pasLM_eg")
+    def test_pasLM(self):
+        paslm_path = "/work/yu-s/cl/nldata/PAS/eg_afp_apw_PAS.pickle"
+        self.detector.make_cases()
+        self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
+        self.detector.PASLM_count()
+        print pformat(self.detector.testcases)
+        raise Exception        
