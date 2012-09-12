@@ -171,8 +171,6 @@ class LM_Detector(DetectorBase):
         """
         calculate scores of given string query, using irstlm.getSentenceScore
         """
-        self.invalidnum_plm = {"org":0, "alt":0}
-        self.validnum_plm = {"org":0, "alt":0}
         for testid in self.case_keys:
             case = self.testcases[testid]
             self.testcases[testid]["LM_scores"] = {"org":[], "alt":[]}
@@ -180,10 +178,6 @@ class LM_Detector(DetectorBase):
                 logging.debug(pformat(org_q))
                 try:
                     score = getSentenceScore(self.LM, org_q)
-                    if score == 0:
-                        self.invalidnum_plm["org"] += 1
-                    else:
-                        self.validnum_plm["org"] += 1
                     logging.debug(pformat(score))
                 except TypeError:
                     score = -100
@@ -192,10 +186,6 @@ class LM_Detector(DetectorBase):
                 logging.debug(pformat(alt_q))
                 try:
                     score = getSentenceScore(self.LM, alt_q)
-                    if score == 0:
-                        self.invalidnum_plm["alt"] += 1
-                    else:
-                        self.validnum_plm["alt"] += 1
                     logging.debug(pformat(score))
                 except TypeError:
                     score = -100
@@ -222,6 +212,8 @@ class LM_Detector(DetectorBase):
         return logscore
 
     def PASLM_count(self):
+        self.invalidnum_plm = {"org":0, "alt":0}
+        self.validnum_plm = {"org":0, "alt":0}
         for testid in self.case_keys:
             case = self.testcases[testid]
             self.testcases[testid]["PASLM_scores"] = {"org":[], "alt":[]}
@@ -234,6 +226,10 @@ class LM_Detector(DetectorBase):
                 logging.debug(pformat(org_pq))
                 try:
                     score = self._getPASLMscore(self.pasCounter, org_pq)
+                    if score == 0:
+                        self.invalidnum_plm["org"] += 1
+                    else:
+                        self.validnum_plm["org"] += 1
                     logging.debug(pformat(score))
                 except TypeError:
                     score = -100
@@ -247,6 +243,10 @@ class LM_Detector(DetectorBase):
                 logging.debug(pformat(alt_pq))
                 try:
                     score = self._getPASLMscore(self.pasCounter, alt_pq)
+                    if score == 0:
+                        self.invalidnum_plm["alt"] += 1
+                    else:
+                        self.validnum_plm["alt"] += 1
                     logging.debug(pformat(score))
                 except TypeError:
                     score = -100
