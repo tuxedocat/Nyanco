@@ -24,11 +24,19 @@ class TestLMDetector:
         self.corpuspath = "../sandbox/fce_corpus/fce_processed.pickle"
         self.detector = LM_Detector(self.corpuspath)
         self.testlm_path = "../sandbox/irstlm_sample/testlm.gz"
+        self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
 
     @attr("makecase")
     def test_makecase(self):
         self.detector.make_cases()
         print pformat(self.detector.testcases)
+        raise Exception
+
+    @attr("preLM")
+    def test_preLM(self):
+        lm = initLM(5, self.testlm_path)
+        sc1 = getSentenceScore(lm, "the cat is black")
+        logging.debug(pformat(sc1))
         raise Exception
 
     @attr("LM")
@@ -39,10 +47,19 @@ class TestLMDetector:
         print pformat(self.detector.testcases)
         raise Exception
 
-
-    @attr("preLM")
-    def test_preLM(self):
-        lm = initLM(5, self.testlm_path)
-        sc1 = getSentenceScore(lm, "the cat is black")
-        logging.debug(pformat(sc1))
+    @attr("pasLM")
+    def test_pasLM(self):
+        self.detector.make_cases()
+        self.detector.read_LM_and_PASLM(path_PASLM=self.paslm_path)
+        self.detector.PASLM_count()
+        print pformat(self.detector.testcases)
         raise Exception
+
+    @attr("pasLM_ukwac")
+    def test_pasLM(self):
+        paslm_path = "/work/yu-s/cl/nldata/PAS/ukwac_PAS.pickle"
+        self.detector.make_cases()
+        self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
+        self.detector.PASLM_count()
+        print pformat(self.detector.testcases)
+        raise Exception       
