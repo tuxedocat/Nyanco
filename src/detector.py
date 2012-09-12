@@ -66,8 +66,10 @@ class LM_Detector(DetectorBase):
             self.LM = initLM(5, path_IRSTLM)
             logging.debug(pformat("IRSTLM's LM is loaded from %s"%path_IRSTLM))
         if path_PASLM:
-            self.pasFreqDict = pickle.load(open(path_PASLM))
+            self.pasCounter = pickle.load(open(path_PASLM))
             logging.debug(pformat("PASLM is loaded"))
+            self.paslm_c_sum = sum(self.pasCounter.values())
+
 
 
     def _mk_ngram_queries(self, n=5, cp_pos=None, w_list=[], alt_candidates=[]):
@@ -155,9 +157,10 @@ class LM_Detector(DetectorBase):
                     self.testcases[testkey]["checkpoint_idx"] = cp_pos
                     self.testcases[testkey]["incorrect_label"] = incorr
                     self.testcases[testkey]["gold_label"] = gold
-                    org_q, alt_q = self._mk_ngram_queries(n=5, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
-                    self.testcases[testkey]["LM_queries"] = {"org":org_q, "alt":alt_q}
-                    self.testcases[testkey]["PASLM_queries"] = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
+                    org_qs, alt_qs = self._mk_ngram_queries(n=5, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
+                    self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
+                    org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
+                    self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
 
             except Exception as e:
                 logging.debug("error catched in _mk_cases")
@@ -165,6 +168,9 @@ class LM_Detector(DetectorBase):
                 logging.debug(pformat(e))
 
     def LM_count(self):
+        """
+        calculate scores of given string query, using irstlm.getSentenceScore
+        """
         for testid in self.case_keys:
             case = self.testcases[testid]
             self.testcases[testid]["LM_scores"] = {"org":[], "alt":[]}
@@ -186,6 +192,45 @@ class LM_Detector(DetectorBase):
                 self.testcases[testid]["LM_scores"]["alt"].append(score)
 
 
+    def _getPASLMscore(self, pasCounter={}, pas_q=[]):
+        """
+        Get count and calculate scores of given query tuple, on PAS counter object
+
+        @takes:
+            pasCounter:: colections.Counter
+            pas_q :: (PRED, ARG0, ARG1)
+        @returns:
+            logscore:: log score of count
+        """
+        import math
+        Logscore = lambda x, y: math.log(float(x) / float(y), 10) if x != 0 and y != 0 else 0
+        try:
+            count = pasCounter[pas_q]
+        except KeyError:
+            count = 10^(-6)
+        logscore = Logscore(count, self.paslm_c_sum)
+        return logscore
+
+    def PASLM_count(self):
+        for testid in self.case_keys:
+            case = self.testcases[testid]
+            self.testcases[testid]["PASLM_scores"] = {"org":[], "alt":[]}
+            for org_pq in case["PASLM_queries"]["org"]:
+                logging.debug(pformat(org_pq))
+                try:
+                    score = self._getPASLMscore(self.pasCounter, org_pq)
+                    logging.debug(pformat(score))
+                except TypeError:
+                    score = -100
+                self.testcases[testid]["PASLM_scores"]["org"].append(score)
+            for alt_pq in case["PASLM_queries"]["alt"]:
+                logging.debug(pformat(alt_pq))
+                try:
+                    score = self._getPASLMscore(self.pasCounter, alt_pq)
+                    logging.debug(pformat(score))
+                except TypeError:
+                    score = -100
+                self.testcases[testid]["PASLM_scores"]["alt"].append(score)
 
 
     def detect(self):

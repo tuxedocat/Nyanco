@@ -25,12 +25,12 @@ class TestPasExtractor:
         import os, sys
         import glob
         import collections
-        relpath = '../../sandbox/pas/testdat*'
+        relpath = '../sandbox/pas/testdat*'
         self.testfile = glob.glob(relpath)
-        self.eg1 = '../../sandbox/pas/afp_eng_201012_raw.parsed'
-        self.eg2 = ['../../sandbox/pas/afp_eng_201012_raw.parsed', 
-                    '../../sandbox/pas/afp_eng_201012_raw.parsed'] 
-        self.testalt1 = "../../sandbox/pas/test_alt1.txt"
+        self.eg1 = '../sandbox/pas/afp_eng_201012_raw.parsed'
+        self.eg2 = ['../sandbox/pas/afp_eng_201012_raw.parsed', 
+                    '../sandbox/pas/afp_eng_201012_raw.parsed'] 
+        self.testalt1 = "../sandbox/pas/test_alt1.txt"
 
     @attr("extract_full")
     def test_extract_full1(self):
@@ -136,6 +136,7 @@ class TestPasExtractor:
                                         ('loved', 'We', 'cat'),('loved', 'We', 'cat')])
         assert triples == expected
 
+    @attr("egtest")
     def test_extract_gigaword_single(self):
         '''test for real Gigaword data but single'''
         pax = PasExtractor(self.eg1)
@@ -143,6 +144,8 @@ class TestPasExtractor:
         triples = collections.Counter(result)
         # print triples.most_common(1)
         self.eg_single = triples
+        logging.debug(pformat(triples))
+        raise AssertionError
 
     def test_extract_gigaword_multi(self):
         '''test for multiple files of Gigaword data'''
@@ -171,7 +174,7 @@ class TestPasExtractor:
         expected = open(os.path.join(input_dir, 'correct1.tsv'),'r').read()
         output = open(os.path.join(input_dir, 'test_tsvout_PAS.tsv'),'r').read()
         assert output == expected
-
+    @attr("egtest")
     def test_tsvout_huge(self):
         '''check whether the tsv-output is correct'''
         pax = PasExtractor(self.eg1)
