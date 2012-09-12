@@ -253,27 +253,44 @@ class LM_Detector(DetectorBase):
                 self.testcases[testid]["PASLM_scores"]["alt"].append(score)
 
 
-    def _LM_PASLM_model(self, testcase, div_lm_pas=(1,1)):
+    def _LM_PASLM_model(self, testcase, div_lm_pas=(1,5)):
         w_lm = div_lm_pas[0]
         w_pas = div_lm_pas[1]
         org_scores = [t for t in zip(testcase["LM_scores"]["org"], testcase["PASLM_scores"]["org"])]
         alt_scores = [t for t in zip(testcase["LM_scores"]["alt"], testcase["PASLM_scores"]["alt"])]
-        detect_flag = None # True if one of alternatives' score is over the original, None means there's no valid comparison
+        detect_flag_lm = None # True if one of alternatives' score is over the original, None means there's no valid comparison
+        detect_flag_pas = None
         if org_scores and alt_scores:
             for o_tuple in org_scores:
-                weighted_s_o = o_tuple[0]*w_lm + o_tuple[1]*w_pas
+                o_s_lm, o_s_pas = o_tuple
                 for a_tuple in alt_scores:
-                    weighted_s_a = a_tuple[0]*w_lm + a_tuple[1]*w_pas
-                    if weighted_s_a > weighted_s_o:
-                        detect_flag = True
-                    elif weighted_s_o > weighted_s_a:
-                        detect_flag = False
-        if detect_flag is True:
+                    a_s_lm, a_s_pas = a_tuple
+                    if a_s_lm > o_s_lm:
+                        detect_flag_lm = True
+                    elif o_s_lm > a_s_lm:
+                        detect_flag_lm = False
+                    if a_s_pas > o_s_pas:
+                        detect_flag_pas = True
+                    elif o_s_pas > a_s_pas:
+                        detect_flag_pas = False
+        if detect_flag_lm is True and detect_flag_pas is True:
             testcase["Result_LM+PASLM_model"] = "alt"
-        elif detect_flag is False:
+        elif detect_flag_lm is False and detect_flag_pas is True:
+            if pasmodel_exclusive is True:
+                testcase["Result_LM+PASLM_model"] = "alt"
+            else:
+                testcase["Result_LM+PASLM_model"] = "org"
+        elif detect_flag_lm is True and detect_flag_pas is False:
+            if pasmodel_exclusive is True:
+                testcase["Result_LM+PASLM_model"] = "org"
+            else:
+                testcase["Result_LM+PASLM_model"] = "alt"
+        elif detect_flag_lm is False and detect_flag_pas is False:
             testcase["Result_LM+PASLM_model"] = "org"
+        elif detect_flag_lm is True and detect_flag_pas is None:
+            testcase["Result_LM+PASLM_model"] = "alt"
         else:
-            testcase["Result_LM+PASLM_model"] = "failed"
+            testcase["Result_LM+PASLM_model"] = "none_result"
         pass
 
 
