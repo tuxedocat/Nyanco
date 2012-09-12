@@ -368,6 +368,10 @@ class LM_Detector(DetectorBase):
 
 
     def mk_report(self):
+        """
+        Class "alt" = 1 (successfully detected)
+              "org" = 0 (not detected)
+        """
         from scikits.learn import metrics
         self.truelabels = []
         self.syslabels_lm_paslm = []
@@ -386,14 +390,14 @@ class LM_Detector(DetectorBase):
             tmp_l = []
             for output in output_models:
                 if output == "alt":
-                    tmp_l.append(truelabel)
+                    tmp_l.append(1)
                 else:
-                    tmp_l.append(incorrlabel)
+                    tmp_l.append(0)
             # self.truelabels.append(truelabel)
-            self.truelabels.append("alt")
-            self.syslabels_lm_paslm.append(lm_paslm_out)
-            self.syslabels_lm.append(lm_out)
-            self.syslabels_paslm.append(paslm_out)
+            self.truelabels.append(1)
+            self.syslabels_lm_paslm.append(tmp_l[0])
+            self.syslabels_lm.append(tmp_l[1])
+            self.syslabels_paslm.append(tmp_l[2])
             tmpdic_r["name"] = id
             tmpdic_r["outputs"] = output_models
             tmpdic_r["original"] = incorrlabel
