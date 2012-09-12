@@ -38,6 +38,9 @@ class DetectorBase(object):
             raise IOError
         self.reportpath = os.path.join(os.path.dirname(reportpath), 
                                         datetime.now().strftime("detector_report_%Y%m%d_%H%M.log"))
+        reportdir = os.path.dirname(self.reportpath)
+        if not os.path.exists(reportdir):
+            os.makedirs(reportdir)
 
     def make_cases(self):
         """
