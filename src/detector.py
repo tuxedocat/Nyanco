@@ -20,6 +20,7 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
                     filename='../log/'+logfilename)
 from nltk import ngrams
+from numpy import array
 try:
     from lsa_test.irstlm import *
 except:
@@ -379,7 +380,7 @@ class LM_Detector(DetectorBase):
         self.syslabels_paslm = []
         self.report = [] 
         labels = [0 ,1]
-        names = ["org", "alt"]
+        names = ["not_error", "detected_as_error"]
         for id, case in self.testcases.iteritems():
             tmpdic_r = {}
             truelabel = case["gold_label"]
@@ -408,9 +409,9 @@ class LM_Detector(DetectorBase):
         # logging.debug(pformat(self.truelabels))
         # logging.debug(pformat(self.syslabels_lm_paslm))
         with open(self.reportpath, "w") as rf:
-            clsrepo_lm_paslm = metrics.classification_report(self.truelabels, self.syslabels_lm_paslm, target_names=names)#, labels=labels, target_names=names)
-            clsrepo_lm = metrics.classification_report(self.truelabels, self.syslabels_lm, target_names=names)#, labels=labels, target_names=names)
-            clsrepo_paslm = metrics.classification_report(self.truelabels, self.syslabels_paslm, target_names=names)#, labels=labels, target_names=names)
+            clsrepo_lm_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm_paslm), target_names=names)#, labels=labels, target_names=names)
+            clsrepo_lm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
+            clsrepo_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_paslm), target_names=names)#, labels=labels, target_names=names)
             print clsrepo_lm_paslm
             print clsrepo_lm
             print clsrepo_paslm
