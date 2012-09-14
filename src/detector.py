@@ -380,7 +380,7 @@ class LM_Detector(DetectorBase):
         Class "alt" = 1 (successfully detected)
               "org" = 0 (not detected)
         """
-        from scikits.learn import metrics
+        from sklearn import metrics
         self.truelabels = []
         self.syslabels_lm_paslm = []
         self.syslabels_lm = []
