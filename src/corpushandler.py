@@ -27,15 +27,18 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
                     filename='../log/'+logfilename)
 from collections import defaultdict
 from tool import pas_extractor
+from tool.online_fanseparser import OnlineFanseParser
 
 # ----------------------------------------------------------------------------------------------------
 
 class CorpusHandler(object):
-    def __init__(self, corpuspath=""):
+    def __init__(self, corpuspath="", outputname=""):
         """
         Constructor args:
             corpuspath: path of a pickled corpus created by corpusreader2.py
             e.g. "/Users/foo/bar/fce.pickle"
+
+            outputname: name of processedcorpus
         """
         try:
             cf = pickle.load(open(corpuspath, "rb"))
@@ -49,6 +52,7 @@ class CorpusHandler(object):
         self.docnames = sorted(self.corpus.keys())
         self.processedcorpus = defaultdict(dict)
         self.cp_tags = [u"RV",] # Extensible if tags other than RV are needed
+        self.outputname = outputname
 
 
     def main(self, mode=""):
@@ -78,6 +82,7 @@ class CorpusHandler(object):
                 for et in ls:
                     flag = et[3]
                     if flag in self.cp_tags:
+                        logging.debug(pformat((idx, et)))
                         filtereddict["errorposition"].append(et)
                         filtereddict["RVtest_words"].append(dic_of_doc["RVtest_words"][idx])
                         filtereddict["RVtest_text"].append(dic_of_doc["RVtest_text"][idx])
@@ -99,17 +104,18 @@ class CorpusHandler(object):
         filtereddict = defaultdict(list)
         for idx, ls in enumerate(dic_of_doc["errorposition"]):
             if ls:
-                for et in ls:
-                    flag = et[3]
-                    if flag not in self.cp_tags:
-                        filtereddict["errorposition"].append(et)
-                        filtereddict["RVtest_words"].append(dic_of_doc["RVtest_words"][idx])
-                        filtereddict["RVtest_text"].append(dic_of_doc["RVtest_text"][idx])
-                        filtereddict["gold_words"].append(dic_of_doc["gold_words"][idx])
-                        filtereddict["gold_text"].append(dic_of_doc["gold_text"][idx])
-                    else:
-                        pass
+                RV = [et for et in ls if et[3] in self.cp_tags]
+                if not RV:
+                    logging.debug(pformat((idx, dic_of_doc["RVtest_text"][idx])))
+                    filtereddict["errorposition"].append(())
+                    filtereddict["RVtest_words"].append(dic_of_doc["RVtest_words"][idx])
+                    filtereddict["RVtest_text"].append(dic_of_doc["RVtest_text"][idx])
+                    filtereddict["gold_words"].append(dic_of_doc["gold_words"][idx])
+                    filtereddict["gold_text"].append(dic_of_doc["gold_text"][idx])
+                else:
+                    pass
             else:
+                logging.debug(pformat((idx, dic_of_doc["RVtest_text"][idx])))
                 filtereddict["errorposition"].append(())
                 filtereddict["RVtest_words"].append(dic_of_doc["RVtest_words"][idx])
                 filtereddict["RVtest_text"].append(dic_of_doc["RVtest_text"][idx])
@@ -161,6 +167,10 @@ class CorpusHandler(object):
                 doc["gold_PAS"] = pe_g.extract_full()
                 print pformat(doc["RVtest_PAS"])
                 print pformat(doc["gold_PAS"])
-        with open(os.path.join(os.path.dirname(self.path), "fce_processed.pickle"), "wb") as cf:
+        if self.outputname == "":
+            outputname = "fce_processed.pickle"
+        else:
+            outputname = self.outputname
+        with open(os.path.join(os.path.dirname(self.path), outputname), "wb") as cf:
             pickle.dump(self.processedcorpus, cf)
         return True
