@@ -22,21 +22,29 @@ class TestCorpusHandler:
         self.corpuspath = "../sandbox/fce_corpus/fce.pickle"
         self.handler = corpushandler.CorpusHandler(self.corpuspath)
 
-    @attr("full","handler")
+    @attr("full","filter")
     def test_filter(self):
-        self.handler.filter()
+        self.handler.filter_checkpoints()
         # print pformat(self.handler.processedcorpus.items()[0:100])
         raise Exception
 
     @attr("full", "parse")
     def test_parse_pre(self):
-        self.handler.filter()
+        self.handler.filter_checkpoints()
         self.handler.parse_eachsent_pre()
         raise Exception
 
     @attr("full", "parse_read")
     def test_parse_read(self):
-        self.handler.filter()
+        self.handler.filter_checkpoints()
         self.handler.parse_eachsent_read()
         logging.debug(pformat(self.handler.processedcorpus.items()[0:10]))
+        raise Exception
+
+
+    @attr("full", "filter_others")
+    def test_filter2(self):
+        self.handler.filter_others()
+        print pformat(self.handler.processedcorpus.items()[0:10])
+        # self.handler.parse_eachsent_pre_others()
         raise Exception

@@ -31,7 +31,7 @@ from tool import pas_extractor
 # ----------------------------------------------------------------------------------------------------
 
 class CorpusHandler(object):
-    def __init__(self, corpuspath):
+    def __init__(self, corpuspath=""):
         """
         Constructor args:
             corpuspath: path of a pickled corpus created by corpusreader2.py
@@ -51,8 +51,12 @@ class CorpusHandler(object):
         self.cp_tags = [u"RV",] # Extensible if tags other than RV are needed
 
 
-    def main(self):
-        self.filter()
+    def main(self, mode=""):
+        if mode == "checkpoints":
+            self.filter_checkpoints()
+        elif mode == "others":
+            self.filter_others()
+
         if not (os.path.exists(self.tmppath) and len(self.processedcorpus.keys()) == len(os.listdir(self.tmppath))):
             print "creating pre-parsing data..."
             self.parse_eachsent_pre()
@@ -83,9 +87,41 @@ class CorpusHandler(object):
                         pass
         return filtereddict
 
-    def filter(self):
+    def filter_checkpoints(self):
         for fn in self.docnames:
             self.processedcorpus[fn] = self._filter_checkpoints(self.corpus[fn])
+
+
+    def _filter_others(self, dic_of_doc):
+        """
+        find checkpoints for a document, exclude sentences contain checkpoints 
+        """
+        filtereddict = defaultdict(list)
+        for idx, ls in enumerate(dic_of_doc["errorposition"]):
+            if ls:
+                for et in ls:
+                    flag = et[3]
+                    if flag not in self.cp_tags:
+                        filtereddict["errorposition"].append(et)
+                        filtereddict["RVtest_words"].append(dic_of_doc["RVtest_words"][idx])
+                        filtereddict["RVtest_text"].append(dic_of_doc["RVtest_text"][idx])
+                        filtereddict["gold_words"].append(dic_of_doc["gold_words"][idx])
+                        filtereddict["gold_text"].append(dic_of_doc["gold_text"][idx])
+                    else:
+                        pass
+            else:
+                filtereddict["errorposition"].append(())
+                filtereddict["RVtest_words"].append(dic_of_doc["RVtest_words"][idx])
+                filtereddict["RVtest_text"].append(dic_of_doc["RVtest_text"][idx])
+                filtereddict["gold_words"].append(dic_of_doc["gold_words"][idx])
+                filtereddict["gold_text"].append(dic_of_doc["gold_text"][idx])
+        return filtereddict
+
+    def filter_others(self):
+        for fn in self.docnames:
+            self.processedcorpus[fn] = self._filter_others(self.corpus[fn])
+
+
 
     def parse_eachsent_pre(self):
         """
