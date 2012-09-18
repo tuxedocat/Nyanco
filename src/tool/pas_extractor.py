@@ -172,6 +172,58 @@ def output2file(input_prefix, output_prefix, counter_obj):
             tsv.write(outstr)
 
 
+
+
+class PEmod(PasExtractor):
+    """
+    Another version of PasExtractor, for a sentence
+    """
+    def __init__(self, fname="", verb=""):
+        if fname:
+            self.fname_in = fname
+            self.fname_out = ""
+        with open(self.fname_in, "r") as f:
+            self.raw = [line for line in f.read().split("\n") if line]
+        self.col_surface = 1
+        self.col_pos = 4
+        self.col_dep = 7
+        self.col_arg = 12
+        self.col_argdepID = 13
+        self.col_ne = 10
+        self.verb = verb
+
+
+    def extract(self):
+        """
+        wrapper func. of _extract_simple
+        @returns
+            self.paslist :: a list of tuples (ROOT, ARG0, ARG1)
+        """
+        pasdiclist = [self._extract_simple(self.raw)] 
+        if pasdiclist:
+            self.paslist = [(pdic['ROOT'], pdic['ARG0'], pdic['ARG1']) for pdic in pasdiclist
+                            if pdic and (pdic['ROOT'] and pdic['ARG0'] and pdic['ARG1']) ]
+            return self.paslist
+        else:
+            pass
+
+
+    def extract_full(self):
+        """
+        wrapper func. of _extract_full
+        @returns
+            self.paslist :: a list of dictionary 
+        """
+        return self._extract_full(self.raw)
+
+
+
+
+
+
+
+
+
 def extract(input_prefix, output_prefix):
     """
     Wrapper function of whole process.
@@ -227,48 +279,6 @@ def cicp_extract(input_prefix, output_prefix):
             logging.debug(('Foreign: "No such file exists" at file  %s '%(f)))
     output2file(input_prefix, output_prefix+"Foreign", pastriples_counter_foreign)
 
-
-class PEmod(PasExtractor):
-    """
-    Another version of PasExtractor, for a sentence
-    """
-    def __init__(self, fname="", verb=""):
-        if fname:
-            self.fname_in = fname
-            self.fname_out = ""
-        with open(self.fname_in, "r") as f:
-            self.raw = [line for line in f.read().split("\n") if line]
-        self.col_surface = 1
-        self.col_pos = 4
-        self.col_dep = 7
-        self.col_arg = 12
-        self.col_argdepID = 13
-        self.col_ne = 10
-        self.verb = verb
-
-
-    def extract(self):
-        """
-        wrapper func. of _extract_simple
-        @returns
-            self.paslist :: a list of tuples (ROOT, ARG0, ARG1)
-        """
-        pasdiclist = [self._extract_simple(self.raw)] 
-        if pasdiclist:
-            self.paslist = [(pdic['ROOT'], pdic['ARG0'], pdic['ARG1']) for pdic in pasdiclist
-                            if pdic and (pdic['ROOT'] and pdic['ARG0'] and pdic['ARG1']) ]
-            return self.paslist
-        else:
-            pass
-
-
-    def extract_full(self):
-        """
-        wrapper func. of _extract_full
-        @returns
-            self.paslist :: a list of dictionary 
-        """
-        return self._extract_full(self.raw)
 
 
 if __name__=='__main__':

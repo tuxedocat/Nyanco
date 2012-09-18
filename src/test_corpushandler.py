@@ -25,7 +25,7 @@ class TestCorpusHandler:
     @attr("full","filter")
     def test_filter(self):
         self.handler.filter_checkpoints()
-        # print pformat(self.handler.processedcorpus.items()[0:100])
+        logging.debug(pformat(self.handler.processedcorpus.items()[-5:]))
         raise Exception
 
     @attr("full", "parse")
@@ -44,7 +44,8 @@ class TestCorpusHandler:
 
     @attr("full", "filter_others")
     def test_filter2(self):
+        self.handler = corpushandler.CorpusHandler(self.corpuspath, outputname="fce_others.pickle")
         self.handler.filter_others()
-        print pformat(self.handler.processedcorpus.items()[0:10])
-        # self.handler.parse_eachsent_pre_others()
+        print pformat(self.handler.processedcorpus.items()[0:5])
+        self.handler.parse_eachsent_pre()
         raise Exception

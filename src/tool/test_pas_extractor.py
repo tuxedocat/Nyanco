@@ -25,12 +25,12 @@ class TestPasExtractor:
         import os, sys
         import glob
         import collections
-        relpath = '../sandbox/pas/testdat*'
+        relpath = '../../sandbox/pas/testdat*'
         self.testfile = glob.glob(relpath)
-        self.eg1 = '../sandbox/pas/afp_eng_201012_raw.parsed'
-        self.eg2 = ['../sandbox/pas/afp_eng_201012_raw.parsed', 
-                    '../sandbox/pas/afp_eng_201012_raw.parsed'] 
-        self.testalt1 = "../sandbox/pas/test_alt1.txt"
+        self.eg1 = '../../sandbox/pas/afp_eng_201012_raw.parsed'
+        self.eg2 = ['../../sandbox/pas/afp_eng_201012_raw.parsed', 
+                    '../../sandbox/pas/afp_eng_201012_raw.parsed'] 
+        self.testalt1 = "../../sandbox/pas/test_alt1.txt"
 
     @attr("extract_full")
     def test_extract_full1(self):
@@ -180,7 +180,7 @@ class TestPasExtractor:
         pax = PasExtractor(self.eg1)
         result = pax.extract()
         triples = collections.Counter(result)
-        input_dir = '../sandbox/pas'
+        input_dir = '../../sandbox/pas'
         prefix = 'test_tsvout_huge_'
         output2file(input_dir, prefix, triples)
         output = open(os.path.join(input_dir, 'test_tsvout_huge_PAS.tsv'),'r').read()
