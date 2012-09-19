@@ -25,7 +25,7 @@ class TestLMDetector:
         self.detector = LM_Detector(self.corpuspath)
         self.testlm_path = "../sandbox/irstlm_sample/testlm.gz"
         self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
-        self.reportpath = "../report.log"
+        self.reportpath = "../sandbox/report.log"
 
     @attr("makecase")
     def test_makecase(self):
