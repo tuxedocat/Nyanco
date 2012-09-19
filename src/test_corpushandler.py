@@ -20,7 +20,7 @@ class TestCorpusHandler:
         import os, sys
         import collections
         self.corpuspath = "../sandbox/fce_corpus/fce.pickle"
-        self.handler = corpushandler.CorpusHandler(self.corpuspath)
+        self.handler = corpushandler.CorpusHandler(self.corpuspath, outputname="")
 
     @attr("full","filter")
     def test_filter(self):
@@ -47,5 +47,5 @@ class TestCorpusHandler:
         self.handler = corpushandler.CorpusHandler(self.corpuspath, outputname="fce_others.pickle")
         self.handler.filter_others()
         print pformat(self.handler.processedcorpus.items()[0:5])
-        self.handler.parse_eachsent_pre()
+        self.handler.onlineparse_others()
         raise Exception

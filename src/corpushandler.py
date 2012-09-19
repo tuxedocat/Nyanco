@@ -51,6 +51,7 @@ class CorpusHandler(object):
         self.parsedpath = os.path.join(os.path.dirname(self.path), "parsed")
         self.docnames = sorted(self.corpus.keys())
         self.processedcorpus = defaultdict(dict)
+        self.processedcorpus_others = defaultdict(dict)
         self.cp_tags = [u"RV",] # Extensible if tags other than RV are needed
         self.outputname = outputname
 
@@ -106,7 +107,7 @@ class CorpusHandler(object):
             if ls:
                 RV = [et for et in ls if et[3] in self.cp_tags]
                 if not RV:
-                    logging.debug(pformat((idx, dic_of_doc["RVtest_text"][idx])))
+                    # logging.debug(pformat((idx, dic_of_doc["RVtest_text"][idx])))
                     filtereddict["errorposition"].append(())
                     filtereddict["RVtest_words"].append(dic_of_doc["RVtest_words"][idx])
                     filtereddict["RVtest_text"].append(dic_of_doc["RVtest_text"][idx])
@@ -115,7 +116,7 @@ class CorpusHandler(object):
                 else:
                     pass
             else:
-                logging.debug(pformat((idx, dic_of_doc["RVtest_text"][idx])))
+                # logging.debug(pformat((idx, dic_of_doc["RVtest_text"][idx])))
                 filtereddict["errorposition"].append(())
                 filtereddict["RVtest_words"].append(dic_of_doc["RVtest_words"][idx])
                 filtereddict["RVtest_text"].append(dic_of_doc["RVtest_text"][idx])
@@ -125,7 +126,41 @@ class CorpusHandler(object):
 
     def filter_others(self):
         for fn in self.docnames:
-            self.processedcorpus[fn] = self._filter_others(self.corpus[fn])
+            self.processedcorpus_others[fn] = self._filter_others(self.corpus[fn])
+
+
+    def onlineparse_others(self):
+        ofp = OnlineFanseParser(w_dir=self.tmppath)
+        ofp.check_running()
+        try:
+            n_all = len(self.processedcorpus_others)
+            c = 0
+            for name, doc in self.processedcorpus_others.iteritems():
+                c += 1
+                for idx, sent in enumerate(doc["gold_text"]): 
+                    print "Parsing and getting PAS tags... (%i of %i)"%(c, n_all)
+                    logging.debug(pformat("Parsing and getting PAS tags... (%i of %i)"%(c, n_all)))
+                    parsed = ofp.parse_one(sent)
+                    doc["gold_tags"] = parsed 
+                    doc["RVtest_tags"] = parsed
+                    pe = pas_extractor.OnlinePasExtractor(parsed)
+                    doc["RVtest_PAS"] = pe.extract_full()
+                    doc["gold_PAS"] = pe.extract_full()
+                    logging.debug(pformat(doc["RVtest_PAS"]))
+                    logging.debug(pformat(doc["gold_PAS"]))
+        except KeyboardInterrupt:
+            pass
+
+        finally:
+            ofp.clean()
+            
+        if self.outputname == "":
+            outputname = "fce_processed.pickle"
+        else:
+            outputname = self.outputname
+        with open(os.path.join(os.path.dirname(self.path), outputname), "wb") as cf:
+            pickle.dump(self.processedcorpus_others, cf)
+        return True
 
 
 
