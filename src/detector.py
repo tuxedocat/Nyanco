@@ -177,6 +177,7 @@ class LM_Detector(DetectorBase):
                 logging.debug(pformat(testkey))
                 logging.debug(pformat(e))
 
+
     def LM_count(self):
         """
         calculate scores of given string query, using irstlm.getSentenceScore
@@ -220,6 +221,7 @@ class LM_Detector(DetectorBase):
             count = 10**(-6)
         logscore = Logscore(count, self.paslm_c_sum)
         return logscore
+
 
     def PASLM_count(self):
         self.invalidnum_plm = {"org":0, "alt":0}
