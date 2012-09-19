@@ -22,10 +22,10 @@ except:
 class TestLMDetector:
     def setUp(self):
         self.corpuspath = "../sandbox/fce_corpus/fce_processed.pickle"
-        self.detector = LM_Detector(self.corpuspath)
         self.testlm_path = "../sandbox/irstlm_sample/testlm.gz"
         self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
         self.reportpath = "../sandbox/report.log"
+        self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
 
     @attr("makecase")
     def test_makecase(self):
