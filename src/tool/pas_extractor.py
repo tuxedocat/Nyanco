@@ -241,7 +241,6 @@ class OnlinePasExtractor(PasExtractor):
         self.col_srl = 6
         self.col_srldepID = 7
         self.col_ne = 5
-        # self.verb = verb
 
 
     def extract_full(self):
