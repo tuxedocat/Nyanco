@@ -20,7 +20,7 @@ from nose.plugins.attrib import attr
 
 
 class OnlineFanseParser(object):
-    def __init__(self, w_dir):
+    def __init__(self, w_dir=""):
         try:
             FProot = os.environ["FANSEPARSER"]
         except KeyError:
@@ -56,7 +56,7 @@ class OnlineFanseParser(object):
         if not self.fanseserver_str in ps_out:
             print "Starting fanseparser server.... on port %s"%self.PORT_NUMBER
             scmd = deepcopy(self.servercmd)
-            logging.debug(pformat(scmd))
+            # logging.debug(pformat(scmd))
             self.server = subprocess.Popen(scmd, stderr=subprocess.PIPE)
             while True:
                 line = self.server.stderr.readline()
@@ -71,7 +71,7 @@ class OnlineFanseParser(object):
     def _parse(self, filename=""):
         parsecmd = deepcopy(self.clientcmd)
         parsecmd.append(filename)
-        logging.debug(pformat(parsecmd))
+        # logging.debug(pformat(parsecmd))
         subprocess.call(parsecmd)
 
 
