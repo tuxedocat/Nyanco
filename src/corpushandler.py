@@ -48,6 +48,7 @@ class CorpusHandler(object):
             raise IOError
         self.path = corpuspath
         self.tmppath = os.path.join(os.path.dirname(self.path), "tmp")
+        self.tmppath_op = os.path.join(os.path.dirname(self.path), "fptmp")
         self.parsedpath = os.path.join(os.path.dirname(self.path), "parsed")
         self.docnames = sorted(self.corpus.keys())
         self.processedcorpus = defaultdict(dict)
@@ -130,7 +131,7 @@ class CorpusHandler(object):
 
 
     def onlineparse_others(self):
-        ofp = OnlineFanseParser(w_dir=self.tmppath)
+        ofp = OnlineFanseParser(w_dir=self.tmppath_op)
         ofp.check_running()
         try:
             n_all = len(self.processedcorpus_others)
@@ -147,8 +148,8 @@ class CorpusHandler(object):
                     pe = pas_extractor.OnlinePasExtractor(parsed)
                     doc["RVtest_PAS"].append(pe.extract_full())
                     doc["gold_PAS"].append(pe.extract_full())
-                    logging.debug(pformat(doc["RVtest_PAS"]))
-                    logging.debug(pformat(doc["gold_PAS"]))
+                    # logging.debug(pformat(doc["RVtest_PAS"]))
+                    # logging.debug(pformat(doc["gold_PAS"]))
         except KeyboardInterrupt:
             pass
 
@@ -209,7 +210,7 @@ class CorpusHandler(object):
                 # print pformat(doc["RVtest_PAS"])
                 # print pformat(doc["gold_PAS"])
         if self.outputname == "":
-            outputname = "fce_processed.pickle"
+            outputname = "fce_processed_2.pickle"
         else:
             outputname = self.outputname
         with open(os.path.join(os.path.dirname(self.path), outputname), "wb") as cf:
