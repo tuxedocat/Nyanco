@@ -141,19 +141,21 @@ class CorpusHandler(object):
                     print "Parsing and getting PAS tags... (%i of %i)"%(c, n_all)
                     logging.debug(pformat("Parsing and getting PAS tags... (%i of %i)"%(c, n_all)))
                     parsed = ofp.parse_one(sent)
-                    doc["gold_tags"] = parsed 
-                    doc["RVtest_tags"] = parsed
+                    parsed_t = [tuple(l) for l in parsed]
+                    doc["gold_tags"].append(parsed_t)
+                    doc["RVtest_tags"].append(parsed_t)
                     pe = pas_extractor.OnlinePasExtractor(parsed)
-                    doc["RVtest_PAS"] = pe.extract_full()
-                    doc["gold_PAS"] = pe.extract_full()
+                    doc["RVtest_PAS"].append(pe.extract_full())
+                    doc["gold_PAS"].append(pe.extract_full())
                     logging.debug(pformat(doc["RVtest_PAS"]))
                     logging.debug(pformat(doc["gold_PAS"]))
         except KeyboardInterrupt:
             pass
 
         finally:
-            ofp.clean()
-            
+            # ofp.clean()
+            pass
+
         if self.outputname == "":
             outputname = "fce_processed.pickle"
         else:
@@ -192,16 +194,20 @@ class CorpusHandler(object):
                 fn_g = os.path.join(self.parsedpath, name+"_gold_part"+str(idx)+".parsed")
                 with open(fn_t, "r") as tf_t:
                     rawtags = [tuple(t.strip("\n").split("\t")) for t in tf_t.readlines() if t != "\n"]
-                    doc["RVtest_tags"] = rawtags
+                    # doc["RVtest_tags"] = rawtags
+                    doc["RVtest_tags"].append(rawtags)
                 with open(fn_g, "r") as tf_g:
                     rawtags = [tuple(t.strip("\n").split("\t")) for t in tf_g.readlines() if t != "\n"]
-                    doc["gold_tags"] = rawtags
+                    # doc["gold_tags"] = rawtags
+                    doc["gold_tags"].append(rawtags)
                 pe_t = pas_extractor.PEmod(fn_t)
                 pe_g = pas_extractor.PEmod(fn_g)
-                doc["RVtest_PAS"] = pe_t.extract_full()
-                doc["gold_PAS"] = pe_g.extract_full()
-                print pformat(doc["RVtest_PAS"])
-                print pformat(doc["gold_PAS"])
+                # doc["RVtest_PAS"] = pe_t.extract_full()
+                doc["RVtest_PAS"].append(pe_t.extract_full())
+                # doc["gold_PAS"] = pe_g.extract_full()
+                doc["gold_PAS"].append(pe_g.extract_full())
+                # print pformat(doc["RVtest_PAS"])
+                # print pformat(doc["gold_PAS"])
         if self.outputname == "":
             outputname = "fce_processed.pickle"
         else:
