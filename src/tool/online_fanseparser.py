@@ -81,7 +81,7 @@ class OnlineFanseParser(object):
             with open(self.tmpfilename, "w+") as wf:
                 wf.write(string)
             self._parse(filename=self.tmpfilename)
-            with open(self.tmpfilename+".parsed", "r+") as parsed_f:
+            with open(self.tmpfilename+".parsed", "r") as parsed_f:
                 parsed = [line.strip("\n") for line in parsed_f.readlines() if line != '\n']
         return parsed
 
