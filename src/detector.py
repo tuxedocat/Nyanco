@@ -107,7 +107,7 @@ class LM_Detector(DetectorBase):
         org_q = []
         alt_q = []
         try:
-            ngrams_l = ngrams(w_list, n=n, pad_right=True, pad_symbol=" ")
+            ngrams_l = ngrams(w_list, n=n, pad_right=True)
             query = ngrams_l[cp_pos - (n-1)/2]
             if alt_candidates:
                 for cand in alt_candidates:
