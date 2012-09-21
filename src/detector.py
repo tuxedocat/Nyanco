@@ -28,7 +28,7 @@ except:
 
 
 class DetectorBase(object):
-    def __init__(self, corpusdictpath="", reportpath=""):
+    def __init__(self, corpusdictpath="", reportpath="", ngram_length=5):
         if os.path.exists(corpusdictpath):
             with open(corpusdictpath, "rb") as f:
                 corpusdict = pickle.load(f)
@@ -41,7 +41,7 @@ class DetectorBase(object):
         reportdir = os.path.dirname(self.reportpath)
         if not os.path.exists(reportdir):
             os.makedirs(reportdir)
-        self.ngram_len=5
+        self.ngram_len = ngram_length
 
     def make_cases(self):
         """
@@ -456,8 +456,8 @@ class LM_Detector(DetectorBase):
 
 
 
-def detectmain(corpuspath="", lmpath="", paslmpath="", reportout=""):
-    detector = LM_Detector(corpusdictpath=corpuspath, reportpath=reportout)
+def detectmain(corpuspath="", lmpath="", paslmpath="", reportout="", ngram_length=5):
+    detector = LM_Detector(corpusdictpath=corpuspath, reportpath=reportout, ngram_length=ngram_length)
     detector.make_cases()
     detector.read_LM_and_PASLM(path_IRSTLM=lmpath, path_PASLM=paslmpath)
     if lmpath:
@@ -494,23 +494,25 @@ if __name__=='__main__':
                     help="path of output report file")
     ap.add_argument("-c", '--corpus_pickle_file', action="store",
                     help="path of pickled corpus made by corpusreader2.py and test_corpushandler.py")
+    ap.add_argument("-n", '--ngram_length', action="store", type=int,
+                    help="length of Ngram query")
     args = ap.parse_args()
 
     if (args.corpus_pickle_file and args.output_file and args.lm and args.pas_lm_path):
-        print "Using both 5gramLM and PAS_triples"
-        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
+        print "Using both NgramLM and PAS_triples"
+        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path, ngram_length=args.ngram_length)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
     elif (args.corpus_pickle_file and args.output_file and args.lm):
-        print "Using only 5gramLM"
-        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
+        print "Using only NgramLM"
+        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path, ngram_length=args.ngram_length)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
     elif (args.corpus_pickle_file and args.output_file and args.pas_lm_path):
         print "Using only PAS_triples"
-        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
+        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path, ngram_length=args.ngram_length)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
