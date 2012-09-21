@@ -121,6 +121,9 @@ class LM_Detector(DetectorBase):
                     alt_q.append(str(" ".join(tmp)))
             else:
                 alt_q.append(str(" ".join(query)))
+            query = [w for w in query if w is not None]
+            if len(query) < self.ngram_len:
+                query.append("</S>")
             org_q.append(str(" ".join(query)))
         except Exception as nge:
             logging.debug(format(w_list, cp_pos))
