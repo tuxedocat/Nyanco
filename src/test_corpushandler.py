@@ -46,6 +46,7 @@ class TestCorpusHandler:
     def test_filter2(self):
         self.handler = corpushandler.CorpusHandler(self.corpuspath, outputname="fce_others.pickle")
         self.handler.filter_others()
-        print pformat(self.handler.processedcorpus.items()[0:5])
+        # print pformat(self.handler.processedcorpus.items()[0:5])
         self.handler.onlineparse_others()
+        logging.debug(pformat(self.handler.processedcorpus_others[0:5]))
         raise Exception

@@ -50,6 +50,12 @@ class CorpusHandler(object):
         self.tmppath = os.path.join(os.path.dirname(self.path), "tmp")
         self.tmppath_op = os.path.join(os.path.dirname(self.path), "fptmp")
         self.parsedpath = os.path.join(os.path.dirname(self.path), "parsed")
+        if not os.path.exists(self.tmppath):
+            os.makedirs(self.tmppath)
+        if not os.path.exists(self.tmppath_op):
+            os.makedirs(self.tmppath_op)
+        if not os.path.exists(self.parsedpath):
+            os.makedirs(self.parsedpath)
         self.docnames = sorted(self.corpus.keys())
         self.processedcorpus = defaultdict(dict)
         self.processedcorpus_others = defaultdict(dict)
@@ -142,14 +148,14 @@ class CorpusHandler(object):
                     print "Parsing and getting PAS tags... (%i of %i)"%(c, n_all)
                     logging.debug(pformat("Parsing and getting PAS tags... (%i of %i)"%(c, n_all)))
                     parsed = ofp.parse_one(sent)
-                    parsed_t = [tuple(l) for l in parsed]
+                    parsed_t = [tuple(l.split("\t")) for l in parsed]
                     doc["gold_tags"].append(parsed_t)
                     doc["RVtest_tags"].append(parsed_t)
                     pe = pas_extractor.OnlinePasExtractor(parsed)
                     doc["RVtest_PAS"].append(pe.extract_full())
                     doc["gold_PAS"].append(pe.extract_full())
-                    # logging.debug(pformat(doc["RVtest_PAS"]))
-                    # logging.debug(pformat(doc["gold_PAS"]))
+                    logging.debug(pformat(doc["RVtest_PAS"]))
+                    logging.debug(pformat(doc["gold_tags"]))
         except KeyboardInterrupt:
             pass
 

@@ -41,6 +41,7 @@ class DetectorBase(object):
         reportdir = os.path.dirname(self.reportpath)
         if not os.path.exists(reportdir):
             os.makedirs(reportdir)
+        self.ngram_len = 5
 
     def make_cases(self):
         """
@@ -57,6 +58,20 @@ class DetectorBase(object):
             except Exception as e:
                 logging.debug("error catched in make_cases")
                 logging.debug(pformat(e))
+
+    def make_cases2(self):
+        """
+        An alternative version of make_cases.
+        This takes a pickled corpus of {"checkpoints":<corpus as dict>, "not_checkpoints":<corpus as dict>}
+        Then put two test-cases together, with additional key "has_checkpoints":<True or False>
+        """
+        self.testcases = defaultdict(dict)
+        self.case_keys = []
+        self.dataset_with_cp = self.corpus["checkpoints"]
+        self.dataset_without_cp = self.corups["not_checkpoints"]
+
+
+        pass
 
     def detect(self):
         raise NotImplementedError
@@ -106,7 +121,7 @@ class LM_Detector(DetectorBase):
         org_q = []
         alt_q = []
         try:
-            ngrams_l = ngrams(w_list, n=n, pad_right=True, pad_symbol=" ")
+            ngrams_l = ngrams(w_list, n=n, pad_right=True)
             query = ngrams_l[cp_pos - (n-1)/2]
             if alt_candidates:
                 for cand in alt_candidates:
@@ -114,6 +129,9 @@ class LM_Detector(DetectorBase):
                     tmpi = int((n - 1)/2)
                     tmp.pop(tmpi)
                     tmp.insert(tmpi, cand)
+                    if len(tmp) < self.ngram_len:
+                        tmp = [w for w in tmp if w is not None]
+                        tmp.append("</S>")
                     alt_q.append(str(" ".join(tmp)))
             else:
                 alt_q.append(str(" ".join(query)))
@@ -167,7 +185,7 @@ class LM_Detector(DetectorBase):
                     self.testcases[testkey]["checkpoint_idx"] = cp_pos
                     self.testcases[testkey]["incorrect_label"] = incorr
                     self.testcases[testkey]["gold_label"] = gold
-                    org_qs, alt_qs = self._mk_ngram_queries(n=5, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
+                    org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
                     self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                     org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
                     self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
