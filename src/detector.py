@@ -41,6 +41,7 @@ class DetectorBase(object):
         reportdir = os.path.dirname(self.reportpath)
         if not os.path.exists(reportdir):
             os.makedirs(reportdir)
+        self.ngram_len=5
 
     def make_cases(self):
         """
@@ -114,6 +115,9 @@ class LM_Detector(DetectorBase):
                     tmpi = int((n - 1)/2)
                     tmp.pop(tmpi)
                     tmp.insert(tmpi, cand)
+                    if len(tmp) < self.ngram_len:
+                        tmp = [w for w in tmp if w is not None]
+                        tmp.append("</S>")
                     alt_q.append(str(" ".join(tmp)))
             else:
                 alt_q.append(str(" ".join(query)))
@@ -167,7 +171,7 @@ class LM_Detector(DetectorBase):
                     self.testcases[testkey]["checkpoint_idx"] = cp_pos
                     self.testcases[testkey]["incorrect_label"] = incorr
                     self.testcases[testkey]["gold_label"] = gold
-                    org_qs, alt_qs = self._mk_ngram_queries(n=5, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
+                    org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
                     self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                     org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
                     self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
