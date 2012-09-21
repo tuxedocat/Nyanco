@@ -89,3 +89,9 @@ class TestLMDetector:
     def test_detect(self):
         detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
         raise Exception
+
+
+    @attr("makecase_format2")
+    def test_makecase2(self):
+        self.corpuspath = "../sandbox/fce_corpus/fce_processed_2.pickle"
+        self.detector.make_cases2()
