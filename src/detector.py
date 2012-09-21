@@ -70,7 +70,7 @@ class DetectorBase(object):
 class LM_Detector(DetectorBase):
     def read_LM_and_PASLM(self, path_IRSTLM="", path_PASLM=""):
         if path_IRSTLM:
-            self.LM = initLM(5, path_IRSTLM)
+            self.LM = initLM(self.ngram_len, path_IRSTLM)
             logging.debug(pformat("IRSTLM's LM is loaded from %s"%path_IRSTLM))
         if path_PASLM:
             self.pasCounter = pickle.load(open(path_PASLM))
@@ -430,16 +430,16 @@ class LM_Detector(DetectorBase):
             # print clsrepo_lm
             # print clsrepo_paslm
             acc_lm_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm_paslm)
-            print "accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm
+            print "accuracy, NgramLM+PAS_triples: %3.4f"%acc_lm_paslm
             acc_lm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm)
-            print "accuracy, 5gramLM: %3.4f"%acc_lm
+            print "accuracy, NgramLM: %3.4f"%acc_lm
             acc_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_paslm)
             print "accuracy, PAS_triples: %3.4f"%acc_paslm
-            rf.write("RESULT: 5gramLM + PAS triples\n")
-            rf.write("accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm)
+            rf.write("RESULT: NgramLM + PAS triples\n")
+            rf.write("accuracy, NgramLM+PAS_triples: %3.4f"%acc_lm_paslm)
             # rf.write(clsrepo_lm_paslm)
-            rf.write("\n\n\nRESULT: 5gramLM\n")
-            rf.write("accuracy, 5gramLM: %3.4f"%acc_lm)
+            rf.write("\n\n\nRESULT: NgramLM\n")
+            rf.write("accuracy, NgramLM: %3.4f"%acc_lm)
             # rf.write(clsrepo_lm)
             rf.write("\n\n\nRESULT: PAS triples model\n")
             rf.write("accuracy, PAS_triples: %3.4f"%acc_paslm)
