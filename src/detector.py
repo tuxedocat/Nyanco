@@ -141,7 +141,6 @@ class LM_Detector(DetectorBase):
         """
         org_q = []
         alt_q = []
-        logging.debug(pformat(cp_pos))
         try:
             ngrams_l = ngrams(w_list, n=n, pad_right=True)
             query = ngrams_l[cp_pos - (n-1)/2]
@@ -275,6 +274,7 @@ class LM_Detector(DetectorBase):
                                 testkey = docname+"_checkpoint" + str(s_id) + "." + str(cpid)
                                 self.case_keys.append(testkey)
                                 cp_pos = cp[0]
+                                logging.debug(pformat(cp_pos))
                                 incorr = cp[1]
                                 gold = cp[2]
                                 test_wl = test_words[cpid]
