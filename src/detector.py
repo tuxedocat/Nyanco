@@ -77,6 +77,7 @@ class DetectorBase(object):
             except Exception as e:
                 logging.debug("error catched in make_cases")
                 logging.debug(pformat(e))
+                raise
 
         for docname, doc in self.dataset_without_cp.iteritems():
             try:
@@ -90,6 +91,7 @@ class DetectorBase(object):
             except Exception as e:
                 logging.debug("error catched in make_cases")
                 logging.debug(pformat(e))
+                raise
 
 
     def detect(self):
@@ -260,7 +262,7 @@ class LM_Detector(DetectorBase):
                     self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
             else:
                 checkpoints = self.__addcheckpoints_to_others(doc)
-                logging.debug(pformat(checkpoints))
+                # logging.debug(pformat(checkpoints))
                 for s_id, sent_cp in enumerate(checkpoints):
                     for cpid, cp in enumerate(sent_cp):
                         testkey = docname+"_checkpoint" + str(s_id) + "." + str(cpid)
