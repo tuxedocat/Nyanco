@@ -161,7 +161,7 @@ class LM_Detector(DetectorBase):
                 query.append("</S>")
             org_q.append(str(" ".join(query)))
         except Exception as nge:
-            logging.debug(format(w_list, cp_pos))
+            logging.debug(pformat(w_list, cp_pos))
             logging.debug(pformat(nge))
         return org_q, alt_q
 
