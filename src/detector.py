@@ -82,7 +82,9 @@ class DetectorBase(object):
             try:
                 if docname in self.testcases:
                     docname_dup = docname + "2"
-                self._mk_cases2(docname=docname, doc=doc, is_withCP=False)
+                    self._mk_cases2(docname=docname_dup, doc=doc, is_withCP=False)
+                else:
+                    self._mk_cases2(docname=docname, doc=doc, is_withCP=False)
             except KeyError as ke:
                 logging.debug(pformat(ke))
             except Exception as e:
