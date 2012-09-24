@@ -261,7 +261,7 @@ class LM_Detector(DetectorBase):
                         for cpid, cp in enumerate(sent_cp):
                             testkey = docname+"_checkpoint" + str(s_id) + "." + str(cpid)
                             self.case_keys.append(testkey)
-                            cp_pos = cp[0]
+                            cp_pos = int(cp[0])
                             incorr = cp[1]
                             gold = cp[2]
                             test_wl = test_words[cpid]
