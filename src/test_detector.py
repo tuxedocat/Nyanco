@@ -93,5 +93,8 @@ class TestLMDetector:
 
     @attr("makecase_format2")
     def test_makecase2(self):
-        self.corpuspath = "../sandbox/fce_corpus/fce_processed_2.pickle"
+        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_ver2.pickle"
+        self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
         self.detector.make_cases2()
+        print pformat(self.detector.testcases)
+        raise Exception
