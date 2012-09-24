@@ -80,6 +80,8 @@ class DetectorBase(object):
 
         for docname, doc in self.dataset_without_cp.iteritems():
             try:
+                if docname in self.testcases:
+                    docname_dup = docname + "2"
                 self._mk_cases2(docname=docname, doc=doc, is_withCP=False)
             except KeyError as ke:
                 logging.debug(pformat(ke))
@@ -256,7 +258,7 @@ class LM_Detector(DetectorBase):
                     self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
             else:
                 checkpoints = self.__addcheckpoints_to_others(doc)
-                # logging.debug(pformat(checkpoints))
+                logging.debug(pformat(checkpoints))
                 for s_id, sent_cp in enumerate(checkpoints):
                     for cpid, cp in enumerate(sent_cp):
                         testkey = docname+"_checkpoint" + str(s_id) + "." + str(cpid)
