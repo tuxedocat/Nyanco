@@ -169,17 +169,20 @@ class LM_Detector(DetectorBase):
     def _mk_PAS_queries(self, pasdiclist=[], org_preds=[], alt_preds=[]):
         org_pas_q = []
         alt_pas_q = []
-        for pdic in pasdiclist:
-            PRED = pdic["PRED"][0]
-            ARG0 = pdic["ARG0"][0]
-            ARG1 = pdic["ARG1"][0]
-            tmp = (PRED, ARG0, ARG1)
-            if PRED in org_preds:
-                org_pas_q.append(tmp)
-            if PRED in alt_preds:
-                alt_pas_q.append(tmp)
-        org_pas_q = list(set(org_pas_q))
-        alt_pas_q = list(set(alt_pas_q))
+        try:
+            for pdic in pasdiclist:
+                PRED = pdic["PRED"][0]
+                ARG0 = pdic["ARG0"][0]
+                ARG1 = pdic["ARG1"][0]
+                tmp = (PRED, ARG0, ARG1)
+                if PRED in org_preds:
+                    org_pas_q.append(tmp)
+                if PRED in alt_preds:
+                    alt_pas_q.append(tmp)
+            org_pas_q = list(set(org_pas_q))
+            alt_pas_q = list(set(alt_pas_q))
+        except:
+            pass
         # if org_pas_q and alt_pas_q:
             # logging.debug(pformat(org_pas_q))
             # logging.debug(pformat(alt_pas_q))
