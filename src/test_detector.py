@@ -22,7 +22,7 @@ except:
 class TestLMDetector:
     def setUp(self):
         self.corpuspath = "../sandbox/fce_corpus/fce_processed.pickle"
-        self.testlm_path = "../sandbox/irstlm_sample/testlm.gz"
+        self.testlm_path = "../sandbox/irstlm_sample/testlm.blm"
         self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
         self.reportpath = "../sandbox/report.log"
         self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
@@ -103,8 +103,8 @@ class TestLMDetector:
     def test_detect_proper(self):
         self.corpuspath = "../sandbox/fce_corpus/fce_dataset_ver2.pickle"
         self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
-        self.detector.make_cases2()
         self.detector.read_LM_and_PASLM(path_IRSTLM=self.testlm_path)
+        self.detector.make_cases2()
         self.detector.LM_count()
         for key in self.detector.testcases:
             logging.debug(pformat(self.detector.testcases[key]["LM_scores"]))
