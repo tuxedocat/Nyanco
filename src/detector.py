@@ -226,19 +226,40 @@ class LM_Detector(DetectorBase):
 
     def _mk_cases2(self, docname="", doc=None, is_withCP=True):
         if docname and doc:
-            try:
-                gold_tags = doc["gold_tags"]
-                test_tags = doc["RVtest_tags"]
-                gold_text = doc["gold_text"]
-                test_text = doc["RVtest_text"]
-                gold_words = doc["gold_words"]
-                test_words = doc["RVtest_words"]
-                gold_pas = doc["gold_PAS"]
-                test_pas = doc["RVtest_PAS"]
-                if is_withCP is True:
-                    checkpoints = doc["errorposition"]
-                    for cpid, cp in enumerate(checkpoints):
-                        testkey = docname + "_checkpoint" + str(cpid)
+            # try:
+            gold_tags = doc["gold_tags"]
+            test_tags = doc["RVtest_tags"]
+            gold_text = doc["gold_text"]
+            test_text = doc["RVtest_text"]
+            gold_words = doc["gold_words"]
+            test_words = doc["RVtest_words"]
+            gold_pas = doc["gold_PAS"]
+            test_pas = doc["RVtest_PAS"]
+            if is_withCP is True:
+                checkpoints = doc["errorposition"]
+                for cpid, cp in enumerate(checkpoints):
+                    testkey = docname + "_checkpoint" + str(cpid)
+                    self.case_keys.append(testkey)
+                    cp_pos = cp[0]
+                    incorr = cp[1]
+                    gold = cp[2]
+                    test_wl = test_words[cpid]
+                    query_altwords = [gold]
+                    self.testcases[testkey]["gold_text"] = gold_text
+                    self.testcases[testkey]["test_text"] = test_text
+                    self.testcases[testkey]["checkpoint_idx"] = cp_pos
+                    self.testcases[testkey]["incorrect_label"] = incorr
+                    self.testcases[testkey]["gold_label"] = gold
+                    org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
+                    self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
+                    org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
+                    self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
+            else:
+                checkpoints = self.__addcheckpoints_to_others(doc)
+                # logging.debug(pformat(checkpoints))
+                for s_id, sent_cp in enumerate(checkpoints):
+                    for cpid, cp in enumerate(sent_cp):
+                        testkey = docname+"_checkpoint" + str(s_id) + "." + str(cpid)
                         self.case_keys.append(testkey)
                         cp_pos = cp[0]
                         incorr = cp[1]
@@ -254,33 +275,12 @@ class LM_Detector(DetectorBase):
                         self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                         org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
                         self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
-                else:
-                    checkpoints = self.__addcheckpoints_to_others(doc)
-                    # logging.debug(pformat(checkpoints))
-                    for s_id, sent_cp in enumerate(checkpoints):
-                        for cpid, cp in enumerate(sent_cp):
-                            testkey = docname+"_checkpoint" + str(s_id) + "." + str(cpid)
-                            self.case_keys.append(testkey)
-                            cp_pos = cp[0]
-                            incorr = cp[1]
-                            gold = cp[2]
-                            test_wl = test_words[cpid]
-                            query_altwords = [gold]
-                            self.testcases[testkey]["gold_text"] = gold_text
-                            self.testcases[testkey]["test_text"] = test_text
-                            self.testcases[testkey]["checkpoint_idx"] = cp_pos
-                            self.testcases[testkey]["incorrect_label"] = incorr
-                            self.testcases[testkey]["gold_label"] = gold
-                            org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
-                            self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
-                            org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
-                            self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
 
-            except Exception , e:
-                logging.debug("error catched in _mk_cases")
-                logging.debug(pformat(testkey))
-                logging.debug(pformat(e))
-                raise
+            # except Exception , e:
+            #     logging.debug("error catched in _mk_cases")
+            #     logging.debug(pformat(testkey))
+            #     logging.debug(pformat(e))
+            #     raise
 
 
     def LM_count(self):
