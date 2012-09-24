@@ -261,7 +261,7 @@ class LM_Detector(DetectorBase):
                         for cpid, cp in enumerate(sent_cp):
                             testkey = docname+"_checkpoint" + str(s_id) + "." + str(cpid)
                             self.case_keys.append(testkey)
-                            cp_pos = int(cp[0])
+                            cp_pos = cp[0]
                             incorr = cp[1]
                             gold = cp[2]
                             test_wl = test_words[cpid]
@@ -276,10 +276,11 @@ class LM_Detector(DetectorBase):
                             org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
                             self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
 
-            except Exception as e:
+            except Exception , e:
                 logging.debug("error catched in _mk_cases")
                 logging.debug(pformat(testkey))
                 logging.debug(pformat(e))
+                raise
 
 
     def LM_count(self):
