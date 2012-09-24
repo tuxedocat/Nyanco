@@ -163,6 +163,7 @@ class LM_Detector(DetectorBase):
         except Exception as nge:
             logging.debug(pformat(w_list, cp_pos))
             logging.debug(pformat(nge))
+            raise
         return org_q, alt_q
 
 
