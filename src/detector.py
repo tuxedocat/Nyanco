@@ -141,6 +141,7 @@ class LM_Detector(DetectorBase):
         """
         org_q = []
         alt_q = []
+        logging.debug(pformat(cp_pos))
         try:
             ngrams_l = ngrams(w_list, n=n, pad_right=True)
             query = ngrams_l[cp_pos - (n-1)/2]
