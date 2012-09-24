@@ -103,7 +103,7 @@ class TestLMDetector:
     def test_detect_proper(self):
         self.corpuspath = "../sandbox/fce_corpus/fce_dataset_ver2.pickle"
         self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
-        self.detector.read_LM_and_PASLM(path_IRSTLM=self.testlm_path)
+        self.detector.read_LM_and_PASLM(path_IRSTLM=self.testlm_path, path_PASLM=self.paslm_path)
         self.detector.make_cases2()
         self.detector.LM_count()
         for key in self.detector.testcases:
