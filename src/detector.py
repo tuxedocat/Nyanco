@@ -429,6 +429,10 @@ class LM_Detector(DetectorBase):
             # print clsrepo_lm_paslm
             # print clsrepo_lm
             # print clsrepo_paslm
+            num_tests = len(self.truelabels)
+            num_ok_lm = len(self.syslabels_lm)
+            num_ok_lm_paslm = len(self.syslabels_lm_paslm)
+            num_ok_paslm = len(self.syslabels_paslm)
             acc_lm_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm_paslm)
             print "accuracy, NgramLM+PAS_triples: %3.4f"%acc_lm_paslm
             acc_lm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm)
@@ -437,12 +441,15 @@ class LM_Detector(DetectorBase):
             print "accuracy, PAS_triples: %3.4f"%acc_paslm
             rf.write("RESULT: NgramLM + PAS triples\n")
             rf.write("accuracy, NgramLM+PAS_triples: %3.4f"%acc_lm_paslm)
+            rf.write("Num_OK : Num_Tests = %i : %i"%(num_ok_lm_paslm, num_tests))
             # rf.write(clsrepo_lm_paslm)
             rf.write("\n\n\nRESULT: NgramLM\n")
             rf.write("accuracy, NgramLM: %3.4f"%acc_lm)
+            rf.write("Num_OK : Num_Tests = %i : %i"%(num_ok_lm, num_tests))
             # rf.write(clsrepo_lm)
             rf.write("\n\n\nRESULT: PAS triples model\n")
             rf.write("accuracy, PAS_triples: %3.4f"%acc_paslm)
+            rf.write("Num_OK : Num_Tests = %i : %i"%(num_ok_paslm, num_tests))
             # rf.write(clsrepo_paslm)
             rf.write("\n\n\n\n")
             # try:
