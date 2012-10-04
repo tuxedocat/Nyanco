@@ -81,7 +81,7 @@ class DetectorBase(object):
 
         for docname, doc in self.dataset_without_cp.iteritems():
             try:
-                if docname in self.testcases:
+                if docname in self.testcases.keys():
                     docname_dup = docname + "2"
                     self._mk_cases2(docname=docname_dup, doc=doc, is_withCP=False)
                 else:
@@ -142,7 +142,7 @@ class LM_Detector(DetectorBase):
         org_q = []
         alt_q = []
         try:
-            ngrams_l = ngrams(w_list, n=n, pad_right=True)
+            ngrams_l = ngrams(w_list, n=n, pad_right=True, pad_symbol=" ")
             query = ngrams_l[cp_pos - (n-1)/2]
             if alt_candidates:
                 for cand in alt_candidates:
@@ -150,20 +150,13 @@ class LM_Detector(DetectorBase):
                     tmpi = int((n - 1)/2)
                     tmp.pop(tmpi)
                     tmp.insert(tmpi, cand)
-                    tmp = [w for w in tmp if w is not None]
-                    if len(tmp) < self.ngram_len:
-                        tmp.append("</S>")
                     alt_q.append(str(" ".join(tmp)))
             else:
                 alt_q.append(str(" ".join(query)))
-            query = [w for w in query if w is not None]
-            if len(query) < self.ngram_len:
-                query.append("</S>")
             org_q.append(str(" ".join(query)))
         except Exception as nge:
-            # logging.debug(pformat(w_list, cp_pos))
-            # logging.debug(pformat(nge))
-            raise
+            logging.debug(format(w_list, cp_pos))
+            logging.debug(pformat(nge))
         return org_q, alt_q
 
 
