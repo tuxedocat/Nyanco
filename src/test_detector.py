@@ -96,7 +96,8 @@ class TestLMDetector:
         self.corpuspath = "../sandbox/fce_corpus/fce_dataset_ver2.pickle"
         self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
         self.detector.make_cases2()
-        print pformat(self.detector.testcases)
+        for k in self.detector.testcases.keys()[0:50]:
+            logging.debug(pformat(self.detector.testcases[k]))
         raise Exception
 
     @attr("detect_proper")

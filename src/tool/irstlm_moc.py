@@ -46,11 +46,11 @@ Deleting FAKE_LM has been completed\n
                     """
 
 def initLM(*args):
-    logging.debug(pformat(initmssg_fake))
+    # logging.debug(pformat(initmssg_fake))
     print initmssg_fake
 
 def deleteLM(*args):
-    logging.debug(pformat(deletemssg_fake))
+    # logging.debug(pformat(deletemssg_fake))
     print deletemssg_fake
 
 def getSentenceScore(*args):
