@@ -24,7 +24,7 @@ from numpy import array
 try:
     from lsa_test.irstlm import *
 except:
-    pass
+    from tool.irstlm_moc import *
 
 
 class DetectorBase(object):

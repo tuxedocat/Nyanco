@@ -16,7 +16,7 @@ from nose.plugins.attrib import attr
 try:
     from lsa_test.irstlm import *
 except:
-    pass
+    from tool.irstlm_moc import *
 #=====================================================================================================
 
 class TestLMDetector:
