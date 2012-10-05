@@ -10,7 +10,6 @@ __version__ = "0"
 __status__ = "Prototyping"
 
 import os
-import nltk
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
@@ -19,6 +18,7 @@ logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
                     filename='../log/'+logfilename)
+import nltk
 from nltk import ngrams
 from numpy import array
 try:
@@ -75,7 +75,7 @@ class DetectorBase(object):
             except KeyError as ke:
                 logging.debug(pformat(ke))
             except Exception as e:
-                logging.debug("error catched in make_cases")
+                logging.debug("error catched in make_cases for checkpoints")
                 logging.debug(pformat(e))
                 raise
 
@@ -89,7 +89,9 @@ class DetectorBase(object):
             except KeyError as ke:
                 logging.debug(pformat(ke))
             except Exception as e:
-                logging.debug("error catched in make_cases")
+                logging.debug("error catched in make_cases for other sentences")
+                logging.debug(docname)
+                # logging.debug(pformat(doc))
                 logging.debug(pformat(e))
                 raise
 
@@ -118,7 +120,7 @@ class LM_Detector(DetectorBase):
         logging.debug("IRSTLM_LM has been deleted from memory")
         print "Deleting LM has been completed" 
 
-    def _mk_ngram_queries(self, n=5, cp_pos=None, w_list=[], alt_candidates=[]):
+    def _mk_ngram_queries(self, n=5, cp_pos=-5000, w_list=[], alt_candidates=[]):
         """
         Make a query for ngram frequency counter
             nltk.ngrams returns when `pad_right=True, pad_symbol=" "`
@@ -154,8 +156,11 @@ class LM_Detector(DetectorBase):
             else:
                 alt_q.append(str(" ".join(query)))
             org_q.append(str(" ".join(query)))
+        except IndexError:
+            org_q = []
+            alt_q = []
         except Exception as nge:
-            logging.debug(format(w_list, cp_pos))
+            logging.debug(pformat((w_list, cp_pos)))
             logging.debug(pformat(nge))
         return org_q, alt_q
 
@@ -221,7 +226,8 @@ class LM_Detector(DetectorBase):
     def __addcheckpoints_to_others(self, doc=None):
         cp_list = []
         for tag_for_sent in doc["gold_tags"]:
-            vblist = [(idx, tag[1]) for idx, tag in enumerate(tag_for_sent) if "VB" in tag[2] and tag[5] != "be.01"]
+            vblist = [(idx-1, tag[1]) for idx, tag in enumerate(tag_for_sent) if "VB" in tag[2] and tag[5] != "be.01"]
+            # logging.debug(pformat(tag_for_sent))
             if vblist:
                 cp_list.append([(tuple[0], tuple[1], tuple[1], "NoError") for tuple in vblist])
         # logging.debug(pformat(cp_list))
@@ -229,64 +235,65 @@ class LM_Detector(DetectorBase):
 
     def _mk_cases2(self, docname="", doc=None, is_withCP=True):
         if docname and doc:
-            # try:
-            gold_tags = doc["gold_tags"]
-            test_tags = doc["RVtest_tags"]
-            gold_text = doc["gold_text"]
-            test_text = doc["RVtest_text"]
-            gold_words = doc["gold_words"]
-            test_words = doc["RVtest_words"]
-            gold_pas = doc["gold_PAS"]
-            test_pas = doc["RVtest_PAS"]
-            if is_withCP is True:
-                checkpoints = doc["errorposition"]
-                for cpid, cp in enumerate(checkpoints):
-                    testkey = docname + "_checkpoint" + str(cpid)
-                    self.case_keys.append(testkey)
-                    cp_pos = cp[0]
-                    incorr = cp[1]
-                    gold = cp[2]
-                    test_wl = test_words[cpid]
-                    query_altwords = [gold]
-                    self.testcases[testkey]["gold_text"] = gold_text
-                    self.testcases[testkey]["test_text"] = test_text
-                    self.testcases[testkey]["checkpoint_idx"] = cp_pos
-                    self.testcases[testkey]["incorrect_label"] = incorr
-                    self.testcases[testkey]["gold_label"] = gold
-                    org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
-                    self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
-                    org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
-                    self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
-            else:
-                checkpoints = self.__addcheckpoints_to_others(doc)
-                logging.debug(pformat(checkpoints))
-                for s_id, sent_cp in enumerate(checkpoints):
-                    if sent_cp:
-                        for cpid, cp in enumerate(sent_cp):
-                            if cp:
-                                testkey = docname+"_checkpoint" + str(s_id) + "." + str(cpid)
-                                self.case_keys.append(testkey)
-                                cp_pos = cp[0]
-                                logging.debug(pformat(cp_pos))
-                                incorr = cp[1]
-                                gold = cp[2]
-                                test_wl = test_words[cpid]
-                                query_altwords = [gold]
-                                self.testcases[testkey]["gold_text"] = gold_text
-                                self.testcases[testkey]["test_text"] = test_text
-                                self.testcases[testkey]["checkpoint_idx"] = cp_pos
-                                self.testcases[testkey]["incorrect_label"] = incorr
-                                self.testcases[testkey]["gold_label"] = gold
-                                org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
-                                self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
-                                org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
-                                self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
+            try:
+                gold_tags = doc["gold_tags"]
+                test_tags = doc["RVtest_tags"]
+                gold_text = doc["gold_text"]
+                test_text = doc["RVtest_text"]
+                gold_words = doc["gold_words"]
+                test_words = doc["RVtest_words"]
+                gold_pas = doc["gold_PAS"]
+                test_pas = doc["RVtest_PAS"]
+                if is_withCP is True:
+                    checkpoints = doc["errorposition"]
+                    for cpid, cp in enumerate(checkpoints):
+                        testkey = docname + "_checkpoint" + str(cpid)
+                        self.case_keys.append(testkey)
+                        cp_pos = cp[0]
+                        incorr = cp[1]
+                        gold = cp[2]
+                        test_wl = test_words[cpid]
+                        query_altwords = [gold]
+                        self.testcases[testkey]["gold_text"] = gold_text
+                        self.testcases[testkey]["test_text"] = test_text
+                        self.testcases[testkey]["checkpoint_idx"] = cp_pos
+                        self.testcases[testkey]["incorrect_label"] = incorr
+                        self.testcases[testkey]["gold_label"] = gold
+                        org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
+                        # logging.debug(pformat(cp))
+                        self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
+                        org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
+                        self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
+                else:
+                    checkpoints = self.__addcheckpoints_to_others(doc)
+                    logging.debug(pformat(checkpoints))
+                    for s_id, sent_cp in enumerate(checkpoints):
+                        if sent_cp:
+                            for cpid, cp in enumerate(sent_cp):
+                                if cp:
+                                    testkey = docname + "_checkpoint" + str(s_id) + "." + str(cpid)
+                                    self.case_keys.append(testkey)
+                                    cp_pos = cp[0]
+                                    # logging.debug(pformat(cp_pos))
+                                    incorr = cp[1]
+                                    gold = cp[2]
+                                    test_wl = test_words[cpid]
+                                    query_altwords = [gold]
+                                    self.testcases[testkey]["gold_text"] = gold_text
+                                    self.testcases[testkey]["test_text"] = test_text
+                                    self.testcases[testkey]["checkpoint_idx"] = cp_pos
+                                    self.testcases[testkey]["incorrect_label"] = incorr
+                                    self.testcases[testkey]["gold_label"] = gold
+                                    org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
+                                    self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
+                                    org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
+                                    self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
 
-            # except Exception , e:
-            #     logging.debug("error catched in _mk_cases")
-            #     logging.debug(pformat(testkey))
-            #     logging.debug(pformat(e))
-            #     raise
+            except Exception, e:
+                logging.debug("error catched in _mk_cases")
+                logging.debug(pformat(testkey))
+                # logging.debug(pformat(e))
+                pass
 
 
     def LM_count(self):
