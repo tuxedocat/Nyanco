@@ -91,6 +91,9 @@ class TestDetector:
         detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
         raise Exception
 
+# ------------------------------------------------------------------
+# For detector version 2
+# ------------------------------------------------------------------
 
     @attr("makecase_format2")
     def test_makecase2(self):
@@ -101,7 +104,7 @@ class TestDetector:
             logging.debug("\n\n"+ "-"*48)
             logging.debug(pformat(k))
             logging.debug(pformat(self.detector.testcases[k]))
-        for k in sorted([k for k in self.detector.testcases.keys() if "VB" in k]):
+        for k in sorted([k for k in self.detector.testcases.keys() if "VB" in k])[:10]:
             logging.debug("\n\n"+ "-"*48)
             logging.debug(pformat(k))
             logging.debug(pformat(self.detector.testcases[k]))
