@@ -120,7 +120,7 @@ class LM_Detector(DetectorBase):
         logging.debug("IRSTLM_LM has been deleted from memory")
         print "Deleting LM has been completed" 
 
-    def _mk_ngram_queries(self, n=5, cp_pos=-5000, w_list=[], alt_candidates=[]):
+    def _mk_ngram_queries(self, n=5, cp_pos=None, w_list=[], alt_candidates=[]):
         """
         Make a query for ngram frequency counter
             nltk.ngrams returns when `pad_right=True, pad_symbol=" "`
@@ -162,6 +162,18 @@ class LM_Detector(DetectorBase):
         except Exception as nge:
             logging.debug(pformat((w_list, cp_pos)))
             logging.debug(pformat(nge))
+        return org_q, alt_q
+
+    def _mk_ngram_queries2(self, n=5, cp_pos=None, w_list=[], alt_candidates=[]):
+        org_q = []
+        alt_q = []
+        window = int((n - 1)/2)
+        core = w_list[cp_pos]
+        _left = [word for index, word in enumerate(w_list) if index < cp_pos][-window:]
+        _right = [word for index, word in enumerate(w_list) if index > cp_pos][:window]
+        org_q = [str(" ".join(_left)) + " "+ core + " " + str(" ".join(_right))]
+        for alt in alt_candidates:
+            alt_q.append(str(" ".join(_left)) + " "+ alt + " " + str(" ".join(_right)))
         return org_q, alt_q
 
 
@@ -223,15 +235,20 @@ class LM_Detector(DetectorBase):
 
 
 
-    def __addcheckpoints_to_others(self, doc=None):
+    def __addcheckpoints(self, doc=None):
         cp_list = []
         for tag_for_sent in doc["gold_tags"]:
-            vblist = [(idx-1, tag[1]) for idx, tag in enumerate(tag_for_sent) if "VB" in tag[2] and tag[5] != "be.01"]
-            # logging.debug(pformat(tag_for_sent))
+            vblist = [(idx, tag[1]) for idx, tag in enumerate(tag_for_sent) if "VB" in tag[2] and tag[5] != "be.01"]
+            # print pformat(tag_for_sent)
             if vblist:
                 cp_list.append([(tuple[0], tuple[1], tuple[1], "NoError") for tuple in vblist])
-        # logging.debug(pformat(cp_list))
+            else:
+                cp_list.append([])
+        print "Checkpoints_VB: ", pformat(cp_list)
         return cp_list
+
+    def __read_altwords(self, orgword=""):
+        return ["cat", "cats", "kinako"]
 
     def _mk_cases2(self, docname="", doc=None, is_withCP=True):
         if docname and doc:
@@ -244,6 +261,7 @@ class LM_Detector(DetectorBase):
                 test_words = doc["RVtest_words"]
                 gold_pas = doc["gold_PAS"]
                 test_pas = doc["RVtest_PAS"]
+
                 if is_withCP is True:
                     checkpoints = doc["errorposition"]
                     for cpid, cp in enumerate(checkpoints):
@@ -253,47 +271,52 @@ class LM_Detector(DetectorBase):
                         incorr = cp[1]
                         gold = cp[2]
                         test_wl = test_words[cpid]
-                        query_altwords = [gold]
+                        query_altwords = self.__read_altwords()
                         self.testcases[testkey]["gold_text"] = gold_text[cpid]
                         self.testcases[testkey]["test_text"] = test_text[cpid]
                         self.testcases[testkey]["checkpoint_idx"] = cp_pos
                         self.testcases[testkey]["incorrect_label"] = incorr
                         self.testcases[testkey]["gold_label"] = gold
-                        org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
-                        # logging.debug(pformat(cp))
+                        org_qs, alt_qs = self._mk_ngram_queries2(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
                         self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                         org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
                         self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
                 else:
-                    checkpoints = self.__addcheckpoints_to_others(doc)
-                    logging.debug(pformat(checkpoints))
+                    checkpoints = self.__addcheckpoints(doc)
+                    print pformat(checkpoints)
                     for s_id, sent_cp in enumerate(checkpoints):
+                        print pformat(("sent_id %d, checkpoints :"%s_id, sent_cp))
+                        print "sent_gold", str(gold_words)
+                        print "sent_test", str(test_words)
                         if sent_cp:
                             for cpid, cp in enumerate(sent_cp):
+                                print pformat(("cpid %d, checkpoints :"%cpid, cp))
                                 if cp:
                                     testkey = docname + "_checkpoint_VB_" + str(s_id) + "." + str(cpid)
                                     self.case_keys.append(testkey)
                                     cp_pos = cp[0]
-                                    # logging.debug(pformat(cp_pos))
                                     incorr = cp[1]
                                     gold = cp[2]
-                                    test_wl = test_words[cpid]
-                                    query_altwords = [gold]
-                                    self.testcases[testkey]["gold_text"] = gold_text[cpid]
-                                    self.testcases[testkey]["test_text"] = test_text[cpid]
+                                    test_wl = test_words[s_id]
+                                    query_altwords = self.__read_altwords()
+                                    self.testcases[testkey]["gold_text"] = gold_text[s_id]
+                                    self.testcases[testkey]["test_text"] = test_text[s_id]
+                                    self.testcases[testkey]["gold_words"] = gold_words[s_id]
+                                    self.testcases[testkey]["test_words"] = test_words[s_id]
                                     self.testcases[testkey]["checkpoint_idx"] = cp_pos
                                     self.testcases[testkey]["incorrect_label"] = incorr
                                     self.testcases[testkey]["gold_label"] = gold
-                                    org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
+                                    # self.testcases[testkey]["checkpoint"] = cp
+                                    # self.testcases[testkey]["checkpoint_list"] = sent_cp
+                                    org_qs, alt_qs = self._mk_ngram_queries2(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
                                     self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                                     org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
                                     self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
 
             except Exception, e:
                 logging.debug("error catched in _mk_cases")
-                logging.debug(pformat(testkey))
-                # logging.debug(pformat(e))
-                pass
+                # logging.debug(pformat(testkey))
+                logging.debug(pformat(e))
 
 
     def LM_count(self):
