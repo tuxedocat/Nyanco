@@ -13,13 +13,14 @@ from pprint import pformat
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 from detector import *
 from nose.plugins.attrib import attr
+import random
 try:
     from lsa_test.irstlm import *
 except:
     from tool.irstlm_moc import *
 #=====================================================================================================
 
-class TestLMDetector:
+class TestDetector:
     def setUp(self):
         self.corpuspath = "../sandbox/fce_corpus/fce_processed.pickle"
         self.testlm_path = "../sandbox/irstlm_sample/testlm.blm"
@@ -93,16 +94,22 @@ class TestLMDetector:
 
     @attr("makecase_format2")
     def test_makecase2(self):
-        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_ver2.pickle"
+        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pickle"
         self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
         self.detector.make_cases2()
-        for k in self.detector.testcases.keys()[0:50]:
+        for k in sorted([k for k in self.detector.testcases.keys() if "RV" in k]):
+            logging.debug("\n\n"+ "-"*48)
+            logging.debug(pformat(k))
+            logging.debug(pformat(self.detector.testcases[k]))
+        for k in sorted([k for k in self.detector.testcases.keys() if "VB" in k]):
+            logging.debug("\n\n"+ "-"*48)
+            logging.debug(pformat(k))
             logging.debug(pformat(self.detector.testcases[k]))
         raise Exception
 
     @attr("detect_proper")
     def test_detect_proper(self):
-        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_ver2.pickle"
+        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pickle"
         self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
         self.detector.read_LM_and_PASLM(path_IRSTLM=self.testlm_path, path_PASLM=self.paslm_path)
         self.detector.make_cases2()

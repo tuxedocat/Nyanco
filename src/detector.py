@@ -67,8 +67,8 @@ class DetectorBase(object):
         """
         self.testcases = defaultdict(dict)
         self.case_keys = []
-        self.dataset_with_cp = self.corpus["checkpoints"]
-        self.dataset_without_cp = self.corpus["not_checkpoints"]
+        self.dataset_with_cp = self.corpus["checkpoints_RV"]
+        self.dataset_without_cp = self.corpus["checkpoints_VB"]
         for docname, doc in self.dataset_with_cp.iteritems():
             try:
                 self._mk_cases2(docname=docname, doc=doc, is_withCP=True)
@@ -247,15 +247,15 @@ class LM_Detector(DetectorBase):
                 if is_withCP is True:
                     checkpoints = doc["errorposition"]
                     for cpid, cp in enumerate(checkpoints):
-                        testkey = docname + "_checkpoint" + str(cpid)
+                        testkey = docname + "_checkpoint_RV_" + str(cpid)
                         self.case_keys.append(testkey)
                         cp_pos = cp[0]
                         incorr = cp[1]
                         gold = cp[2]
                         test_wl = test_words[cpid]
                         query_altwords = [gold]
-                        self.testcases[testkey]["gold_text"] = gold_text
-                        self.testcases[testkey]["test_text"] = test_text
+                        self.testcases[testkey]["gold_text"] = gold_text[cpid]
+                        self.testcases[testkey]["test_text"] = test_text[cpid]
                         self.testcases[testkey]["checkpoint_idx"] = cp_pos
                         self.testcases[testkey]["incorrect_label"] = incorr
                         self.testcases[testkey]["gold_label"] = gold
@@ -271,7 +271,7 @@ class LM_Detector(DetectorBase):
                         if sent_cp:
                             for cpid, cp in enumerate(sent_cp):
                                 if cp:
-                                    testkey = docname + "_checkpoint" + str(s_id) + "." + str(cpid)
+                                    testkey = docname + "_checkpoint_VB_" + str(s_id) + "." + str(cpid)
                                     self.case_keys.append(testkey)
                                     cp_pos = cp[0]
                                     # logging.debug(pformat(cp_pos))
@@ -279,8 +279,8 @@ class LM_Detector(DetectorBase):
                                     gold = cp[2]
                                     test_wl = test_words[cpid]
                                     query_altwords = [gold]
-                                    self.testcases[testkey]["gold_text"] = gold_text
-                                    self.testcases[testkey]["test_text"] = test_text
+                                    self.testcases[testkey]["gold_text"] = gold_text[cpid]
+                                    self.testcases[testkey]["test_text"] = test_text[cpid]
                                     self.testcases[testkey]["checkpoint_idx"] = cp_pos
                                     self.testcases[testkey]["incorrect_label"] = incorr
                                     self.testcases[testkey]["gold_label"] = gold
