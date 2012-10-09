@@ -110,13 +110,12 @@ class TestDetector:
             logging.debug(pformat(self.detector.testcases[k]))
         raise Exception
 
+
     @attr("detect_proper")
     def test_detect_proper(self):
+        self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
         self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pickle"
-        self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
-        self.detector.read_LM_and_PASLM(path_IRSTLM=self.testlm_path, path_PASLM=self.paslm_path)
-        self.detector.make_cases2()
-        self.detector.LM_count()
+        detectmain2(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
         for key in self.detector.testcases:
             logging.debug(pformat(self.detector.testcases[key]["LM_scores"]))
         raise Exception
