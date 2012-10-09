@@ -249,6 +249,7 @@ class LM_Detector(DetectorBase):
                         self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                         org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
                         self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
+                        self.testcases[testkey]["type"] = "RV"
                         self.case_keys.append(testkey)
                 else:
                     checkpoints = self.__addcheckpoints(doc)
@@ -278,6 +279,7 @@ class LM_Detector(DetectorBase):
                                     self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                                     org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
                                     self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
+                                    self.testcases[testkey]["type"] = ""
                                     self.case_keys.append(testkey)
 
             except Exception, e:
@@ -405,29 +407,29 @@ class LM_Detector(DetectorBase):
                         detect_flag_lm = False
 
         if detect_flag_lm is True and detect_flag_pas is True:
-            testcase["Result_LM+PASLM_model"] = "alt"
+            testcase["Result_LMPASLM_model"] = "alt"
         elif detect_flag_lm is False and detect_flag_pas is True:
             if pasmodel_exclusive is True:
-                testcase["Result_LM+PASLM_model"] = "alt"
+                testcase["Result_LMPASLM_model"] = "alt"
             else:
-                testcase["Result_LM+PASLM_model"] = "org"
+                testcase["Result_LMPASLM_model"] = "org"
         elif detect_flag_lm is True and detect_flag_pas is False:
             if pasmodel_exclusive is True:
-                testcase["Result_LM+PASLM_model"] = "org"
+                testcase["Result_LMPASLM_model"] = "org"
             else:
-                testcase["Result_LM+PASLM_model"] = "alt"
+                testcase["Result_LMPASLM_model"] = "alt"
         elif detect_flag_lm is False and detect_flag_pas is False:
-            testcase["Result_LM+PASLM_model"] = "org"
+            testcase["Result_LMPASLM_model"] = "org"
         elif detect_flag_lm is True and detect_flag_pas is None:
-            testcase["Result_LM+PASLM_model"] = "alt"
+            testcase["Result_LMPASLM_model"] = "alt"
         elif detect_flag_lm is False and detect_flag_pas is None:
-            testcase["Result_LM+PASLM_model"] = "org"
+            testcase["Result_LMPASLM_model"] = "org"
         elif detect_flag_lm is None and detect_flag_pas is True:
-            testcase["Result_LM+PASLM_model"] = "alt"
+            testcase["Result_LMPASLM_model"] = "alt"
         elif detect_flag_lm is None and detect_flag_pas is False:
-            testcase["Result_LM+PASLM_model"] = "org"
+            testcase["Result_LMPASLM_model"] = "org"
         else:
-            testcase["Result_LM+PASLM_model"] = "none_result"
+            testcase["Result_LMPASLM_model"] = "none_result"
         pass
 
 
@@ -476,7 +478,7 @@ class LM_Detector(DetectorBase):
     def detect(self):
         for testid in self.case_keys:
             tc = self.testcases[testid]
-            tc["Result_LM+PASLM_model"] = defaultdict(list)
+            tc["Result_LMPASLM_model"] = defaultdict(list)
             tc["Result_LM_model"] = defaultdict(list)
             tc["Result_PASLM_model"] = defaultdict(list)
             self._LM_model(tc)
@@ -503,10 +505,14 @@ class LM_Detector(DetectorBase):
             tmpdic_r = {}
             truelabel = case["gold_label"]
             incorrlabel = case["incorrect_label"]
-            lm_paslm_out = case["Result_LM+PASLM_model"]
-            lm_out = case["Result_LM_model"]
-            paslm_out = case["Result_PASLM_model"]
-            output_models = [lm_paslm_out, lm_out, paslm_out]
+            if "Result_LMPASLM_model" in case:
+                lm_paslm_out = case["Result_LMPASLM_model"]
+            if "Result_LM_model" in case:
+                lm_out = case["Result_LM_model"]
+            if "Result_PASLM_model" in case:
+                paslm_out = case["Result_PASLM_model"]
+            # output_models = [lm_paslm_out, lm_out, paslm_out]
+            output_models = lm_out
             tmp_l = []
             for output in output_models:
                 if output == "alt":
@@ -533,20 +539,20 @@ class LM_Detector(DetectorBase):
             # print clsrepo_lm_paslm
             # print clsrepo_lm
             # print clsrepo_paslm
-            acc_lm_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm_paslm)
-            print "accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm
+            # acc_lm_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm_paslm)
+            # print "accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm
             acc_lm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm)
             print "accuracy, 5gramLM: %3.4f"%acc_lm
-            acc_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_paslm)
-            print "accuracy, PAS_triples: %3.4f"%acc_paslm
-            rf.write("RESULT: 5gramLM + PAS triples\n")
-            rf.write("accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm)
+            # acc_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_paslm)
+            # print "accuracy, PAS_triples: %3.4f"%acc_paslm
+            # rf.write("RESULT: 5gramLM + PAS triples\n")
+            # rf.write("accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm)
             # rf.write(clsrepo_lm_paslm)
             rf.write("\n\n\nRESULT: 5gramLM\n")
             rf.write("accuracy, 5gramLM: %3.4f"%acc_lm)
             # rf.write(clsrepo_lm)
-            rf.write("\n\n\nRESULT: PAS triples model\n")
-            rf.write("accuracy, PAS_triples: %3.4f"%acc_paslm)
+            # rf.write("\n\n\nRESULT: PAS triples model\n")
+            # rf.write("accuracy, PAS_triples: %3.4f"%acc_paslm)
             # rf.write(clsrepo_paslm)
             rf.write("\n\n\n\n")
             # try:
@@ -612,19 +618,19 @@ if __name__=='__main__':
 
     if (args.corpus_pickle_file and args.output_file and args.lm and args.pas_lm_path):
         print "Using both 5gramLM and PAS_triples"
-        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
+        detectmain2(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
     elif (args.corpus_pickle_file and args.output_file and args.lm):
         print "Using only 5gramLM"
-        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
+        detectmain2(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
     elif (args.corpus_pickle_file and args.output_file and args.pas_lm_path):
         print "Using only PAS_triples"
-        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
+        detectmain2(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
