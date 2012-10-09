@@ -44,5 +44,10 @@ train
 
 # sandbox test files
 sandbox/afp_eng_199405_raw.cleaned
-sandbox/pas/afp_eng_201012_1*
-
+sandbox/pas/afp_eng_201012_*
+sandbox/fce_corpus/tmp*
+sandbox/fce_corpus/parsed*
+sandbox/fce_corpus/fptmp*
+sandbox/fce_corpus/fce/*.pickle
+sandbox/fce_corpus/fce2/*.pickle
+sandbox/fce_corpus/fce3/*.pickle
