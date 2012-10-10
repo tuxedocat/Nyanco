@@ -218,7 +218,7 @@ class LM_Detector(DetectorBase):
 
     def __read_altwords(self, orgword=""):
         # return ["cat", "cats", "kinako"]
-        return [orgword]
+        return ["Kinako"]
 
     def _mk_cases2(self, docname="", doc=None, is_withCP=True):
         if docname and doc:
@@ -240,12 +240,12 @@ class LM_Detector(DetectorBase):
                         incorr = cp[1]
                         gold = cp[2]
                         test_wl = test_words[cpid]
-                        query_altwords = self.__read_altwords()
                         self.testcases[testkey]["gold_text"] = gold_text[cpid]
                         self.testcases[testkey]["test_text"] = test_text[cpid]
                         self.testcases[testkey]["checkpoint_idx"] = cp_pos
                         self.testcases[testkey]["incorrect_label"] = incorr
                         self.testcases[testkey]["gold_label"] = gold
+                        query_altwords = [gold]
                         org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
                         self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                         org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
