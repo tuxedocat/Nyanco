@@ -27,9 +27,10 @@ class PasExtractor(object):
             self.raw = [line.split('\n') for line in f.read().split('\n\n')]
         self.col_surface = 1
         self.col_pos = 4
+        self.col_depID = 6
         self.col_dep = 7
-        self.col_arg = 12
-        self.col_argdepID = 13
+        self.col_srl = 12
+        self.col_srldepID = 13
         self.col_ne = 10
 
     def _extract_simple(self, sent):
@@ -55,8 +56,8 @@ class PasExtractor(object):
                     if tags[self.col_dep] == "ROOT":
                         root = tags[1]
                         root_idx = int(tags[0])
-                    elif 'ARG' in tags[self.col_arg]:
-                        args.append((tags[1], tags[self.col_arg], int(tags[self.col_argdepID])))
+                    elif 'ARG' in tags[self.col_srl]:
+                        args.append((tags[1], tags[self.col_srl], int(tags[self.col_srldepID])))
                 except:
                     pass
             # logging.info(('Arguments::',args)) 
@@ -107,7 +108,7 @@ class PasExtractor(object):
             opened_AM-LOC_in
 
         Firstly, filter the tags which contain ARG0, and ARG1 respectively.
-        Then, from self.col_argdepID, find each predicates
+        Then, from self.col_srldepID, find each predicates
         The output format will be like...
         [a list of dicts {"PAS name":(<surface>, <POS>, <dep_tag>, <NE tag>)} ]
                     column in files:          1      4        7           10
@@ -130,13 +131,13 @@ class PasExtractor(object):
         if tagtuples:
             for tt in tagtuples:
                 try:
-                    if tt[self.col_arg] == "ARG0":
+                    if tt[self.col_srl] == "ARG0":
                         self.tmp_ARG0.append(tt)
-                        predidx = int(tt[self.col_argdepID]) - 1
+                        predidx = int(tt[self.col_srldepID]) - 1
                         self.tmp_PRED[tagtuples[predidx]].update({"ARG0":tt})
-                    elif tt[self.col_arg] == "ARG1":
+                    elif tt[self.col_srl] == "ARG1":
                         self.tmp_ARG1.append(tt)
-                        predidx = int(tt[self.col_argdepID]) - 1
+                        predidx = int(tt[self.col_srldepID]) - 1
                         self.tmp_PRED[tagtuples[predidx]].update({"ARG1":tt})
                 except Exception as e:
                     logging.debug(pformat(e.string))
@@ -170,6 +171,91 @@ def output2file(input_prefix, output_prefix, counter_obj):
         for k, v in sorted(counter_obj.iteritems(), key=lambda x: x[1], reverse=True):
             outstr = '\t'.join(k) + '\t' + str(v) + '\n'
             tsv.write(outstr)
+
+
+
+
+class PEmod(PasExtractor):
+    """
+    Another version of PasExtractor, for a sentence
+    """
+    def __init__(self, fname="", verb=""):
+        if fname:
+            self.fname_in = fname
+            self.fname_out = ""
+        with open(self.fname_in, "r") as f:
+            self.raw = [line for line in f.read().split("\n") if line]
+        self.col_surface = 1
+        self.col_pos = 4
+        self.col_depID = 6
+        self.col_dep = 7
+        self.col_srl = 12
+        self.col_srldepID = 13
+        self.col_ne = 10
+        self.verb = verb
+
+
+    def extract(self):
+        """
+        wrapper func. of _extract_simple
+        @returns
+            self.paslist :: a list of tuples (ROOT, ARG0, ARG1)
+        """
+        pasdiclist = [self._extract_simple(self.raw)] 
+        if pasdiclist:
+            self.paslist = [(pdic['ROOT'], pdic['ARG0'], pdic['ARG1']) for pdic in pasdiclist
+                            if pdic and (pdic['ROOT'] and pdic['ARG0'] and pdic['ARG1']) ]
+            return self.paslist
+        else:
+            pass
+
+
+    def extract_full(self):
+        """
+        wrapper func. of _extract_full
+        @returns
+            self.paslist :: a list of dictionary 
+        """
+        return self._extract_full(self.raw)
+
+
+class OnlinePasExtractor(PasExtractor):
+    """
+    Another version of PasExtractor, for a sentence, coop with OnlineFanseParser
+
+    * mapping (full to simple)
+        * Surface: 1, 1
+        * POS: 4, 2
+        * DEP_TO: 6, 4
+        * DEPENDENCY: 7, 3
+        * NE: 10, 5
+        * SRL: 12, 6
+        * SRL_REL: 13, 7
+    """
+    def __init__(self, taglist):
+        self.raw = taglist
+        self.col_surface = 1
+        self.col_pos = 2
+        self.col_dep = 3
+        self.col_depID = 4
+        self.col_srl = 6
+        self.col_srldepID = 7
+        self.col_ne = 5
+
+
+    def extract_full(self):
+        """
+        wrapper func. of _extract_full
+        @returns
+            self.paslist :: a list of dictionary 
+        """
+        return self._extract_full(self.raw)
+
+
+
+
+
+
 
 
 def extract(input_prefix, output_prefix):
@@ -228,48 +314,6 @@ def cicp_extract(input_prefix, output_prefix):
     output2file(input_prefix, output_prefix+"Foreign", pastriples_counter_foreign)
 
 
-class PEmod(PasExtractor):
-    """
-    Another version of PasExtractor, for a sentence
-    """
-    def __init__(self, fname="", verb=""):
-        if fname:
-            self.fname_in = fname
-            self.fname_out = ""
-        with open(self.fname_in, "r") as f:
-            self.raw = [line for line in f.read().split("\n") if line]
-        self.col_surface = 1
-        self.col_pos = 4
-        self.col_dep = 7
-        self.col_arg = 12
-        self.col_argdepID = 13
-        self.col_ne = 10
-        self.verb = verb
-
-
-    def extract(self):
-        """
-        wrapper func. of _extract_simple
-        @returns
-            self.paslist :: a list of tuples (ROOT, ARG0, ARG1)
-        """
-        pasdiclist = [self._extract_simple(self.raw)] 
-        if pasdiclist:
-            self.paslist = [(pdic['ROOT'], pdic['ARG0'], pdic['ARG1']) for pdic in pasdiclist
-                            if pdic and (pdic['ROOT'] and pdic['ARG0'] and pdic['ARG1']) ]
-            return self.paslist
-        else:
-            pass
-
-
-    def extract_full(self):
-        """
-        wrapper func. of _extract_full
-        @returns
-            self.paslist :: a list of dictionary 
-        """
-        return self._extract_full(self.raw)
-
 
 if __name__=='__main__':
     import sys
@@ -300,7 +344,7 @@ if __name__=='__main__':
         opts.input_prefix = None
     elif len(opts.input_prefix)==1:
         opts.input_prefix = opts.input_prefix[0]
-    print opts.mode
+    # print opts.mode
     if (opts.input_prefix and opts.output_prefix and opts.mode == "cicp"):
         cicp_extract(opts.input_prefix, opts.output_prefix)
     elif (opts.input_prefix and opts.output_prefix):
