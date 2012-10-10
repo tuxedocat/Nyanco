@@ -218,7 +218,7 @@ class LM_Detector(DetectorBase):
 
     def __read_altwords(self, orgword=""):
         # return ["cat", "cats", "kinako"]
-        return ["Kinako"]
+        return ["have", "get", "take"]
 
     def _mk_cases2(self, docname="", doc=None, is_withCP=True):
         if docname and doc:
@@ -245,7 +245,7 @@ class LM_Detector(DetectorBase):
                         self.testcases[testkey]["checkpoint_idx"] = cp_pos
                         self.testcases[testkey]["incorrect_label"] = incorr
                         self.testcases[testkey]["gold_label"] = gold
-                        query_altwords = [gold]
+                        query_altwords = [gold, gold, gold]
                         org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
                         self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                         org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
@@ -298,18 +298,18 @@ class LM_Detector(DetectorBase):
             case = self.testcases[testid]
             self.testcases[testid]["LM_scores"] = {"org":[], "alt":[]}
             for org_q in case["LM_queries"]["org"]:
-                # logging.debug(pformat(org_q))
+                logging.debug(pformat(org_q))
                 try:
                     score = getSentenceScore(self.LM, org_q)
-                    # logging.debug(pformat(score))
+                    logging.debug(pformat(score))
                 except TypeError:
                     score = -100
                 self.testcases[testid]["LM_scores"]["org"].append(score)
             for alt_q in case["LM_queries"]["alt"]:
-                # logging.debug(pformat(alt_q))
+                logging.debug(pformat(alt_q))
                 try:
                     score = getSentenceScore(self.LM, alt_q)
-                    # logging.debug(pformat(score))
+                    logging.debug(pformat(score))
                 except TypeError:
                     score = -100
                 self.testcases[testid]["LM_scores"]["alt"].append(score)

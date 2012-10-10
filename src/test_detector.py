@@ -116,4 +116,4 @@ class TestDetector:
         self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
         self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pickle"
         detectmain2(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
-        # raise Exception
+        raise Exception
