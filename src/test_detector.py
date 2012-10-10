@@ -28,68 +28,68 @@ class TestDetector:
         self.reportpath = "../sandbox/report.log"
         self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
 
-    @attr("makecase")
-    def test_makecase(self):
-        self.detector.make_cases()
-        print pformat(self.detector.testcases)
-        raise Exception
+    # @attr("makecase")
+    # def test_makecase(self):
+    #     self.detector.make_cases()
+    #     print pformat(self.detector.testcases)
+    #     raise Exception
 
-    @attr("preLM")
-    def test_preLM(self):
-        lm = initLM(5, self.testlm_path)
-        sc1 = getSentenceScore(lm, "the cat is black")
-        logging.debug(pformat(sc1))
-        raise Exception
+    # @attr("preLM")
+    # def test_preLM(self):
+    #     lm = initLM(5, self.testlm_path)
+    #     sc1 = getSentenceScore(lm, "the cat is black")
+    #     logging.debug(pformat(sc1))
+    #     raise Exception
 
-    @attr("LM")
-    def test_LM(self):
-        self.detector.make_cases()
-        self.detector.read_LM_and_PASLM(path_IRSTLM=self.testlm_path)
-        self.detector.LM_count()
-        print pformat(self.detector.testcases)
-        raise Exception
+    # @attr("LM")
+    # def test_LM(self):
+    #     self.detector.make_cases()
+    #     self.detector.read_LM_and_PASLM(path_IRSTLM=self.testlm_path)
+    #     self.detector.LM_count()
+    #     print pformat(self.detector.testcases)
+    #     raise Exception
 
-    @attr("pasLM")
-    def test_pasLM(self):
-        self.detector.make_cases()
-        self.detector.read_LM_and_PASLM(path_PASLM=self.paslm_path)
-        self.detector.PASLM_count()
-        print pformat(self.detector.testcases)
-        raise Exception
+    # @attr("pasLM")
+    # def test_pasLM(self):
+    #     self.detector.make_cases()
+    #     self.detector.read_LM_and_PASLM(path_PASLM=self.paslm_path)
+    #     self.detector.PASLM_count()
+    #     print pformat(self.detector.testcases)
+    #     raise Exception
 
-    @attr("pasLM_ukwac")
-    def test_pasLM_uk(self):
-        paslm_path = "/work/yu-s/cl/nldata/PAS/ukwac_PAS.pickle"
-        self.detector.make_cases()
-        self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
-        self.detector.PASLM_count()
-        print pformat(self.detector.testcases)
-        raise Exception      
+    # @attr("pasLM_ukwac")
+    # def test_pasLM_uk(self):
+    #     paslm_path = "/work/yu-s/cl/nldata/PAS/ukwac_PAS.pickle"
+    #     self.detector.make_cases()
+    #     self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
+    #     self.detector.PASLM_count()
+    #     print pformat(self.detector.testcases)
+    #     raise Exception      
 
-    @attr("pasLM_eg")
-    def test_pasLM_eg(self):
-        paslm_path = "/work/yu-s/cl/nldata/PAS/eg_afp_apw_PAS.pickle"
-        self.detector.make_cases()
-        self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
-        self.detector.PASLM_count()
-        print pformat(self.detector.testcases)
-        raise Exception        
+    # @attr("pasLM_eg")
+    # def test_pasLM_eg(self):
+    #     paslm_path = "/work/yu-s/cl/nldata/PAS/eg_afp_apw_PAS.pickle"
+    #     self.detector.make_cases()
+    #     self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
+    #     self.detector.PASLM_count()
+    #     print pformat(self.detector.testcases)
+    #     raise Exception        
 
-    @attr("pasLM_eg+")
-    def test_pasLM_eguk(self):
-        paslm_path = "/work/yu-s/cl/nldata/PAS/eg_plus_ukwac_PAS.pickle"
-        self.detector.make_cases()
-        self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
-        self.detector.PASLM_count()
-        print pformat(self.detector.testcases)
-        logging.debug(pformat(("Valid", self.detector.validnum_plm)))
-        logging.debug(pformat(("Invalid", self.detector.invalidnum_plm)))
-        raise Exception
+    # @attr("pasLM_eg+")
+    # def test_pasLM_eguk(self):
+    #     paslm_path = "/work/yu-s/cl/nldata/PAS/eg_plus_ukwac_PAS.pickle"
+    #     self.detector.make_cases()
+    #     self.detector.read_LM_and_PASLM(path_PASLM=paslm_path)
+    #     self.detector.PASLM_count()
+    #     print pformat(self.detector.testcases)
+    #     logging.debug(pformat(("Valid", self.detector.validnum_plm)))
+    #     logging.debug(pformat(("Invalid", self.detector.invalidnum_plm)))
+    #     raise Exception
 
-    @attr("detect_small")
-    def test_detect(self):
-        detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
-        raise Exception
+    # @attr("detect_small")
+    # def test_detect(self):
+    #     detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
+    #     raise Exception
 
 # ------------------------------------------------------------------
 # For detector version 2
@@ -99,7 +99,7 @@ class TestDetector:
     def test_makecase2(self):
         self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pickle"
         self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
-        self.detector.make_cases2()
+        self.detector.make_cases()
         for k in sorted([k for k in self.detector.testcases.keys() if "RV" in k]):
             logging.debug("\n\n"+ "-"*48)
             logging.debug(pformat(k))
@@ -115,5 +115,5 @@ class TestDetector:
     def test_detect_proper(self):
         self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
         self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pickle"
-        detectmain2(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
+        detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
         raise Exception

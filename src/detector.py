@@ -18,7 +18,6 @@ logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
                     filename='../log/'+logfilename)
-import nltk
 from numpy import array
 try:
     from lsa_test.irstlm import *
@@ -42,24 +41,8 @@ class DetectorBase(object):
             os.makedirs(reportdir)
         self.ngram_len = 5
 
+
     def make_cases(self):
-        """
-        Makes test instances entirely on the corpus, just a wrapper
-        """
-        self.testcases = defaultdict(dict)
-        self.case_keys = []
-        for docname, doc in self.corpus.iteritems():
-            try:
-                self._mk_cases(docname, doc)
-            except KeyError as ke:
-                logging.debug(pformat(ke))
-            
-            except Exception as e:
-                logging.debug("error catched in make_cases")
-                logging.debug(pformat(e))
-
-
-    def make_cases2(self):
         """
         An alternative version of make_cases.
         This takes a pickled corpus of {"checkpoints":<corpus as dict>, "not_checkpoints":<corpus as dict>}
@@ -71,7 +54,7 @@ class DetectorBase(object):
         self.dataset_without_cp = self.corpus["checkpoints_VB"]
         for docname, doc in self.dataset_with_cp.iteritems():
             try:
-                self._mk_cases2(docname=docname, doc=doc, is_withCP=True)
+                self._mk_cases(docname=docname, doc=doc, is_withCP=True)
             except KeyError as ke:
                 logging.debug(pformat(ke))
             except Exception as e:
@@ -83,9 +66,9 @@ class DetectorBase(object):
             try:
                 if docname in self.testcases.keys():
                     docname_dup = docname + "2"
-                    self._mk_cases2(docname=docname_dup, doc=doc, is_withCP=False)
+                    self._mk_cases(docname=docname_dup, doc=doc, is_withCP=False)
                 else:
-                    self._mk_cases2(docname=docname, doc=doc, is_withCP=False)
+                    self._mk_cases(docname=docname, doc=doc, is_withCP=False)
             except KeyError as ke:
                 logging.debug(pformat(ke))
             except Exception as e:
@@ -169,41 +152,6 @@ class LM_Detector(DetectorBase):
         return org_pas_q, alt_pas_q
 
 
-    def _mk_cases(self, docname="", doc=None):
-        if docname and doc:
-            try:
-                gold_tags = doc["gold_tags"]
-                test_tags = doc["RVtest_tags"]
-                gold_text = doc["gold_text"]
-                test_text = doc["RVtest_text"]
-                gold_words = doc["gold_words"]
-                test_words = doc["RVtest_words"]
-                gold_pas = doc["gold_PAS"]
-                test_pas = doc["RVtest_PAS"]
-                checkpoints = doc["errorposition"]
-                for cpid, cp in enumerate(checkpoints):
-                    testkey = docname+"_checkpoint"+str(cpid)
-                    self.case_keys.append(testkey)
-                    cp_pos = cp[0]
-                    incorr = cp[1]
-                    gold = cp[2]
-                    test_wl = test_words[cpid]
-                    query_altwords = [gold]
-                    self.testcases[testkey]["checkpoint_idx"] = cp_pos
-                    self.testcases[testkey]["incorrect_label"] = incorr
-                    self.testcases[testkey]["gold_label"] = gold
-                    org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
-                    self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
-                    org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
-                    self.testcases[testkey]["PASLM_queries"] = {"org":org_pqs, "alt":alt_pqs}
-
-            except Exception as e:
-                logging.debug("error catched in _mk_cases")
-                logging.debug(pformat(testkey))
-                logging.debug(pformat(e))
-
-
-
     def __addcheckpoints(self, doc=None):
         cp_list = []
         for tag_for_sent in doc["gold_tags"]:
@@ -220,7 +168,7 @@ class LM_Detector(DetectorBase):
         # return ["cat", "cats", "kinako"]
         return ["have", "get", "take"]
 
-    def _mk_cases2(self, docname="", doc=None, is_withCP=True):
+    def _mk_cases(self, docname="", doc=None, is_withCP=True):
         if docname and doc:
             try:
                 gold_tags = doc["gold_tags"]
@@ -560,27 +508,10 @@ class LM_Detector(DetectorBase):
             #     logging.debug(pformat(fileouterror))
 
 
-
-
-
-
 def detectmain(corpuspath="", lmpath="", paslmpath="", reportout=""):
-    detector = LM_Detector(corpusdictpath=corpuspath, reportpath=reportout)
-    detector.make_cases()
-    detector.read_LM_and_PASLM(path_IRSTLM=lmpath, path_PASLM=paslmpath)
-    if lmpath:
-        detector.LM_count()
-    if paslmpath:
-        detector.PASLM_count()
-    detector.detect()
-    detector.mk_report()
-    detector.cleanup()
-
-
-def detectmain2(corpuspath="", lmpath="", paslmpath="", reportout=""):
     try:
         detector = LM_Detector(corpusdictpath=corpuspath, reportpath=reportout)
-        detector.make_cases2()
+        detector.make_cases()
         detector.read_LM_and_PASLM(path_IRSTLM=lmpath, path_PASLM=paslmpath)
         if lmpath:
             detector.LM_count()
@@ -618,19 +549,19 @@ if __name__=='__main__':
 
     if (args.corpus_pickle_file and args.output_file and args.lm and args.pas_lm_path):
         print "Using both 5gramLM and PAS_triples"
-        detectmain2(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
+        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
     elif (args.corpus_pickle_file and args.output_file and args.lm):
         print "Using only 5gramLM"
-        detectmain2(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
+        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
     elif (args.corpus_pickle_file and args.output_file and args.pas_lm_path):
         print "Using only PAS_triples"
-        detectmain2(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
+        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
