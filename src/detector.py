@@ -437,7 +437,7 @@ class LM_Detector(DetectorBase):
     def _LM_model(self, testcase):
         """
         Compare original's score and alternatives' score
-        then returns "org" or "alt" (in fce testset, "alt" is always right )
+        then returns "org" or "alt"
         """
         org_scores = [s for s in testcase["LM_scores"]["org"]]
         alt_scores = [s for s in testcase["LM_scores"]["alt"]]
@@ -525,11 +525,16 @@ class LM_Detector(DetectorBase):
                         tmp_l.append(1)
                     else:
                         tmp_l.append(0)
-                self.syslabels_lm.append(tmp_l[0])
                 if case["type"] == "RV":
+                    self.syslabels_lm.append(tmp_l[0])
                     self.truelabels.append(1)
                 else:
-                    self.truelabels.append(0)
+                    if tmp_l[0] == "org":
+                        self.syslabels_lm.append(0)
+                        self.truelabels.append(0)
+                    else:
+                        self.syslabels_lm.append(tmp_l[0])
+                        self.truelabels.append(0)
                 # self.syslabels_lm_paslm.append(tmp_l[0])
                 # self.syslabels_lm.append(tmp_l[1])
                 # self.syslabels_paslm.append(tmp_l[2])
@@ -538,6 +543,7 @@ class LM_Detector(DetectorBase):
                 tmpdic_r["original"] = incorrlabel
                 tmpdic_r["correction"] = truelabel
                 self.report.append(tmpdic_r)
+                # logging.debug(pformat(self.report))
             except:
                 pass
         # logging.debug(pformat(self.truelabels))
