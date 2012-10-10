@@ -254,7 +254,7 @@ class LM_Detector(DetectorBase):
                         self.case_keys.append(testkey)
                 else:
                     checkpoints = self.__addcheckpoints(doc)
-                    print pformat(checkpoints)
+                    # print pformat(checkpoints)
                     for s_id, sent_cp in enumerate(checkpoints):
                         # print pformat(("sent_id %d, checkpoints :"%s_id, sent_cp))
                         # print "sent_gold", str(gold_words)
@@ -285,9 +285,9 @@ class LM_Detector(DetectorBase):
 
             except Exception, e:
                 logging.debug("error catched in _mk_cases")
-                logging.debug(pformat(docname))
-                logging.debug(pformat(doc))
-                logging.debug(pformat(e))
+                # logging.debug(pformat(docname))
+                # logging.debug(pformat(doc))
+                # logging.debug(pformat(e))
 
 
     def LM_count(self):
