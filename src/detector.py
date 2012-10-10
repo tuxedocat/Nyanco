@@ -478,12 +478,12 @@ class LM_Detector(DetectorBase):
     def detect(self):
         for testid in self.case_keys:
             tc = self.testcases[testid]
-            tc["Result_LMPASLM_model"] = defaultdict(list)
             tc["Result_LM_model"] = defaultdict(list)
-            tc["Result_PASLM_model"] = defaultdict(list)
+            # tc["Result_PASLM_model"] = defaultdict(list)
+            # tc["Result_LMPASLM_model"] = defaultdict(list)
             self._LM_model(tc)
-            self._PASLM_model(tc)
-            self._LM_PASLM_model(tc)
+            # self._PASLM_model(tc)
+            # self._LM_PASLM_model(tc)
             # logging.debug("Case %s"%(testid))
             # logging.debug(pformat(tc))
 
@@ -502,47 +502,56 @@ class LM_Detector(DetectorBase):
         labels = [0 ,1]
         names = ["not_error", "detected_as_error"]
         for id, case in self.testcases.iteritems():
-            tmpdic_r = {}
-            truelabel = case["gold_label"]
-            incorrlabel = case["incorrect_label"]
-            if "Result_LMPASLM_model" in case:
-                lm_paslm_out = case["Result_LMPASLM_model"]
-            if "Result_LM_model" in case:
+            try:
+                tmpdic_r = {}
+                truelabel = case["gold_label"]
+                incorrlabel = case["incorrect_label"]
+                # if "Result_LMPASLM_model" in case:
+                #     lm_paslm_out = case["Result_LMPASLM_model"]
+                # if "Result_LM_model" in case:
                 lm_out = case["Result_LM_model"]
-            if "Result_PASLM_model" in case:
-                paslm_out = case["Result_PASLM_model"]
-            # output_models = [lm_paslm_out, lm_out, paslm_out]
-            output_models = lm_out
-            tmp_l = []
-            for output in output_models:
-                if output == "alt":
-                    tmp_l.append(1)
+                # if "Result_PASLM_model" in case:
+                #     paslm_out = case["Result_PASLM_model"]
+                # output_models = [lm_paslm_out, lm_out, paslm_out]
+                output_models = [lm_out]
+                # print "LMout", lm_out
+                tmp_l = []
+                for output in output_models:
+                    if output == "alt":
+                        tmp_l.append(1)
+                    else:
+                        tmp_l.append(0)
+                self.syslabels_lm.append(tmp_l[0])
+                # self.truelabels.append(truelabel)
+                if case["type"] == "RV":
+                    self.truelabels.append(1)
                 else:
-                    tmp_l.append(0)
-            # self.truelabels.append(truelabel)
-            self.truelabels.append(1)
-            self.syslabels_lm_paslm.append(tmp_l[0])
-            self.syslabels_lm.append(tmp_l[1])
-            self.syslabels_paslm.append(tmp_l[2])
-            tmpdic_r["name"] = id
-            tmpdic_r["outputs"] = output_models
-            tmpdic_r["original"] = incorrlabel
-            tmpdic_r["correction"] = truelabel
-            self.report.append(tmpdic_r)
-
+                    self.truelabels.append(0)
+                # self.syslabels_lm_paslm.append(tmp_l[0])
+                # self.syslabels_lm.append(tmp_l[1])
+                # self.syslabels_paslm.append(tmp_l[2])
+                tmpdic_r["name"] = id
+                tmpdic_r["outputs"] = output_models
+                tmpdic_r["original"] = incorrlabel
+                tmpdic_r["correction"] = truelabel
+                self.report.append(tmpdic_r)
+            except:
+                pass
+                # self.truelabels.append(None)
+                # self.syslabels_lm.append(None)
         # logging.debug(pformat(self.truelabels))
         # logging.debug(pformat(self.syslabels_lm_paslm))
         with open(self.reportpath, "w") as rf:
             # clsrepo_lm_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm_paslm), target_names=names)#, labels=labels, target_names=names)
-            # clsrepo_lm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
+            clsrepo_lm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
             # clsrepo_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_paslm), target_names=names)#, labels=labels, target_names=names)
             # print clsrepo_lm_paslm
-            # print clsrepo_lm
+            print clsrepo_lm
             # print clsrepo_paslm
             # acc_lm_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm_paslm)
             # print "accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm
-            acc_lm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm)
-            print "accuracy, 5gramLM: %3.4f"%acc_lm
+            # acc_lm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm)
+            # print "accuracy, 5gramLM: %3.4f"%acc_lm
             # acc_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_paslm)
             # print "accuracy, PAS_triples: %3.4f"%acc_paslm
             # rf.write("RESULT: 5gramLM + PAS triples\n")
@@ -580,16 +589,18 @@ def detectmain(corpuspath="", lmpath="", paslmpath="", reportout=""):
 
 
 def detectmain2(corpuspath="", lmpath="", paslmpath="", reportout=""):
-    detector = LM_Detector(corpusdictpath=corpuspath, reportpath=reportout)
-    detector.make_cases2()
-    detector.read_LM_and_PASLM(path_IRSTLM=lmpath, path_PASLM=paslmpath)
-    if lmpath:
-        detector.LM_count()
-    if paslmpath:
-        detector.PASLM_count()
-    detector.detect()
-    detector.mk_report()
-    detector.cleanup()
+    try:
+        detector = LM_Detector(corpusdictpath=corpuspath, reportpath=reportout)
+        detector.make_cases2()
+        detector.read_LM_and_PASLM(path_IRSTLM=lmpath, path_PASLM=paslmpath)
+        if lmpath:
+            detector.LM_count()
+        if paslmpath:
+            detector.PASLM_count()
+        detector.detect()
+        detector.mk_report()
+    finally :
+        detector.cleanup()
 
 
 if __name__=='__main__':
