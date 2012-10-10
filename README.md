@@ -1,7 +1,7 @@
 Nyanco
 ======
 
-Nyanco - Verb selection error detector and corrector
+Nyanco - Verb selection error detector 
 
 Components
 -------
