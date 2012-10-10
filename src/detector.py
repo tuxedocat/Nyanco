@@ -217,7 +217,8 @@ class LM_Detector(DetectorBase):
         return cp_list
 
     def __read_altwords(self, orgword=""):
-        return ["cat", "cats", "kinako"]
+        # return ["cat", "cats", "kinako"]
+        return [orgword]
 
     def _mk_cases2(self, docname="", doc=None, is_withCP=True):
         if docname and doc:
