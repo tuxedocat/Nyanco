@@ -529,7 +529,7 @@ class LM_Detector(DetectorBase):
                     self.syslabels_lm.append(tmp_l[0])
                     self.truelabels.append(1)
                 else:
-                    if tmp_l[0] == "org":
+                    if "org" in output_models:
                         self.syslabels_lm.append(0)
                         self.truelabels.append(0)
                     else:
@@ -546,8 +546,6 @@ class LM_Detector(DetectorBase):
                 # logging.debug(pformat(self.report))
             except:
                 pass
-        # logging.debug(pformat(self.truelabels))
-        # logging.debug(pformat(self.syslabels_lm_paslm))
         with open(self.reportpath, "w") as rf:
             # clsrepo_lm_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm_paslm), target_names=names)#, labels=labels, target_names=names)
             clsrepo_lm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
@@ -555,22 +553,6 @@ class LM_Detector(DetectorBase):
             # print clsrepo_lm_paslm
             print clsrepo_lm
             # print clsrepo_paslm
-            # acc_lm_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm_paslm)
-            # print "accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm
-            # acc_lm = nltk.metrics.accuracy(self.truelabels, self.syslabels_lm)
-            # print "accuracy, 5gramLM: %3.4f"%acc_lm
-            # acc_paslm = nltk.metrics.accuracy(self.truelabels, self.syslabels_paslm)
-            # print "accuracy, PAS_triples: %3.4f"%acc_paslm
-            # rf.write("RESULT: 5gramLM + PAS triples\n")
-            # rf.write("accuracy, 5gramLM+PAS_triples: %3.4f"%acc_lm_paslm)
-            # rf.write(clsrepo_lm_paslm)
-            rf.write("\n\n\nRESULT: 5gramLM\n")
-            rf.write("accuracy, 5gramLM: %3.4f"%acc_lm)
-            # rf.write(clsrepo_lm)
-            # rf.write("\n\n\nRESULT: PAS triples model\n")
-            # rf.write("accuracy, PAS_triples: %3.4f"%acc_paslm)
-            # rf.write(clsrepo_paslm)
-            rf.write("\n\n\n\n")
             # try:
             #     for repo in self.report:
             #         rf.write(pformat(repo))
