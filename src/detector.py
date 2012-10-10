@@ -539,8 +539,6 @@ class LM_Detector(DetectorBase):
                 self.report.append(tmpdic_r)
             except:
                 pass
-                # self.truelabels.append(None)
-                # self.syslabels_lm.append(None)
         # logging.debug(pformat(self.truelabels))
         # logging.debug(pformat(self.syslabels_lm_paslm))
         with open(self.reportpath, "w") as rf:
