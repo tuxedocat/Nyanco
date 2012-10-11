@@ -45,7 +45,7 @@ class DetectorBase(object):
     def make_cases(self):
         """
         An alternative version of make_cases.
-        This takes a pickled corpus of {"checkpoints":<corpus as dict>, "not_checkpoints":<corpus as dict>}
+        This takes a pickled corpus of {"checkpoints_RV":<corpus as dict>, "checkpoints_VB":<corpus as dict>}
         Then put two test-cases together, with additional key "has_checkpoints":<True or False>
         """
         self.testcases = defaultdict(dict)
@@ -401,7 +401,7 @@ class LM_Detector(DetectorBase):
             testcase["Result_LM_model"] = "alt"
         elif detect_flag is False:
             testcase["Result_LM_model"] = "org"
-        else:
+        elif detect_flag is None:
             testcase["Result_LM_model"] = "none_result"
 
 
@@ -420,7 +420,7 @@ class LM_Detector(DetectorBase):
             testcase["Result_PASLM_model"] = "alt"
         elif detect_flag is False:
             testcase["Result_PASLM_model"] = "org"
-        else:
+        elif detect_flag is None:
             testcase["Result_PASLM_model"] = "none_result"
 
 
@@ -450,7 +450,7 @@ class LM_Detector(DetectorBase):
         self.syslabels_paslm = []
         self.report = [] 
         labels = [0 ,1]
-        names = ["not_error", "detected_as_error"]
+        names = ["not_verb-error", "verb-error"]
         for id, case in self.testcases.iteritems():
             try:
                 tmpdic_r = {}
@@ -471,10 +471,10 @@ class LM_Detector(DetectorBase):
                         tmp_l.append(1)
                     elif output == "none_result":
                         tmp_l.append(1)
-                    else:
+                    elif output == "org":
                         tmp_l.append(0)
                 if case["type"] == "RV":
-                    self.syslabels_lm.append(tmp_l[0])
+                    self.syslabels_lm.append(1)
                     self.truelabels.append(1)
                 else:
                     if "org" in output_models:
