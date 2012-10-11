@@ -470,11 +470,11 @@ class LM_Detector(DetectorBase):
                     if output == "alt":
                         tmp_l.append(1)
                     elif output == "none_result":
-                        tmp_l.append(1)
+                        tmp_l.append(0)
                     elif output == "org":
                         tmp_l.append(0)
                 if case["type"] == "RV":
-                    self.syslabels_lm.append(1)
+                    self.syslabels_lm.append(tmp_l[0])
                     self.truelabels.append(1)
                 else:
                     if "org" in output_models:
