@@ -35,7 +35,7 @@ class TestDetector:
 
     @attr("makecase_format2")
     def test_makecase2(self):
-        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pickle"
+        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2"
         self.detector = LM_Detector(corpusdictpath=self.corpuspath, reportpath=self.reportpath)
         self.detector.make_cases()
         for k in sorted([k for k in self.detector.testcases.keys() if "RV" in k]):
@@ -51,8 +51,8 @@ class TestDetector:
 
     @attr("detect_proper")
     def test_detect_proper(self):
-        self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
-        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pickle"
+        # self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
+        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2"
         detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
         raise Exception
 
