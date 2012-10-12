@@ -24,7 +24,6 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
                     filename='../log/'+logfilename)
 try:
     from lxml import etree
-    print("running with lxml.etree")
 except ImportError:
     print("Import error")
     quit()

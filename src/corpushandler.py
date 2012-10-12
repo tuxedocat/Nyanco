@@ -157,6 +157,7 @@ class CorpusHandler(object):
                     logging.debug(pformat(doc["RVtest_PAS"]))
                     logging.debug(pformat(doc["gold_tags"]))
         except KeyboardInterrupt:
+            print "Interrupted... aborting parsing."
             pass
 
         finally:
@@ -164,14 +165,67 @@ class CorpusHandler(object):
             pass
 
         if self.outputname == "":
-            outputname = "fce_processed.pickle"
+            outputname = "fce_processed_v2VB.pickle3"
         else:
             outputname = self.outputname
         with open(os.path.join(os.path.dirname(self.path), outputname), "wb") as cf:
-            pickle.dump(self.processedcorpus_others, cf)
+            pickle.dump(self.processedcorpus_others, cf, -1)
         return True
 
+    def onlineparse_RV(self):
+        ofp = OnlineFanseParser(w_dir=self.tmppath_op)
+        ofp.check_running()
+        try:
+            n_all = len(self.processedcorpus)
+            c = 0
+            for name, doc in self.processedcorpus.iteritems():
+                c += 1
+                for idx, sent in enumerate(doc["gold_text"]): 
+                    print "Parsing and getting PAS tags... (%i of %i)"%(c, n_all)
+                    logging.debug(pformat("Parsing and getting PAS tags... (%i of %i)"%(c, n_all)))
+                    print pformat(sent)
+                    print pformat(doc["RVtest_text"][idx])
+                    # try:
+                    g_parsed = ofp.parse_one(sent)
+                    g_parsed_t = [tuple(l.split("\t")) for l in g_parsed]
+                    doc["gold_tags"].append(g_parsed_t)
+                    t_parsed = ofp.parse_one(doc["RVtest_text"][idx])
+                    t_parsed_t = [tuple(l.split("\t")) for l in t_parsed]
+                    doc["RVtest_tags"].append(t_parsed_t)
+                    g_pe = pas_extractor.OnlinePasExtractor(g_parsed)
+                    t_pe = pas_extractor.OnlinePasExtractor(t_parsed)
+                    doc["RVtest_PAS"].append(g_pe.extract_full())
+                    doc["gold_PAS"].append(t_pe.extract_full())
+                        # logging.debug(pformat(doc["RVtest_PAS"]))
+                        # logging.debug(pformat(doc["gold_tags"]))
+                    # except TypeError, e:
+                    #     print pformat(e)
+                    #     print "error occured in ", doc["RVtest_text"]
+                    # except Exception as oe:
+                    #     print pformat(oe)
+                    #     print "error occured in ", doc["RVtest_text"]
+            
+        except KeyboardInterrupt:
+            print "Interrupted... aborting parsing."
+            pass
+        except Exception, e:
+            print pformat(e)
+            raise
+        finally:
+            # ofp.clean()
+            pass
 
+        if self.outputname == "":
+            outputname = "fce_processed_v2RV.pickle3"
+        else:
+            outputname = self.outputname
+        with open(os.path.join(os.path.dirname(self.path), outputname), "wb") as cf:
+            pickle.dump(self.processedcorpus, cf, -1)
+        return True
+
+# ----------------------------------------------------------------------
+# NOTE: following code will be useless since now fanseparser-mod is used
+# ----------------------------------------------------------------------
 
     def parse_eachsent_pre(self):
         """
