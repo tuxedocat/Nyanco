@@ -3,7 +3,10 @@
 '''
 Nyanco/corpusreader.py
 Created on 30 Dec 2011
-Upadated??
+
+NOTE:
+    This will be deleted since now corpusreader2 is used
+
 @author: Yu Sawai
 @version: 0.001
 '''

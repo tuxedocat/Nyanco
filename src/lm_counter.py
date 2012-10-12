@@ -6,7 +6,8 @@ Created on 11 Jan 2012
 
 This module handles suspicious n-gram e.g. ("we", "VERB", "throughput")
 and count frequency of candidates using command `ssgnc-search`
-
+TODO:
+    this will be deleted since now IRSTLM is used
 
 @author: Yu Sawai
 @version: 0.001

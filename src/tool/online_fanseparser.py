@@ -69,10 +69,14 @@ class OnlineFanseParser(object):
             print "Fanseparser server is running...."
 
     def _parse(self, filename=""):
-        parsecmd = deepcopy(self.clientcmd)
-        parsecmd.append(filename)
-        # logging.debug(pformat(parsecmd))
-        subprocess.call(parsecmd)
+        try:
+            parsecmd = deepcopy(self.clientcmd)
+            parsecmd.append(filename)
+            subprocess.call(parsecmd)
+        except KeyboardInterrupt:
+            raise KeyboardInterrupt
+        finally:
+            pass
 
 
     def parse_one(self, string=""):

@@ -34,18 +34,26 @@ class TestBoltClassifier(object):
 
     def test3classSGD(self):
         glm = bolt.GeneralizedLinearModel(m=self.train3c.dim, k=3, biasterm = False)
-        sgd = bolt.SGD(bolt.ModifiedHuber(), reg = 0.0001, epochs = 20)
+        sgd = bolt.SGD(bolt.Hinge(), reg = 0.0001, epochs = 50)
         ova = bolt.OVA(sgd)
-        ova.train(glm, self.train3c)
+        ova.train(glm, self.train3c, verbose=1, shuffle=True)
         pred = [p for p in glm.predict(self.test3c.iterinstances())]
         print sklearn.metrics.classification_report(self.correct, array(pred))
         raise Exception
 
     def test3classPEGASOS(self):
         glm = bolt.GeneralizedLinearModel(m=self.train3c.dim, k=3, biasterm = False)
-        sgd = bolt.PEGASOS(reg = 0.0001, epochs = 20)
+        sgd = bolt.PEGASOS(reg = 0.0001, epochs = 50)
         ova = bolt.OVA(sgd)
-        ova.train(glm, self.train3c)
+        ova.train(glm, self.train3c, verbose=1, shuffle=True)
+        pred = [p for p in glm.predict(self.test3c.iterinstances())]
+        print sklearn.metrics.classification_report(self.correct, array(pred))
+        raise Exception
+
+    def test3classAP(self):
+        glm = bolt.GeneralizedLinearModel(m=self.train3c.dim, k=3, biasterm = False)
+        ap = bolt.AveragedPerceptron(epochs = 50)
+        ap.train(glm, self.train3c, verbose=1, shuffle=True)
         pred = [p for p in glm.predict(self.test3c.iterinstances())]
         print sklearn.metrics.classification_report(self.correct, array(pred))
         raise Exception

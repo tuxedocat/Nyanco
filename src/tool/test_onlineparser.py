@@ -42,7 +42,7 @@ class TestOnlineParser(object):
         for txt in self.testtxt:
             parseresult.append(self.ofp.parse_one(txt))
         logging.debug(pformat(parseresult))
-        self.ofp.clean()
+        # self.ofp.clean()
         raise Exception
 
         

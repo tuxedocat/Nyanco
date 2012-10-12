@@ -22,19 +22,19 @@ class TestCorpusHandler:
         self.corpuspath = "../sandbox/fce_corpus/fce.pickle"
         self.handler = corpushandler.CorpusHandler(self.corpuspath, outputname="")
 
-    @attr("full","filter")
+    @attr("filter")
     def test_filter(self):
         self.handler.filter_checkpoints()
         logging.debug(pformat(self.handler.processedcorpus.items()[-5:]))
         raise Exception
 
-    @attr("full", "parse")
+    @attr("pre-parse")
     def test_parse_pre(self):
         self.handler.filter_checkpoints()
         self.handler.parse_eachsent_pre()
         raise Exception
 
-    @attr("full", "parse_read")
+    @attr("parseread")
     def test_parse_read(self):
         self.handler.filter_checkpoints()
         self.handler.parse_eachsent_read()
@@ -42,11 +42,20 @@ class TestCorpusHandler:
         raise Exception
 
 
-    @attr("full", "filter_others")
-    def test_filter2(self):
-        self.handler = corpushandler.CorpusHandler(self.corpuspath, outputname="fce_others.pickle")
+    @attr("full", "VB")
+    def test_VB(self):
+        self.handler = corpushandler.CorpusHandler(self.corpuspath, outputname="fce_VB.pickle3")
         self.handler.filter_others()
         # print pformat(self.handler.processedcorpus.items()[0:5])
         self.handler.onlineparse_others()
         logging.debug(pformat(self.handler.processedcorpus_others[0:5]))
+        raise Exception
+
+    @attr("full", "RV")
+    def test_RV(self):
+        self.handler = corpushandler.CorpusHandler(self.corpuspath, outputname="fce_RV.pickle3")
+        self.handler.filter_checkpoints()
+        # print pformat(self.handler.processedcorpus.items()[0:5])
+        self.handler.onlineparse_RV()
+        # logging.debug(pformat(self.handler.processedcorpus[0:5]))
         raise Exception

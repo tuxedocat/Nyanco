@@ -4,7 +4,8 @@
 Nyanco/nyanco.py
 Created on 11 Jan 2012
 
-
+NOTE:
+    This will be deleted since now detector.py has taken the same role
 @author: Yu Sawai
 @version: 0.001
 '''
