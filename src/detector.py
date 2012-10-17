@@ -198,9 +198,9 @@ class LM_Detector(DetectorBase):
                         self.testcases[testkey]["gold_text"] = gold_text[cpid]
                         self.testcases[testkey]["test_text"] = test_text[cpid]
                         self.testcases[testkey]["checkpoint_idx"] = cp_pos
-                        self.testcases[testkey]["incorrect_label"] = incorr
-                        self.testcases[testkey]["gold_label"] = gold
-                        query_altwords = self.__read_altwords(incorr)
+                        self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
+                        self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
+                        query_altwords = self.__read_altwords(altgen.AlternativeReader.get_lemma(incorr))
                         org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
                         self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                         org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
@@ -223,14 +223,14 @@ class LM_Detector(DetectorBase):
                                     incorr = cp[1]
                                     gold = cp[2]
                                     test_wl = test_words[s_id]
-                                    query_altwords = self.__read_altwords(gold)
+                                    query_altwords = self.__read_altwords(altgen.AlternativeReader.get_lemma(incorr))
                                     self.testcases[testkey]["gold_text"] = gold_text[s_id]
                                     self.testcases[testkey]["test_text"] = test_text[s_id]
                                     self.testcases[testkey]["gold_words"] = gold_words[s_id]
                                     self.testcases[testkey]["test_words"] = test_words[s_id]
                                     self.testcases[testkey]["checkpoint_idx"] = cp_pos
-                                    self.testcases[testkey]["incorrect_label"] = incorr
-                                    self.testcases[testkey]["gold_label"] = gold
+                                    self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
+                                    self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
                                     org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
                                     self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                                     org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
@@ -269,6 +269,28 @@ class LM_Detector(DetectorBase):
                     score = -100
                 self.testcases[testid]["LM_scores"]["alt"].append(score)
 
+
+    def _LM_model(self, testcase):
+        """
+        Compare original's score and alternatives' score
+        then returns "org" or "alt"
+        """
+        org_scores = [s for s in testcase["LM_scores"]["org"]]
+        alt_scores = [s for s in testcase["LM_scores"]["alt"]]
+        detect_flag = None # True if one of alternatives' score is over the original
+        if org_scores and alt_scores:
+            for o_s in org_scores:
+                for a_s in alt_scores:
+                    if a_s > o_s:
+                        detect_flag = True
+                    elif o_s >= a_s:
+                        detect_flag = False
+        if detect_flag is True:
+            testcase["Result_LM_model"] = "alt"
+        elif detect_flag is False:
+            testcase["Result_LM_model"] = "org"
+        elif detect_flag is None:
+            testcase["Result_LM_model"] = "none_result"
 
     def _getPASLMscore(self, pasCounter={}, pas_q=[]):
         """
@@ -387,29 +409,6 @@ class LM_Detector(DetectorBase):
         else:
             testcase["Result_LMPASLM_model"] = "none_result"
         pass
-
-
-    def _LM_model(self, testcase):
-        """
-        Compare original's score and alternatives' score
-        then returns "org" or "alt"
-        """
-        org_scores = [s for s in testcase["LM_scores"]["org"]]
-        alt_scores = [s for s in testcase["LM_scores"]["alt"]]
-        detect_flag = None # True if one of alternatives' score is over the original
-        if org_scores and alt_scores:
-            for o_s in org_scores:
-                for a_s in alt_scores:
-                    if a_s > o_s:
-                        detect_flag = True
-                    elif o_s >= a_s:
-                        detect_flag = False
-        if detect_flag is True:
-            testcase["Result_LM_model"] = "alt"
-        elif detect_flag is False:
-            testcase["Result_LM_model"] = "org"
-        elif detect_flag is None:
-            testcase["Result_LM_model"] = "none_result"
 
 
     def _PASLM_model(self, testcase):
