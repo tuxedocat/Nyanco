@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # coding: utf-8
 '''
-Nyanco/src/tool/altgen.py
+Nyanco/src/tool/altword_generator.py
 Created on 12 Oct 2012
 
 
