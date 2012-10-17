@@ -200,7 +200,7 @@ class LM_Detector(DetectorBase):
                         self.testcases[testkey]["checkpoint_idx"] = cp_pos
                         self.testcases[testkey]["incorrect_label"] = incorr
                         self.testcases[testkey]["gold_label"] = gold
-                        query_altwords = self.__read_altwords(org)
+                        query_altwords = self.__read_altwords(incorr)
                         org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
                         self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                         org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
