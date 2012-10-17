@@ -9,20 +9,22 @@ __copyright__ = "Copyright 2012, Yu Sawai"
 __version__ = "0"
 __status__ = "Prototyping"
 
+from datetime import datetime
+import logging
+logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG, filename='../log/'+logfilename)
 import os
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
-from datetime import datetime
-logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
-import logging
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG,
-                    filename='../log/'+logfilename)
 from numpy import array
+from pattern.text import en
+from nltk.corpus import wordnet as wn
 try:
     from lsa_test.irstlm import *
 except:
     from tool.irstlm_moc import *
+import tool.altword_generator as altgen
 
 
 class DetectorBase(object):
@@ -40,6 +42,10 @@ class DetectorBase(object):
         if not os.path.exists(reportdir):
             os.makedirs(reportdir)
         self.ngram_len = 5
+        # Todo: make it take any given path to the dictionary
+        self.altword_dic_path = "./tool/ranked_alt20.pickle2"
+        self.altword_dic = pickle.load(open(self.altword_dic_path, "rb"))
+        self.altreader = altgen.AlternativeReader(self.altword_dic_path)
 
 
     def make_cases(self):
@@ -165,8 +171,9 @@ class LM_Detector(DetectorBase):
         return cp_list
 
     def __read_altwords(self, orgword=""):
-        # return ["cat", "cats", "kinako"]
-        return ["have", "get", "take"]
+        return self.altreader.get_altwordlist(orgword)
+
+
 
     def _mk_cases(self, docname="", doc=None, is_withCP=True):
         if docname and doc:
@@ -193,7 +200,7 @@ class LM_Detector(DetectorBase):
                         self.testcases[testkey]["checkpoint_idx"] = cp_pos
                         self.testcases[testkey]["incorrect_label"] = incorr
                         self.testcases[testkey]["gold_label"] = gold
-                        query_altwords = [gold, gold, gold]
+                        query_altwords = self.__read_altwords(org)
                         org_qs, alt_qs = self._mk_ngram_queries(n=self.ngram_len, cp_pos=cp_pos, w_list=test_wl, alt_candidates=query_altwords)
                         self.testcases[testkey]["LM_queries"] = {"org":org_qs, "alt":alt_qs}
                         org_pqs, alt_pqs = self._mk_PAS_queries(pasdiclist=gold_pas+test_pas, org_preds=[incorr], alt_preds=query_altwords)
@@ -216,7 +223,7 @@ class LM_Detector(DetectorBase):
                                     incorr = cp[1]
                                     gold = cp[2]
                                     test_wl = test_words[s_id]
-                                    query_altwords = self.__read_altwords()
+                                    query_altwords = self.__read_altwords(gold)
                                     self.testcases[testkey]["gold_text"] = gold_text[s_id]
                                     self.testcases[testkey]["test_text"] = test_text[s_id]
                                     self.testcases[testkey]["gold_words"] = gold_words[s_id]
