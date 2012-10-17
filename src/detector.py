@@ -39,8 +39,7 @@ class DetectorBase(object):
         self.reportpath = os.path.join(os.path.dirname(reportpath), 
                                         datetime.now().strftime("detector_report_%Y%m%d_%H%M.log"))
         reportdir = os.path.dirname(self.reportpath)
-        if not os.path.exists(reportdir):
-            os.makedirs(reportdir)
+        if not os.path.exists(reportdir): os.makedirs(reportdir)
         self.ngram_len = 5
         # Todo: make it take any given path to the dictionary
         self.altword_dic_path = "./tool/ranked_alt20.pickle2"
@@ -57,7 +56,7 @@ class DetectorBase(object):
         self.testcases = defaultdict(dict)
         self.case_keys = []
         self.dataset_with_cp = self.corpus["checkpoints_RV"]
-        self.dataset_without_cp = self.corpus["checkpoints_VB"]
+        self.dataset_without_cp = self.corpus["checkpoints_VB"][:2]
         for docname, doc in self.dataset_with_cp.iteritems():
             try:
                 self._mk_cases(docname=docname, doc=doc, is_withCP=True)
@@ -80,7 +79,6 @@ class DetectorBase(object):
             except Exception as e:
                 logging.debug("error catched in make_cases for other sentences")
                 logging.debug(docname)
-                # logging.debug(pformat(doc))
                 logging.debug(pformat(e))
                 raise
 
