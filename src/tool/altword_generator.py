@@ -14,11 +14,11 @@ __copyright__ = "Copyright 2012, Yu Sawai"
 __version__ = "0"
 __status__ = "Prototyping"
 
+import cPickle as pickle
 from pprint import pformat
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 from nose.plugins.attrib import attr
-import random
 from nltk.corpus import wordnet as wn
 from nltk.corpus import verbnet as vn
 from pattern.text import en
@@ -29,7 +29,7 @@ class AlternativeGenerator(object):
     Takes surface of a word and its wordnet synset name if given, 
     Returns alternative candidates as a list (10 alternatives is maximum as default setting)
     """
-    def __init__(self, suf="", wncat="", maxnum=50, pos="VB", include_hyponyms=False, include_uncertain=False):
+    def __init__(self, suf="", wncat="", maxnum=20, pos="VB", include_hyponyms=False, include_uncertain=False):
         self.surface = suf
         self.pos = pos
         self.wncat = wncat
@@ -83,12 +83,21 @@ class AlternativeGenerator(object):
         tmp.insert(1, p)
         return ".".join(tmp)
 
-    def _search_synsets(self):
-        pass
 
     def _include_uncertain(self):
         pass
 
+
+class AlternativeReader(object):
+    def __init__(self, alt_dict_path=""):
+        self.altdic = pickle.load(open(alt_dict_path, "rb"))
+
+    def get_altwordlist(self, verb=""):
+        try:
+            altlist = [wt[0] for wt in self.altdic[verb]]
+        except KeyError:
+            altlist = AlternativeGenerator(suf=verb, wncat="", include_uncertain=True).generate_from_wordnet()
+        return altlist
 
 class TestAltGen(object):
     """
@@ -98,12 +107,19 @@ class TestAltGen(object):
         self.word1 = "explain"
         self.word1_s = "explain.v.01"
         self.uncertainwords = []
-
+        self.alt_dict_path = "./ranked_alt20.pickle2"
 
     def test_given_synset(self):
         alt = AlternativeGenerator(suf=self.word1, wncat="", include_uncertain=True).generate_from_wordnet()
         print alt
         raise Exception
+
+    def test_alt_reader(self):
+        rdr = AlternativeReader(self.alt_dict_path)
+        altlist = rdr.get_altwordlist("explain")
+        print altlist
+        raise Exception
+
 
     def test_uncertain_synset(self):
         pass
