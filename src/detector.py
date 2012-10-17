@@ -39,7 +39,8 @@ class DetectorBase(object):
         self.reportpath = os.path.join(os.path.dirname(reportpath), 
                                         datetime.now().strftime("detector_report_%Y%m%d_%H%M.log"))
         reportdir = os.path.dirname(self.reportpath)
-        if not os.path.exists(reportdir): os.makedirs(reportdir)
+        if not os.path.exists(reportdir):
+            os.makedirs(reportdir)
         self.ngram_len = 5
         # Todo: make it take any given path to the dictionary
         self.altword_dic_path = "./tool/ranked_alt20.pickle2"
