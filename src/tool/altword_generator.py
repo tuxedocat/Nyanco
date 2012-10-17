@@ -99,6 +99,10 @@ class AlternativeReader(object):
             altlist = AlternativeGenerator(suf=verb, wncat="", include_uncertain=True).generate_from_wordnet()
         return altlist
 
+    @classmethod
+    def get_lemma(self, verb=""):
+        return en.conjugate(verb, tense="infinitive")
+
 class TestAltGen(object):
     """
     Test class for nosetests of AlternativeGenerator
