@@ -68,7 +68,7 @@ class DetectorBase(object):
                 logging.debug(pformat(e))
                 raise
 
-        for docname, doc in self.dataset_without_cp.iteritems()[:2]:
+        for docname, doc in self.dataset_without_cp.items()[:2]:
             try:
                 if docname in self.testcases.keys():
                     docname_dup = docname + "2"
