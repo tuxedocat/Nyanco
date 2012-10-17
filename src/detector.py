@@ -57,7 +57,7 @@ class DetectorBase(object):
         self.testcases = defaultdict(dict)
         self.case_keys = []
         self.dataset_with_cp = self.corpus["checkpoints_RV"]
-        self.dataset_without_cp = self.corpus["checkpoints_VB"][:2]
+        self.dataset_without_cp = self.corpus["checkpoints_VB"]
         for docname, doc in self.dataset_with_cp.iteritems():
             try:
                 self._mk_cases(docname=docname, doc=doc, is_withCP=True)
@@ -68,7 +68,7 @@ class DetectorBase(object):
                 logging.debug(pformat(e))
                 raise
 
-        for docname, doc in self.dataset_without_cp.iteritems():
+        for docname, doc in self.dataset_without_cp.iteritems()[:2]:
             try:
                 if docname in self.testcases.keys():
                     docname_dup = docname + "2"
