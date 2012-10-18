@@ -58,7 +58,7 @@ class DetectorBase(object):
         self.case_keys = []
         self.dataset_with_cp = self.corpus["checkpoints_RV"]
         self.dataset_without_cp = self.corpus["checkpoints_VB"]
-        for docname, doc in self.dataset_with_cp.items()[:5]:
+        for docname, doc in self.dataset_with_cp.items()[:200]:
             try:
                 self._mk_cases(docname=docname, doc=doc, is_withCP=True)
             except KeyError as ke:
