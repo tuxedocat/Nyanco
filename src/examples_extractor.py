@@ -86,14 +86,15 @@ def _extract_sents(corpus=[], verb="", sample_max_num = 10000, conjs = []):
     """
     v_corpus = []
     try:
-        for sentence in corpus:
+        for sid, sentence in enumerate(corpus):
             s = sentence.split("\n") 
             # if is_verbincluded(verb, s) and len(v_corpus) < sample_max_num:
             #     v_corpus.append(s)
-            if is_verbincluded2(verb, sentence, conjs) and len(v_corpus) < sample_max_num:
+            if is_verbincluded2(verb, sentence, conjs):
                 v_corpus.append(s)
-            elif len(v_corpus) >= sample_max_num:
-                break
+            elif sid % 10000 == 0:
+                if len(v_corpus) >= sample_max_num:
+                    break
             else:
                 pass
     except KeyboardInterrupt:
@@ -128,13 +129,14 @@ def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
             v_corpus = []
             conjlist = conjdic[v]
             for fc, file in enumerate(ukwacfiles):
+                if len(v_corpus) > sample_max_num or fc >= 4:
+                    v_corpus = v_corpus[:sample_max_num]
+                    break
                 print "Reading corpus.... file count %d"%fc
                 with open(file, "r") as cf:
                     corpus = cf.read().split("\n\n")
                 print "verb: '%s' (%d out of %d)"%(v, vid+1, len(verbs)), "\t\tworking on file %s"%file
                 v_corpus += _extract_sents(corpus, v, sample_max_num, conjlist)
-                if len(v_corpus) > sample_max_num or fc >= 5:
-                    break
         except CorpusLengthOverlimit:
             pass
         finally:
