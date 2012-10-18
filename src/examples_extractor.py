@@ -79,11 +79,10 @@ def _extract_sents(corpus=[], verb="", sample_max_num = 10000):
             if is_verbincluded(verb, s) and len(v_corpus) <= sample_max_num:
                 v_corpus.append(s)
             else:
-                break
+                pass
     except KeyboardInterrupt:
         print "Interrupted by user... aborting"
-    finally:
-        return v_corpus
+    return v_corpus
 
 def _save_vcorpus(verb="", v_corpus=[], output_dir=""):
     if not os.path.exists(output_dir):
@@ -120,7 +119,8 @@ def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
         except CorpusLengthOverlimit:
             pass
         finally:
-            _save_vcorpus(v, v_corpus, output_dir)
+            if v_corpus:
+                _save_vcorpus(v, v_corpus, output_dir)
     print "Extracting sentences: done"
 
 class CorpusLengthOverlimit(Exception):
