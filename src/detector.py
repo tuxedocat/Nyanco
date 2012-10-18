@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+# ! /usr/bin/env python
 # coding: utf-8
 '''
 Nyanco/src/detector.py
@@ -25,7 +25,7 @@ try:
 except:
     from tool.irstlm_moc import *
 import tool.altword_generator as altgen
-
+from sklearn import cross_validation
 
 class DetectorBase(object):
     def __init__(self, corpusdictpath="", reportpath=""):
@@ -58,7 +58,7 @@ class DetectorBase(object):
         self.case_keys = []
         self.dataset_with_cp = self.corpus["checkpoints_RV"]
         self.dataset_without_cp = self.corpus["checkpoints_VB"]
-        for docname, doc in self.dataset_with_cp.items()[:200]:
+        for docname, doc in self.dataset_with_cp.iteritems():
             try:
                 self._mk_cases(docname=docname, doc=doc, is_withCP=True)
             except KeyError as ke:
@@ -68,7 +68,7 @@ class DetectorBase(object):
                 logging.debug(pformat(e))
                 raise
 
-        for docname, doc in self.dataset_without_cp.items()[:100]:
+        for docname, doc in self.dataset_without_cp.iteritems():
             try:
                 if docname in self.testcases.keys():
                     docname_dup = docname + "2"
@@ -496,18 +496,28 @@ class LM_Detector(DetectorBase):
                 tmpdic_r["original"] = incorrlabel
                 tmpdic_r["correction"] = truelabel
                 self.report.append(tmpdic_r)
-                # logging.debug(pformat(self.report))
             except:
                 pass
         with open(self.reportpath, "w") as rf:
+            ytrue = array(self.truelabels)
+            ysys = array(self.syslabels_lm)
+            skf = cross_validation.StratifiedKFold(ytrue, k=5)
+            for tridx, teidx in skf:
+                _ytrue = ytrue[teidx]
+                _ysys = ysys[teidx]
+                clsrepo_lm = metrics.classification_report(_ytrue, _ysys, target_names=names)#, labels=labels, target_names=names)
+                cm_lm = metrics.confusion_matrix(_ytrue, _ysys, labels=array([0,1]))
+                print clsrepo_lm
+                print pformat(cm_lm)
+                rf.write(clsrepo_lm)
+                rf.write("\n\n")
             # clsrepo_lm_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm_paslm), target_names=names)#, labels=labels, target_names=names)
-            clsrepo_lm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
-            cm_lm = metrics.confusion_matrix(array(self.truelabels), array(self.syslabels_lm), labels=array([0,1]))
             # clsrepo_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_paslm), target_names=names)#, labels=labels, target_names=names)
             # print clsrepo_lm_paslm
+            clsrepo_lm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
+            cm_lm = metrics.confusion_matrix(array(self.truelabels), array(self.syslabels_lm), labels=array([0,1]))
             print clsrepo_lm
             print pformat(cm_lm)
-            # print clsrepo_paslm
             # try:
             #     for repo in self.report:
             #         rf.write(pformat(repo))
