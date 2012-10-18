@@ -58,7 +58,7 @@ class DetectorBase(object):
         self.case_keys = []
         self.dataset_with_cp = self.corpus["checkpoints_RV"]
         self.dataset_without_cp = self.corpus["checkpoints_VB"]
-        for docname, doc in self.dataset_with_cp.iteritems():
+        for docname, doc in self.dataset_with_cp.items()[:5]:
             try:
                 self._mk_cases(docname=docname, doc=doc, is_withCP=True)
             except KeyError as ke:
@@ -68,7 +68,7 @@ class DetectorBase(object):
                 logging.debug(pformat(e))
                 raise
 
-        for docname, doc in self.dataset_without_cp.items()[:2]:
+        for docname, doc in self.dataset_without_cp.items()[:100]:
             try:
                 if docname in self.testcases.keys():
                     docname_dup = docname + "2"
