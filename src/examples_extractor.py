@@ -78,6 +78,8 @@ def _extract_sents(corpus=[], verb="", sample_max_num = 10000):
             s = sentence.split("\n") 
             if is_verbincluded(verb, s) and len(v_corpus) <= sample_max_num:
                 v_corpus.append(s)
+            elif len(v_corpus) > sample_max_num:
+                break
             else:
                 pass
     except KeyboardInterrupt:
