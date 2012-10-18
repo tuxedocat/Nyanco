@@ -17,18 +17,9 @@ import os
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
-from numpy import array
-from nltk.corpus import wordnet as wn
 from pattern.text import en
-from nltk import WordNetLemmatizer
 from nose.plugins.attrib import attr
 import random
-try:
-    from lsa_test.irstlm import *
-except:
-    from tool.irstlm_moc import *
-import tool.altword_generator as altgen
-from sklearn import cross_validation
 tense = ["1sg", "3sg", "pl", "past"]
 
 
