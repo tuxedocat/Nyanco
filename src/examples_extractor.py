@@ -90,7 +90,7 @@ def _save_vcorpus(verb="", v_corpus=[], output_dir=""):
         os.makedirs(output_dir)
     filename = os.path.join(output_dir, verb+".pkl2")
     with open(filename, "wb") as pf:
-        pickle.dump(v_corpus, pf, -1)
+        pickle.dump(v_corpus, pf)
     print "File %s is saved."%filename
 
 
@@ -113,15 +113,14 @@ def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
             for file in ukwacfiles:
                 with open(file, "r") as cf:
                     corpus = cf.read().split("\n\n")
-                print "verb: '%s' (%d out of %d)"%(v, vid, len(verbs)), "\t\tworking on file %s"%file
+                print "verb: '%s' (%d out of %d)"%(v, vid+1, len(verbs)), "\t\tworking on file %s"%file
                 v_corpus += _extract_sents(corpus, v, sample_max_num)
                 if len(v_corpus) > sample_max_num:
                     break
         except CorpusLengthOverlimit:
             pass
         finally:
-            if v_corpus:
-                _save_vcorpus(v, v_corpus, output_dir)
+            _save_vcorpus(v, v_corpus, output_dir)
     print "Extracting sentences: done"
 
 class CorpusLengthOverlimit(Exception):
