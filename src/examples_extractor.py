@@ -127,12 +127,13 @@ def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
         try:
             v_corpus = []
             conjlist = conjdic[v]
-            for file in ukwacfiles:
+            for fc, file in enumerate(ukwacfiles):
+                print "Reading corpus.... file count %d"%fc
                 with open(file, "r") as cf:
                     corpus = cf.read().split("\n\n")
                 print "verb: '%s' (%d out of %d)"%(v, vid+1, len(verbs)), "\t\tworking on file %s"%file
                 v_corpus += _extract_sents(corpus, v, sample_max_num, conjlist)
-                if len(v_corpus) > sample_max_num:
+                if len(v_corpus) > sample_max_num or fc >= 5:
                     break
         except CorpusLengthOverlimit:
             pass
