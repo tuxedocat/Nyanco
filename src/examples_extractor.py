@@ -76,9 +76,9 @@ def _extract_sents(corpus=[], verb="", sample_max_num = 10000):
     try:
         for sentence in corpus:
             s = sentence.split("\n") 
-            if is_verbincluded(verb, s) and len(v_corpus) <= sample_max_num:
+            if is_verbincluded(verb, s) and len(v_corpus) < sample_max_num:
                 v_corpus.append(s)
-            elif len(v_corpus) > sample_max_num:
+            elif len(v_corpus) >= sample_max_num:
                 break
             else:
                 pass
@@ -92,7 +92,8 @@ def _save_vcorpus(verb="", v_corpus=[], output_dir=""):
     filename = os.path.join(output_dir, verb+".pkl2")
     with open(filename, "wb") as pf:
         pickle.dump(v_corpus, pf)
-    print "File %s is saved."%filename
+    print "IO: Pickling %d sentences containing verb '%s'"%(len(v_corpus), verb)
+    print "IO: File %s is saved.\n\n"%filename
 
 
 def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
@@ -181,7 +182,7 @@ if __name__=='__main__':
                     help="path to output directory")
     ap.add_argument("-v", '--verbset', action="store",
                     help="path of verbset pickle file")
-    ap.add_argument("-n", '--maximum_num', action="store",
+    ap.add_argument("-n", '--maximum_num', action="store", type=int,
                     help="max number of sentence that you need to collect")
     ap.add_argument("-s", '--shuffle', action="store_true",
                     help="if you want to shuffle the corpus files...")
