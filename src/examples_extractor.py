@@ -29,6 +29,8 @@ except:
     from tool.irstlm_moc import *
 import tool.altword_generator as altgen
 from sklearn import cross_validation
+tense = ["1sg", "3sg", "pl", "past"]
+
 
 class ClassifierExample(object):
     pass
@@ -51,6 +53,22 @@ def is_verbincluded(verb="", sent=[]):
                 pass
     return vflag
 
+def is_verbincluded2(verb="", sent="", conjs=[]):
+    vflag = False
+    cand = [c+"\t_\t_\tVB" for c in conjs]
+    if sent:
+        try:
+            for c in cand:
+                if c in sent:
+                    vflag = True
+                    break
+        except IndexError, e:
+            pass
+    return vflag
+
+def _get_conjs(verb=""):
+    return [en.conjugate(verb, c) for c in tense]
+
 
 def _is_dic_len_over(dic={}, max_len=0):
     flag = False
@@ -62,13 +80,16 @@ def _is_dic_len_over(dic={}, max_len=0):
 
 def _retrieve_unique_verbs(verbset={}):
     all_v = []
+    vconj_dic = defaultdict(list)
     for k, v in verbset.iteritems():
         all_v.append(k)
         all_v += [vt[0] for vt in v]
-    return set(all_v)
+    allv = set(all_v)
+    for v in allv:
+        vconj_dic[v] = _get_conjs(v)
+    return allv, vconj_dic
 
-
-def _extract_sents(corpus=[], verb="", sample_max_num = 10000):
+def _extract_sents(corpus=[], verb="", sample_max_num = 10000, conjs = []):
     """
     this will extract training sentences (parsed file format) into given output directory
     """
@@ -76,7 +97,9 @@ def _extract_sents(corpus=[], verb="", sample_max_num = 10000):
     try:
         for sentence in corpus:
             s = sentence.split("\n") 
-            if is_verbincluded(verb, s) and len(v_corpus) < sample_max_num:
+            # if is_verbincluded(verb, s) and len(v_corpus) < sample_max_num:
+            #     v_corpus.append(s)
+            if is_verbincluded2(verb, sentence, conjs) and len(v_corpus) < sample_max_num:
                 v_corpus.append(s)
             elif len(v_corpus) >= sample_max_num:
                 break
@@ -105,18 +128,19 @@ def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
     ukwacfiles = glob.glob(ukwac_prefix+"*.parsed")
     raw_verbset = pickle.load(open(verbset_path, "rb"))
     verbset = raw_verbset["verbset"]
-    verbs = _retrieve_unique_verbs(verbset)
+    verbs, conjdic = _retrieve_unique_verbs(verbset)
     if shuffle is True:
         random.seed(output_dir)
         random.shuffle(ukwacfiles)
     for vid, v in enumerate(verbs):
         try:
             v_corpus = []
+            conjlist = conjdic[v]
             for file in ukwacfiles:
                 with open(file, "r") as cf:
                     corpus = cf.read().split("\n\n")
                 print "verb: '%s' (%d out of %d)"%(v, vid+1, len(verbs)), "\t\tworking on file %s"%file
-                v_corpus += _extract_sents(corpus, v, sample_max_num)
+                v_corpus += _extract_sents(corpus, v, sample_max_num, conjlist)
                 if len(v_corpus) > sample_max_num:
                     break
         except CorpusLengthOverlimit:
