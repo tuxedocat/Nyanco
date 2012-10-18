@@ -24,7 +24,6 @@ try:
     from lsa_test.irstlm import *
 except:
     from tool.irstlm_moc import *
-import tool.altword_generator as altgen
 
 
 class FeatureExtractorBase(object):
