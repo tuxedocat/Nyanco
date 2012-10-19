@@ -88,8 +88,6 @@ def _extract_sents(corpus=[], verb="", sample_max_num = 10000, conjs = []):
     try:
         for sid, sentence in enumerate(corpus):
             s = sentence.split("\n") 
-            # if is_verbincluded(verb, s) and len(v_corpus) < sample_max_num:
-            #     v_corpus.append(s)
             if is_verbincluded2(verb, sentence, conjs):
                 v_corpus.append(s)
             elif sid % 10000 == 0:
@@ -98,7 +96,7 @@ def _extract_sents(corpus=[], verb="", sample_max_num = 10000, conjs = []):
             else:
                 pass
     except KeyboardInterrupt:
-        print "Interrupted by user... aborting"
+        raise KeyboardInterrupt
     return v_corpus
 
 def _save_vcorpus(verb="", v_corpus=[], output_dir=""):
@@ -111,6 +109,16 @@ def _save_vcorpus(verb="", v_corpus=[], output_dir=""):
     print "IO: File %s is saved.\n\n"%filename
 
 
+def _save_vcorpusdic(vcorpusdic={}, output_dir=""):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    for vn, vc in vcorpusdic.iteritems():
+        filename = os.path.join(output_dir, vn+".pkl2")
+        with open(filename, "wb") as pf:
+            print "IO: Pickling %d sentences containing verb '%s'"%(len(vc), vn)
+            pickle.dump(vc, pf, -1)
+        print "IO: File %s is saved.\n\n"%filename
+
 def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
                                verbset_path = "", sample_max_num = 10000, shuffle=True):
     """
@@ -121,30 +129,37 @@ def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
     raw_verbset = pickle.load(open(verbset_path, "rb"))
     verbset = raw_verbset["verbset"]
     verbs, conjdic = _retrieve_unique_verbs(verbset)
+    output_dic = defaultdict(list)
     if shuffle is True:
-        random.seed(output_dir)
+        random.seed(output_dir+verbset_path)
         random.shuffle(ukwacfiles)
-    for vid, v in enumerate(verbs):
-        try:
-            v_corpus = []
-            conjlist = conjdic[v]
-            for fc, file in enumerate(ukwacfiles):
-                if len(v_corpus) > sample_max_num or fc >= 4:
-                    v_corpus = v_corpus[:sample_max_num]
-                    break
-                print "Reading corpus.... file count %d"%fc
-                with open(file, "r") as cf:
-                    corpus = cf.read().split("\n\n")
-                print "verb: '%s' (%d out of %d)"%(v, vid+1, len(verbs)), "\t\tworking on file %s"%file
-                v_corpus += _extract_sents(corpus, v, sample_max_num, conjlist)
-        except CorpusLengthOverlimit:
-            pass
-        finally:
-            if v_corpus:
-                _save_vcorpus(v, v_corpus, output_dir)
+    try:
+        for fc, file in enumerate(ukwacfiles):
+            print "IO: Reading corpus.... file count %d"%fc
+            with open(file, "r") as cf:
+                corpus = cf.read().split("\n\n")
+                print "IO: Reading corpus... done!"
+            try:
+                for v in verbs:
+                    conjlist = conjdic[v]
+                    if len(output_dic[v]) > sample_max_num:
+                        output_dic[v] = output_dic[v][:sample_max_num]
+                        verbs.remove(v)
+                    if fc >= 10:
+                        raise CorpusFileCountOverlimit
+                    print "Extraction: verb = '%s' (%d remaining)"%(v, len(verbs)), "\t\tworking on file %s"%file
+                    output_dic[v] += _extract_sents(corpus, v, sample_max_num, conjlist)
+            except CorpusFileCountOverlimit:
+                raise CorpusFileCountOverlimit
+    except KeyboardInterrupt:
+        print "Interrupted by user... aborting"
+    except CorpusFileCountOverlimit:
+        print "Reached file count limitation... aboting"
+    finally:
+        _save_vcorpusdic(output_dic, output_dir)
     print "Extracting sentences: done"
 
-class CorpusLengthOverlimit(Exception):
+class CorpusFileCountOverlimit(Exception):
     pass
 
 
