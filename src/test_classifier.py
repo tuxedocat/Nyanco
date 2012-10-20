@@ -41,7 +41,7 @@ class TestCaseMaker:
         CM.make_fvectors()
         raise Exception
 
-@attr("make_trcases_huge!")
+@attr("make_trcases_huge")
 class TestCaseMaker_huge:
     def setUp(self):
         self.verbcorpus_dir = "../sandbox/classify/out"
