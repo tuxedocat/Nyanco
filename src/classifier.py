@@ -119,7 +119,7 @@ class CaseMaker(object):
             fn_cdic = os.path.join(dir_n, "casedict.pkl2")
             with open(fn, "wb") as f:
                 # np.savez(f, instances=X, labels=Y, dim=dim_X)
-                from sklearn.dataset import svmlight_format as sf
+                from sklearn.datasets import svmlight_format as sf
                 # dump_svmlight_file(X, Y, f)
                 sf.dump_svmlight_file(X, Y, f)
             with open(fn_cdic, "wb") as pf:
