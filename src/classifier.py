@@ -18,13 +18,14 @@ from collections import defaultdict
 from pprint import pformat
 from time import time
 import glob
+
 # Currently, assuming bolt online classifier toolkit as sgd/pegasos classifier
 # and scikit-learn as utilities and for svm models
 try: 
     import bolt
     from sklearn.feature_extraction import DictVectorizer
     from sklearn import preprocessing
-    from svmlight_loader import *
+    from sklearn.datasets.svmlight_format import *
     import numpy as np
 except:
     raise ImportError
@@ -59,9 +60,7 @@ class CaseMaker(object):
         """
         for setname, vset in self.verbsets.iteritems(): # setname is str, vset is list
             print "CaseMaker make_fvectors: working on set '%s'"%setname
-            # vectorizer = DictVectorizer(sparse=False)
             vectorizer = DictVectorizer(sparse=True)
-            # label_encoder = preprocessing.LabelEncoder()
             _classname2id = {vt[0]: id for id, vt in enumerate(vset)}
             _corpusdict = {}
             _casedict = defaultdict(list)
@@ -87,41 +86,23 @@ class CaseMaker(object):
                 _casedict["Y"] += _labellist_int
             fvectors_str = _casedict["X_str"]
             try:
-                # a line below has encountered segmentation fault when dealing with huge matrix
-                # X = vectorizer.fit_transform(fvectors_str).toarray()
-
-                # using this line with sparse=False, worked but consumes memory
-                # X = vectorizer.fit_transform(fvectors_str) 
-
-                # sparse matrix version 
+                print "CaseMaker make_fvectors: Transforming string ID feature vectors"
                 X = vectorizer.fit_transform(fvectors_str)
-
-                # vectorizer.fit(fvectors_str) # create feature map
-                # X = []
-                # for fvec in fvectors_str:
-                #     _X = vectorizer.transform(fvec).toarray() #returns array([[<dtype=float>]])
-                #     _X = _X[0]
-                #     X.append(_X)
-                # X = np.array(X)
                 Y = np.array(_casedict["Y"])
-                # dim_X = X.shape[1]
             except UnboundLocalError, e:
                 print "CaseMaker make_fvectors: seems feature vector for the set %s is empty..."%setname
                 print pformat(e)
                 print fvectors_str
                 X = np.array([])
                 Y = np.array([])
-                # dim_X = 0
             dir_n = os.path.join(self.npy_dir, setname)
             if not os.path.exists(dir_n):
                 os.makedirs(dir_n)
             fn = os.path.join(dir_n, "dataset.svmlight")
             fn_cdic = os.path.join(dir_n, "casedict.pkl2")
             with open(fn, "wb") as f:
-                # np.savez(f, instances=X, labels=Y, dim=dim_X)
-                from sklearn.datasets import svmlight_format as sf
-                # dump_svmlight_file(X, Y, f)
-                sf.dump_svmlight_file(X, Y, f)
+                print "CaseMaker make_fvectors: Saving examples as SVMlight format..."
+                dump_svmlight_file(X, Y, f)
             with open(fn_cdic, "wb") as pf:
                 cdic = {"setname":setname}
                 cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
