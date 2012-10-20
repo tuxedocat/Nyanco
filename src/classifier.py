@@ -156,7 +156,7 @@ class BoltClassifier(Classifier):
         else:
             raise NotImplementedError
         if model == "ap":
-            ap.train(self.glm, self.training_dataset, verbose=1, shuffle=True)
+            trainer.train(self.glm, self.training_dataset, verbose=1, shuffle=True)
         else:
             ova = bolt.OVA(trainer)
             ova.train(self.glm, self.training_dataset, verbose=1, shuffle=True)
@@ -226,7 +226,7 @@ if __name__=='__main__':
     ap.add_argument("-o", '--model_save_dir', action="store",
                     help="path to trained classifier model directory")
     ap.add_argument("-m", '--modeltype', action="store",
-                    help="sgd | pegasos | pa   (default: sgd)")
+                    help="sgd | pegasos | ap   (default: sgd)")
     ap.add_argument("-v", '--verbset_path', action="store",
                     help="path of verbset pickle file")
     ap.add_argument("-d", '--dataset_dir', action="store",
