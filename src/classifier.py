@@ -59,7 +59,7 @@ class CaseMaker(object):
         """
         for setname, vset in self.verbsets.iteritems(): # setname is str, vset is list
             print "CaseMaker make_fvectors: working on set '%s'"%setname
-            vectorizer = DictVectorizer(sparse=True)
+            vectorizer = DictVectorizer(sparse=False)
             # label_encoder = preprocessing.LabelEncoder()
             _classname2id = {vt[0]: id for id, vt in enumerate(vset)}
             _corpusdict = {}
@@ -87,6 +87,8 @@ class CaseMaker(object):
             fvectors_str = _casedict["X_str"]
             try:
                 X = vectorizer.fit_transform(fvectors_str).toarray()
+                # vectorizer.fit(fvectors_str) # create feature map
+
                 Y = np.array(_casedict["Y"])
                 dim_X = X.shape[1]
             except UnboundLocalError, e:
