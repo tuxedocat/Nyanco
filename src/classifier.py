@@ -97,9 +97,15 @@ class CaseMaker(object):
                 os.makedirs(dir_n)
             fn = os.path.join(dir_n, "dataset.svmlight")
             fn_cdic = os.path.join(dir_n, "casedict.pkl2")
-            with open(fn, "wb") as f:
+            with open(fn+"temp", "wb") as f:
                 print "CaseMaker make_fvectors: Saving examples as SVMlight format..."
-                dump_svmlight_file(X, Y, f)
+                dump_svmlight_file(X, Y, f, comment=None)
+            with open(fn+"temp", "rb") as f:
+                cleaned = f.readlines()[2:]
+            with open(fn, "wb") as f:
+                f.writelines(cleaned)
+                os.remove(fn+"temp")
+
             with open(fn_cdic, "wb") as pf:
                 cdic = {"setname":setname}
                 cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
@@ -128,10 +134,10 @@ class BoltClassifier(Classifier):
 
 
     def read_traincases(self, dataset_path=""):
-        try:
-            self.training_dataset = bolt.io.MemoryDataset.load(dataset_path)
-        except Exception, e:
-            print pformat(e)
+        # try:
+        self.training_dataset = bolt.io.MemoryDataset.load(dataset_path)
+        # except Exception, e:
+        #     print pformat(e)
 
 
     def train(self, model="sgd", params={"reg":0.0001, "epochs": 30}):
@@ -185,21 +191,21 @@ def make_fvectors(verbcorpus_dir, verbset_path, dataset_dir):
 
 def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd"):
     default = {"reg":0.0001, "epochs": 30}
-    classfier = BoltClassifier()
-    classifer.read_traincases(dataset_path)
+    classifier = BoltClassifier()
+    classifier.read_traincases(dataset_path)
     classifier.train(model=modeltype, params=default)
     classifier.save_model(output_path)
 
 def train_boltclassifier_batch(dataset_dir="", modeltype="sgd"):
-    dir_names = glob.glob(os.path.join(dataset_dir, "*"))
-    v_names = [os.path.basename(path) for path in set_paths]
-    fndic = {vn : dn for (vn, dn) in zip(v_names, dir_names)}
-    for idd, dir in enumerate(dir_names):
+    set_names = glob.glob(os.path.join(dataset_dir, "*"))
+    v_names = [os.path.basename(path) for path in set_names]
+    fndic = {vn : dn for (vn, dn) in zip(v_names, set_names)}
+    for idd, dir in enumerate(set_names):
         modelfilename = os.path.join(dir, "model_%s.pkl2"%modeltype)
         dspath = os.path.join(dir, "dataset.svmlight")
-        print "Batch trainer (bolt %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd, len(dir_names))
+        print "Batch trainer (bolt %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd, len(set_names))
         train_boltclassifier(dataset_path=dspath, output_path=modelfilename, modeltype=modeltype)
-        print "Batch trainer (bolt %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd, len(dir_names))
+        print "Batch trainer (bolt %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd, len(set_names))
 
 
 if __name__=='__main__':
