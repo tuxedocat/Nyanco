@@ -93,8 +93,8 @@ class CaseMaker(object):
                 print "CaseMaker make_fvectors: seems feature vector for the set %s is empty..."%setname
                 print pformat(e)
                 print fvectors_str
-                X = array([])
-                Y = array([])
+                X = np.array([])
+                Y = np.array([])
                 dim_X = 0
             dir_n = os.path.join(self.npy_dir, setname)
             if not os.path.exists(dir_n):
