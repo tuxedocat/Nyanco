@@ -41,6 +41,19 @@ class TestCaseMaker:
         CM.make_fvectors()
         raise Exception
 
+@attr("make_trcases_huge!")
+class TestCaseMaker_huge:
+    def setUp(self):
+        self.verbcorpus_dir = "../sandbox/classify/out"
+        self.verbset_path = "../sandbox/classify/verbset_111_20.pkl2"
+        self.model_dir = "../sandbox/classify/models"
+        self.npy_dir = "../sandbox/classify/datasets"
+
+
+    def test_maketrcases(self):
+        CM = CaseMaker(self.verbcorpus_dir, self.verbset_path, self.model_dir, self.npy_dir)
+        CM.make_fvectors()
+
 
 @attr("bolt")
 class TestBoltClassifier(object):
