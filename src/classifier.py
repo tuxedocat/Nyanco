@@ -33,18 +33,15 @@ from feature_extractor import SimpleFeatureExtractor
 
 
 class CaseMaker(object):
-    def __init__(self, verbcorpus_dir="", verbset_path="", model_dir="", npy_dir=""):
-        if not verbcorpus_dir and verbset_path and model_dir and npy_dir:
+    def __init__(self, verbcorpus_dir="", verbset_path="", dataset_dir=""):
+        if not verbcorpus_dir and verbset_path and model_dir and dataset_dir:
             raise TypeError
         else:
             print "CaseMaker: successfully imported bolt and sklearn"
         self.corpusdir = verbcorpus_dir
-        if not os.path.exists(model_dir):
-            os.makedirs(model_dir)
-        if not os.path.exists(npy_dir):
-            os.makedirs(npy_dir)
-        self.model_dir = model_dir
-        self.npy_dir = npy_dir
+        if not os.path.exists(dataset_dir):
+            os.makedirs(dataset_dir)
+        self.dataset_dir = dataset_dir
         verbset_load = pickle.load(open(verbset_path,"rb"))
         self.verbs = verbset_load["verbs"]
         self.verbsets = verbset_load["verbset"]
@@ -95,7 +92,7 @@ class CaseMaker(object):
                 print fvectors_str
                 X = np.array([])
                 Y = np.array([])
-            dir_n = os.path.join(self.npy_dir, setname)
+            dir_n = os.path.join(self.dataset_dir, setname)
             if not os.path.exists(dir_n):
                 os.makedirs(dir_n)
             fn = os.path.join(dir_n, "dataset.svmlight")
@@ -128,7 +125,7 @@ class Classifier(object):
 class BoltClassifier(Classifier):
     def __init__(self):
         self.models = ["sgd", "pegasos", "ap"]
-        pass
+
 
     def read_traincases(self, dataset_path=""):
         try:
@@ -136,7 +133,8 @@ class BoltClassifier(Classifier):
         except Exception, e:
             print pformat(e)
 
-    def train(self, model="sgd", params={"reg":0.0001, "epochs": 20}):
+
+    def train(self, model="sgd", params={"reg":0.0001, "epochs": 30}):
         if "reg" in params:
             reg = params["reg"]
         if "epochs" in params:
@@ -165,6 +163,12 @@ class BoltClassifier(Classifier):
         except:
             raise
 
+    def load_model(self, model_path=""):
+        try:
+            with open(model_path, "rb") as f:
+                self.glm = pickle.load(f)
+        except:
+            raise
 
     def predict(self, testset_path="", testset_array=[]):
         if testset_array:
@@ -175,13 +179,28 @@ class BoltClassifier(Classifier):
         return pred
 
 
-def make_fvectors(verbcorpus_dir, verbset_path, model_dir, npy_dir):
-    # verbcorpus_dir = "../sandbox/classify/out"
-    # verbset_path = "../sandbox/classify/verbset_111_20.pkl2"
-    # model_dir = "../sandbox/classify/models"
-    # npy_dir = "../sandbox/classify/datasets"
-    CM = CaseMaker(verbcorpus_dir, verbset_path, model_dir, npy_dir)
+def make_fvectors(verbcorpus_dir, verbset_path, dataset_dir):
+    CM = CaseMaker(verbcorpus_dir, verbset_path, dataset_dir)
     CM.make_fvectors()
+
+def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd"):
+    default = {"reg":0.0001, "epochs": 30}
+    classfier = BoltClassifier()
+    classifer.read_traincases(dataset_path)
+    classifier.train(model=modeltype, params=default)
+    classifier.save_model(output_path)
+
+def train_boltclassifier_batch(dataset_dir="", modeltype="sgd"):
+    dir_names = glob.glob(os.path.join(dataset_dir, "*"))
+    v_names = [os.path.basename(path) for path in set_paths]
+    fndic = {vn : dn for (vn, dn) in zip(v_names, dir_names)}
+    for idd, dir in enumerate(dir_names):
+        modelfilename = os.path.join(dir, "model_%s.pkl2"%modeltype)
+        dspath = os.path.join(dir, "dataset.svmlight")
+        print "Batch trainer (bolt %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd, len(dir_names))
+        train_boltclassifier(dataset_path=dspath, output_path=modelfilename, modeltype=modeltype)
+        print "Batch trainer (bolt %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd, len(dir_names))
+
 
 if __name__=='__main__':
     import time
@@ -191,24 +210,31 @@ if __name__=='__main__':
     argv = sys.argv
     argc = len(argv)
     description =   """
-                    python classifier.py -M prepare -c ../sandbox/classify/tiny/out -v ../sandbox/classify/verbset_111_20.pkl2 
-                                            -m ../sandbox/classify/models -t ../sandbox/classify/datasets
+                    python classifier.py -M prepare -c ../sandbox/classify/tiny/out -v ../sandbox/classify/verbset_111_20.pkl2 -d ../sandbox/classify/datasets
+                    \n
+                    python classifier.py -M train_save -d ../sandbox/classify/datasets -m sgd
                     """
     ap = argparse.ArgumentParser(description=description)
     ap.add_argument("-c", "--verbcorpus_path", action="store", 
                     help="path to pickled corpus files")
-    ap.add_argument("-m", '--model_dir', action="store",
-                    help="path to output model directory")
+    ap.add_argument("-o", '--model_save_dir', action="store",
+                    help="path to trained classifier model directory")
+    ap.add_argument("-m", '--modeltype', action="store",
+                    help="sgd | pegasos | pa   (default: sgd)")
     ap.add_argument("-v", '--verbset_path', action="store",
                     help="path of verbset pickle file")
-    ap.add_argument("-t", '--temp_data_dir', action="store",
-                    help="temporary store for .svmlight examples")
+    ap.add_argument("-d", '--dataset_dir', action="store",
+                    help="model store for .svmlight examples")
     ap.add_argument("-M", '--Mode', action="store",
-                    help="set 'prepare' for making f_vectors")
+                    help="set 'prepare' for making f_vectors, and 'train_save' for training and saving the models")
     args = ap.parse_args()
 
     if (args.Mode=="prepare"):
-        make_fvectors(args.verbcorpus_path, args.verbset_path, args.model_dir, args.temp_data_dir)
+        make_fvectors(args.verbcorpus_path, args.verbset_path, args.dataset_dir)
+        endtime = time.time()
+        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+    elif (args.Mode=="train_save"):
+        train_boltclassifier_batch(args.dataset_dir, args.modeltype)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
     else:
