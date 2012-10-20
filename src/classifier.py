@@ -94,13 +94,15 @@ class CaseMaker(object):
                 # X = vectorizer.fit_transform(fvectors_str) 
 
                 # sparse matrix version 
-                vectorizer.fit(fvectors_str) # create feature map
-                X = []
-                for fvec in fvectors_str:
-                    _X = vectorizer.transform(fvec).toarray() #returns array([[<dtype=float>]])
-                    _X = _X[0]
-                    X.append(_X)
-                X = np.array(X)
+                X = vectorizer.fit_transform(fvectors_str)
+
+                # vectorizer.fit(fvectors_str) # create feature map
+                # X = []
+                # for fvec in fvectors_str:
+                #     _X = vectorizer.transform(fvec).toarray() #returns array([[<dtype=float>]])
+                #     _X = _X[0]
+                #     X.append(_X)
+                # X = np.array(X)
                 Y = np.array(_casedict["Y"])
                 dim_X = X.shape[1]
             except UnboundLocalError, e:
