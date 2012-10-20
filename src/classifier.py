@@ -176,16 +176,42 @@ class BoltClassifier(Classifier):
         return pred
 
 
-def make_fvectors():
-    verbcorpus_dir = "../sandbox/classify/out"
-    verbset_path = "../sandbox/classify/verbset_111_20.pkl2"
-    model_dir = "../sandbox/classify/models"
-    npy_dir = "../sandbox/classify/datasets"
+def make_fvectors(verbcorpus_dir, verbset_path, model_dir, npy_dir):
+    # verbcorpus_dir = "../sandbox/classify/out"
+    # verbset_path = "../sandbox/classify/verbset_111_20.pkl2"
+    # model_dir = "../sandbox/classify/models"
+    # npy_dir = "../sandbox/classify/datasets"
     CM = CaseMaker(verbcorpus_dir, verbset_path, model_dir, npy_dir)
     CM.make_fvectors()
 
-if __name__=="__main__":
+if __name__=='__main__':
     import time
-    start_time = time.time()
-    make_fvectors()
-    print "done in %6.3f[sec.]"%(time.time()-start_time)
+    import sys
+    import argparse
+    starttime = time.time()
+    argv = sys.argv
+    argc = len(argv)
+    description =   """
+                    python classifier.py -M prepare -c ../sandbox/classify/tiny/out -v ../sandbox/classify/verbset_111_20.pkl2 
+                                            -m ../sandbox/classify/models -t ../sandbox/classify/datasets
+                    """
+    ap = argparse.ArgumentParser(description=description)
+    ap.add_argument("-c", "--verbcorpus_path", action="store", 
+                    help="path to pickled corpus files")
+    ap.add_argument("-m", '--model_dir', action="store",
+                    help="path to output model directory")
+    ap.add_argument("-v", '--verbset_path', action="store",
+                    help="path of verbset pickle file")
+    ap.add_argument("-t", '--temp_data_dir', action="store",
+                    help="temporary store for .svmlight examples")
+    ap.add_argument("-M", '--Mode', action="store",
+                    help="set 'prepare' for making f_vectors")
+    args = ap.parse_args()
+
+    if (args.Mode=="prepare"):
+        make_fvectors(args.verbcorpus_path, args.verbset_path, args.model_dir, args.temp_data_dir)
+        endtime = time.time()
+        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+    else:
+        ap.print_help()
+    quit()
