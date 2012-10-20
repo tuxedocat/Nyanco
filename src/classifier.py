@@ -159,6 +159,14 @@ class BoltClassifier(Classifier):
             ova.train(self.glm, self.training_dataset, verbose=1, shuffle=True)
 
 
+    def save_model(self, output_path=""):
+        try:
+            with open(output_path, "wb") as f:
+                pickle.dump(self.glm, f, -1)
+        except:
+            raise
+
+
     def predict(self, testset_path="", testset_array=[]):
         if testset_array:
             raise NotImplementedError
