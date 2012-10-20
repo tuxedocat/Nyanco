@@ -86,7 +86,8 @@ class CaseMaker(object):
                 _casedict["Y"] += _labellist_int
             fvectors_str = _casedict["X_str"]
             try:
-                X = vectorizer.fit_transform(fvectors_str).toarray()
+                # X = vectorizer.fit_transform(fvectors_str).toarray()
+                X = vectorizer.fit_transform(fvectors_str) # for dense
                 # vectorizer.fit(fvectors_str) # create feature map
 
                 Y = np.array(_casedict["Y"])
