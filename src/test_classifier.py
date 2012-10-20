@@ -59,10 +59,23 @@ class TestBoltClassifier(object):
         one_tc = array(self.test3c.instances[0])
         pred_c = [p for p in glm.predict(self.test3c.iterinstances(), confidence=True)]
         pred_one = [p for p in glm.predict(self.test3cone.iterinstances(), confidence=True)]
-        print sklearn.metrics.classification_report(self.correct, array(pred))
-        print pred_one
+        # print sklearn.metrics.classification_report(self.correct, array(pred))
+        # print pred_one
         # print pred_c
-        raise Exception
+        try:
+            # This worked... so the GLM model can be cPickled
+            import cPickle as pickle
+            pickle.dump(glm, open("../sandbox/classify/boltSGD_cPickled.pkl","wb"), -1)
+            glm = pickle.load(open("../sandbox/classify/boltSGD_cPickled.pkl","rb"))
+            pred2 = [p for p in glm.predict(self.test3c.iterinstances())]
+            assert pred == pred2
+        except:
+            import Pickle as pickle
+            pickle.dump(glm, open("../sandbox/classify/boltSGD_PyPickled.pkl","wb"), -1)
+            glm = pickle.load(open("../sandbox/classify/boltSGD_PyPickled.pkl","rb"))
+            pred2 = [p for p in glm.predict(self.test3c.iterinstances())]
+            assert pred == pred2
+    
 
     def test_actual_train_predict(self):
         BC = BoltClassifier()
