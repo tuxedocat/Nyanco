@@ -176,11 +176,16 @@ class BoltClassifier(Classifier):
         return pred
 
 
-def main():
-    pass
+def make_fvectors():
+    verbcorpus_dir = "../sandbox/classify/out"
+    verbset_path = "../sandbox/classify/verbset_111_20.pkl2"
+    model_dir = "../sandbox/classify/models"
+    npy_dir = "../sandbox/classify/datasets"
+    CM = CaseMaker(self.verbcorpus_dir, self.verbset_path, self.model_dir, self.npy_dir)
+    CM.make_fvectors()
 
 if __name__=="__main__":
     import time
     start_time = time.time()
-    main()
+    make_fvectors()
     print "done in %6.3f[sec.]"%(time.time()-start_time)
