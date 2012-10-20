@@ -195,7 +195,7 @@ def extract_training_examples(ukwac_prefix = "", verbset_path = "", max_num = 10
 @attr("extract_tiny")
 def test_extract_small():
     extract_sentence_for_verbs(ukwac_prefix="../sandbox/classify/tiny/", output_dir="../sandbox/classify/tiny/out",
-                                verbset_path="./tool/verbset_111_20.pkl2", sample_max_num=3)
+                                verbset_path="../sandbox/verbset_tiny.pkl2", sample_max_num=1000)
 
 
 if __name__=='__main__':
