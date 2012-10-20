@@ -181,7 +181,7 @@ def make_fvectors():
     verbset_path = "../sandbox/classify/verbset_111_20.pkl2"
     model_dir = "../sandbox/classify/models"
     npy_dir = "../sandbox/classify/datasets"
-    CM = CaseMaker(self.verbcorpus_dir, self.verbset_path, self.model_dir, self.npy_dir)
+    CM = CaseMaker(verbcorpus_dir, verbset_path, model_dir, npy_dir)
     CM.make_fvectors()
 
 if __name__=="__main__":
