@@ -59,7 +59,8 @@ class CaseMaker(object):
         """
         for setname, vset in self.verbsets.iteritems(): # setname is str, vset is list
             print "CaseMaker make_fvectors: working on set '%s'"%setname
-            vectorizer = DictVectorizer(sparse=False)
+            # vectorizer = DictVectorizer(sparse=False)
+            vectorizer = DictVectorizer(sparse=True)
             # label_encoder = preprocessing.LabelEncoder()
             _classname2id = {vt[0]: id for id, vt in enumerate(vset)}
             _corpusdict = {}
@@ -86,10 +87,20 @@ class CaseMaker(object):
                 _casedict["Y"] += _labellist_int
             fvectors_str = _casedict["X_str"]
             try:
+                # a line below has encountered segmentation fault when dealing with huge matrix
                 # X = vectorizer.fit_transform(fvectors_str).toarray()
-                X = vectorizer.fit_transform(fvectors_str) # for dense
-                # vectorizer.fit(fvectors_str) # create feature map
 
+                # using this line with sparse=False, worked but consumes memory
+                # X = vectorizer.fit_transform(fvectors_str) 
+
+                # sparse matrix version 
+                vectorizer.fit(fvectors_str) # create feature map
+                X = []
+                for fvec in fvectors_str:
+                    _X = vectorizer.transform(fvec).toarray() #returns array([[<dtype=float>]])
+                    _X = _X[0]
+                    X.append(_X)
+                X = np.array(X)
                 Y = np.array(_casedict["Y"])
                 dim_X = X.shape[1]
             except UnboundLocalError, e:
