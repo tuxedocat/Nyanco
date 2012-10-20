@@ -25,13 +25,13 @@ from sklearn.pipeline import Pipeline
 from time import time
 from svmlight_loader import *
 from numpy import array
-from classifier import CaseMaker
+from classifier import *
 
 @attr("make_trcases")
 class TestCaseMaker:
     def setUp(self):
         self.verbcorpus_dir = "../sandbox/classify/out"
-        self.verbset_path = "../sandbox/classify/verbset_111_20.pkl2"
+        self.verbset_path = "../sandbox/classify/verbset_tiny.pkl2"
         self.model_dir = "../sandbox/classify/models"
         self.npy_dir = "../sandbox/classify/npy"
 
@@ -42,11 +42,41 @@ class TestCaseMaker:
         raise Exception
 
 
+@attr("bolt")
+class TestBoltClassifier(object):
+    def setUp(self):
+        self.train3c = bolt.io.MemoryDataset.load("../sandbox/classify/npy/have/dataset.svmlight")
+        self.test3c = bolt.io.MemoryDataset.load("../sandbox/classify/npy/have/dataset.svmlight")
+        self.test3cone = bolt.io.MemoryDataset.load("../sandbox/classify/npy/have/testset.svmlight")
+        self.correct = self.test3c.labels
 
+    def test3classSGD(self):
+        glm = bolt.GeneralizedLinearModel(m=self.train3c.dim, k=len(self.train3c.classes), biasterm = False)
+        sgd = bolt.SGD(bolt.Hinge(), reg = 0.0001, epochs = 5)
+        ova = bolt.OVA(sgd)
+        ova.train(glm, self.train3c, verbose=1, shuffle=True)
+        pred = [p for p in glm.predict(self.test3c.iterinstances())]
+        one_tc = array(self.test3c.instances[0])
+        pred_c = [p for p in glm.predict(self.test3c.iterinstances(), confidence=True)]
+        pred_one = [p for p in glm.predict(self.test3cone.iterinstances(), confidence=True)]
+        print sklearn.metrics.classification_report(self.correct, array(pred))
+        print pred_one
+        # print pred_c
+        raise Exception
+
+    def test_actual_train_predict(self):
+        BC = BoltClassifier()
+        BC.read_traincases("../sandbox/classify/npy/have/dataset.svmlight")
+        BC.train(model="sgd")
+        pred = BC.predict(testset_path="../sandbox/classify/npy/have/testset.svmlight")
+        print pred
+        pred = BC.predict(testset_path="../sandbox/classify/npy/have/dataset.svmlight")
+        print sklearn.metrics.classification_report(self.correct, array(pred))
+        raise Exception
 
 
 @attr("bolt_pre")
-class TestBoltClassifier(object):
+class TestBoltClassifier1(object):
     def setUp(self):
         self.train3c = bolt.io.MemoryDataset.load("../sandbox/classify/train3c.svml")
         self.test3c = bolt.io.MemoryDataset.load("../sandbox/classify/train3c.svml")
