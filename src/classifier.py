@@ -156,7 +156,7 @@ class BoltClassifier(Classifier):
         else:
             raise NotImplementedError
         if model == "ap":
-            trainer.train(self.glm, self.training_dataset, verbose=1, shuffle=True)
+            trainer.train(self.glm, self.training_dataset, verbose=0, shuffle=True)
         else:
             ova = bolt.OVA(trainer)
             ova.train(self.glm, self.training_dataset, verbose=1, shuffle=True)
@@ -196,6 +196,15 @@ def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd"):
     classifier.train(model=modeltype, params=default)
     classifier.save_model(output_path)
 
+def _selftest(modelpath="", dspath=""):
+    boltdataset = bolt.io.MemoryDataset.load(dspath)
+    glm = pickle.load(open(modelpath, "rb"))
+    correct = boltdataset.labels
+    testset = boltdataset.instances
+    pred = [p for p in glm.predict(testset)]
+    from sklearn.metrics import classification_report
+    print classification_report(correct, np.array(pred))
+
 def train_boltclassifier_batch(dataset_dir="", modeltype="sgd"):
     set_names = glob.glob(os.path.join(dataset_dir, "*"))
     v_names = [os.path.basename(path) for path in set_names]
@@ -206,8 +215,9 @@ def train_boltclassifier_batch(dataset_dir="", modeltype="sgd"):
         print "Batch trainer (bolt %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd, len(set_names))
         train_boltclassifier(dataset_path=dspath, output_path=modelfilename, modeltype=modeltype)
         print "Batch trainer (bolt %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd, len(set_names))
-
-
+        print "Batch trainer selftest..."
+        _selftest(modelfilename, dspath)
+        print "Batch trainer selftest... done!"
 if __name__=='__main__':
     import time
     import sys
