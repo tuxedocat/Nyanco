@@ -104,14 +104,14 @@ class CaseMaker(object):
                 #     X.append(_X)
                 # X = np.array(X)
                 Y = np.array(_casedict["Y"])
-                dim_X = X.shape[1]
+                # dim_X = X.shape[1]
             except UnboundLocalError, e:
                 print "CaseMaker make_fvectors: seems feature vector for the set %s is empty..."%setname
                 print pformat(e)
                 print fvectors_str
                 X = np.array([])
                 Y = np.array([])
-                dim_X = 0
+                # dim_X = 0
             dir_n = os.path.join(self.npy_dir, setname)
             if not os.path.exists(dir_n):
                 os.makedirs(dir_n)
@@ -119,7 +119,9 @@ class CaseMaker(object):
             fn_cdic = os.path.join(dir_n, "casedict.pkl2")
             with open(fn, "wb") as f:
                 # np.savez(f, instances=X, labels=Y, dim=dim_X)
-                dump_svmlight_file(X, Y, f)
+                from sklearn.dataset import svmlight_format as sf
+                # dump_svmlight_file(X, Y, f)
+                sf.dump_svmlight_file(X, Y, f)
             with open(fn_cdic, "wb") as pf:
                 cdic = {"setname":setname}
                 cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
