@@ -778,7 +778,6 @@ def detectmain(corpuspath="", lmpath="", paslmpath="", reportout="", verbsetpath
         detector.mk_report()
     except Exception, e:
         print pformat(e)
-        raise
     finally :
         detector.cleanup()
 
@@ -819,7 +818,7 @@ if __name__=='__main__':
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
-    elif (args.corpus_pickle_file and args.output_file and args.lm):
+    elif (args.corpus_pickle_file and args.output_file and args.lm and args.model=="lm"):
         print "Using only 5gramLM"
         detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path, verbsetpath=args.verbset)
         endtime = time.time()
