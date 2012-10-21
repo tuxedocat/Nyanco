@@ -103,6 +103,8 @@ class CaseMaker(object):
                 os.makedirs(dir_n)
             fn = os.path.join(dir_n, "dataset.svmlight")
             fn_cdic = os.path.join(dir_n, "casedict.pkl2")
+            fn_fmap = os.path.join(dir_n, "featuremap.pkl2")
+            fn_label2id = os.path.join(dir_n, "label2id.pkl2")
             with open(fn+"temp", "wb") as f:
                 print "CaseMaker make_fvectors: Saving examples as SVMlight format..."
                 dump_svmlight_file(X, Y, f, comment=None)
@@ -111,11 +113,15 @@ class CaseMaker(object):
             with open(fn, "wb") as f:
                 f.writelines(cleaned)
                 os.remove(fn+"temp")
-
+            with open(fn_fmap, "wb") as f:
+                pickle.dump(vectorizer, f, -1)
+            with open(fn_label2id, "wb") as f:
+                pickle.dump(_casedict["label2id"], f, -1)
             with open(fn_cdic, "wb") as pf:
                 cdic = {"setname":setname}
                 cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
                 cdic["label2id"] = _casedict["label2id"]
+                cdic["featuremap"] = vectorizer
                 pickle.dump(cdic, pf, -1)
         print "CaseMaker make_fvectors: successfully done."
 
