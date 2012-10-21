@@ -140,10 +140,10 @@ class BoltClassifier(Classifier):
 
 
     def read_traincases(self, dataset_path=""):
-        # try:
-        self.training_dataset = bolt.io.MemoryDataset.load(dataset_path)
-        # except Exception, e:
-        #     print pformat(e)
+        try:
+            self.training_dataset = bolt.io.MemoryDataset.load(dataset_path)
+        except Exception, e:
+            print pformat(e)
 
 
     def train(self, model="sgd", params={"reg":0.0001, "epochs": 30}):
@@ -224,6 +224,8 @@ def train_boltclassifier_batch(dataset_dir="", modeltype="sgd"):
         print "Batch trainer selftest..."
         _selftest(modelfilename, dspath)
         print "Batch trainer selftest... done!"
+
+
 if __name__=='__main__':
     import time
     import sys
