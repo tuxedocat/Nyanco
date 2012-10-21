@@ -64,8 +64,11 @@ class CaseMaker(object):
             _casedict = defaultdict(list)
             _casedict["label2id"] = _classname2id
             for v in [t[0] for t in vset]:
-                with open(self.vcorpus_filedic[v], "rb") as vcf:
-                    _corpusdict[v] = pickle.load(vcf)
+                try:
+                    with open(self.vcorpus_filedic[v], "rb") as vcf:
+                        _corpusdict[v] = pickle.load(vcf)
+                except:
+                    _corpusdict[v] = [[]]
             for v, v_corpus in _corpusdict.iteritems():
                 _flist = []
                 _labellist_int = []
