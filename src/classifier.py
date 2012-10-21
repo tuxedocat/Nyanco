@@ -48,6 +48,7 @@ class CaseMaker(object):
         vcorpus_filenames = glob.glob(os.path.join(self.corpusdir, "*.pkl2"))
         v_names = [os.path.basename(path).split(".")[0] for path in vcorpus_filenames]
         self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names, vcorpus_filenames)}
+        self.nullfeature = {"NULL":1}
 
 
     def make_fvectors(self):
@@ -70,14 +71,19 @@ class CaseMaker(object):
                 _labellist_int = []
                 _labellist_str = []
                 _labelid = _classname2id[v]
-                for sid, s in enumerate(v_corpus):
-                    fe = SimpleFeatureExtractor(s, verb=v)
-                    fe.ngrams(n=7)
-                    # some other features!
-                    # then finally...
-                    _flist.append(fe.features)
-                    _labellist_int.append(_labelid)
-                    _labellist_str.append(v)
+                if v_corpus:
+                    for sid, s in enumerate(v_corpus):
+                        fe = SimpleFeatureExtractor(s, verb=v)
+                        fe.ngrams(n=7)
+                        # some other features!
+                        # then finally...
+                        _flist.append(fe.features)
+                        _labellist_int.append(_labelid)
+                        _labellist_str.append(v)
+                else:
+                        _flist.append(self.nullfeature)
+                        _labellist_int.append(_labelid)
+                        _labellist_str.append(v)
                 _casedict["X_str"] += _flist
                 _casedict["Y_str"] += _labellist_str
                 _casedict["Y"] += _labellist_int
@@ -225,11 +231,9 @@ if __name__=='__main__':
     starttime = time.time()
     argv = sys.argv
     argc = len(argv)
-    description =   """
-                    python classifier.py -M prepare -c ../sandbox/classify/tiny/out -v ../sandbox/classify/verbset_111_20.pkl2 -d ../sandbox/classify/datasets
-                    \n
-                    python classifier.py -M train_save -d ../sandbox/classify/datasets -m sgd
-                    """
+    description = """python classifier.py -M prepare -c ../sandbox/classify/tiny/out -v ../sandbox/classify/verbset_tiny.pkl2 -d ../sandbox/classify/tiny/datasets\n
+python classifier.py -M train_save -d ../sandbox/classify/tiny/datasets -m sgd
+"""
     ap = argparse.ArgumentParser(description=description)
     ap.add_argument("-c", "--verbcorpus_path", action="store", 
                     help="path to pickled corpus files")
