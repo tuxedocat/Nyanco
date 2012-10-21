@@ -732,8 +732,10 @@ class LM_Detector(DetectorBase):
                 tmpdic_r["original"] = incorrlabel
                 tmpdic_r["correction"] = truelabel
                 self.report.append(tmpdic_r)
-            except:
-                pass
+            except Exception, e:
+                print pformat(e)
+                raise
+
         with open(self.reportpath, "w") as rf:
             ytrue = np.array(self.truelabels)
             ysys = np.array(self.syslabels_lm)
