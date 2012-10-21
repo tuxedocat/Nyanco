@@ -42,6 +42,7 @@ class CaseMaker(object):
         if not os.path.exists(dataset_dir):
             os.makedirs(dataset_dir)
         self.dataset_dir = dataset_dir
+        self.verbset_path = verbset_path
         verbset_load = pickle.load(open(verbset_path,"rb"))
         self.verbs = verbset_load["verbs"]
         self.verbsets = verbset_load["verbset"]
@@ -157,22 +158,31 @@ class CaseMaker(object):
                     pickle.dump(cdic, pf, -1)
             print "CaseMaker make_fvectors: successfully done."
         else:
+            with open(self.verbset_path+"_reduced","wb") as f:
+                verbs2 = [v for v in self.verbs if v != setname]
+                vs2 = {sn : vs for (sn, vs) in self.verbsets.iteritems() if sn != setname}
+                reduced = {"verbs": verbs2, "verbset": vs2}
+                pickle.dump(reduced, f)
             dir_n = os.path.join(self.dataset_dir, setname)
-            if not os.path.exists(dir_n):
-                os.makedirs(dir_n)
-            fn = os.path.join(dir_n, "dataset.svmlight")
-            fn_cdic = os.path.join(dir_n, "casedict.pkl2")
-            fn_fmap = os.path.join(dir_n, "featuremap.pkl2")
-            fn_label2id = os.path.join(dir_n, "label2id.pkl2")
-            with open(fn, "wb") as f:
-                pass
-            with open(fn_cdic, "wb") as f:
-                pass
-            with open(fn_fmap, "wb") as f:
-                pass
-            with open(fn_label2id, "wb") as f:
-                pass
-            print "CaseMaker make_fvectors: saved Null model."
+            # if os.path.exists(dir_n):
+            #     shutil.rmtree(dir_n, ignore_errors=True)
+            print "CaseMaker make_fvectors NOTIFICATION: Verbset is modified since there is null verbset"
+            # dir_n = os.path.join(self.dataset_dir, setname)
+            # if not os.path.exists(dir_n):
+            #     os.makedirs(dir_n)
+            # fn = os.path.join(dir_n, "dataset.svmlight")
+            # fn_cdic = os.path.join(dir_n, "casedict.pkl2")
+            # fn_fmap = os.path.join(dir_n, "featuremap.pkl2")
+            # fn_label2id = os.path.join(dir_n, "label2id.pkl2")
+            # with open(fn, "wb") as f:
+            #     pass
+            # with open(fn_cdic, "wb") as f:
+            #     pass
+            # with open(fn_fmap, "wb") as f:
+            #     pass
+            # with open(fn_label2id, "wb") as f:
+            #     pass
+            # print "CaseMaker make_fvectors: saved Null model."
 #----------------------------------------------------------------------------------------------------
 class Classifier(object):
     def __init__(self):
@@ -272,10 +282,14 @@ def _selftest(modelpath="", dspath=""):
     from sklearn.metrics import classification_report
     print classification_report(correct, np.array(pred))
 
-def train_boltclassifier_batch(dataset_dir="", modeltype="sgd"):
-    set_names = glob.glob(os.path.join(dataset_dir, "*"))
-    v_names = [os.path.basename(path) for path in set_names]
-    fndic = {vn : dn for (vn, dn) in zip(v_names, set_names)}
+def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path=""):
+    vs_file = pickle.load(open(verbset_path, "rb"))
+    verbs = vs_file["verbs"]
+    verbsets = vs_file["verbset"]
+    set_names = [os.path.join(dataset_dir, v) for v in verbs]
+    # set_names = glob.glob(os.path.join(dataset_dir, "*"))
+    # v_names = [os.path.basename(path) for path in set_names]
+    # fndic = {vn : dn for (vn, dn) in zip(v_names, set_names)}
     for idd, dir in enumerate(set_names):
         modelfilename = os.path.join(dir, "model_%s.pkl2"%modeltype)
         dspath = os.path.join(dir, "dataset.svmlight")
@@ -320,7 +334,7 @@ python classifier.py -M train_save -d ../sandbox/classify/tiny/datasets -m sgd
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
     elif (args.Mode=="train_save"):
-        train_boltclassifier_batch(args.dataset_dir, args.modeltype)
+        train_boltclassifier_batch(args.dataset_dir, args.modeltype, args.verbset_path)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
     else:
