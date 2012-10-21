@@ -30,35 +30,58 @@ except:
 class FeatureExtractorBase(object):
     def __init__(self, tags=[], verb=""):
         self.features = defaultdict(float)
-        self.tags = [t for t in tags if not t is ""]
         self.v = verb
         self.gen_fn = lambda x,y,z: "_".join([x, str(y), z])
-        if len(tags[0].split("\t")) == 14:
-            self.col_suf = 1
-            self.col_pos = 4
-        elif len(tags[0].split("\t")) == 8:
-            self.col_suf = 1
-            self.col_pos = 2
-        else:
-            print "FeatureExtractor: initializing... \nUnknown input format"
-            raise IndexError
-        # self.preprocess()
         try:
-            self.SUF = [line.split("\t")[self.col_suf] for line in self.tags]
-            self.POS = [line.split("\t")[self.col_pos] for line in self.tags]
-            self.WL = zip(self.SUF, self.POS)
-            self.v_idx = self._find_verb_idx()
-        except Exception, e:
-            print pformat(e)
-            print tags
+            self.tags = [t for t in tags if not t is ""]
+            if len(tags[0].split("\t")) == 14:
+                self.col_suf = 1
+                self.col_pos = 4
+            elif len(tags[0].split("\t")) == 8:
+                self.col_suf = 1
+                self.col_pos = 2
+            else:
+                print "FeatureExtractor: initializing... \nUnknown input format"
+                raise IndexError
+            try:
+                self.SUF = [line.split("\t")[self.col_suf] for line in self.tags]
+                self.SUF_l = [en.conjugate(line.split("\t")[self.col_suf], tense="infinitive") for line in self.tags]
+                self.POS = [line.split("\t")[self.col_pos] for line in self.tags]
+                self.WL = zip(self.SUF, self.POS)
+                self.v_idx = self._find_verb_idx()
+            except Exception, e:
+                print pformat(e)
+                print tags
+        except AttributeError:
+            if len(tags[0]) == 14:
+                self.col_suf = 1
+                self.col_pos = 4
+            elif len(tags[0]) == 8:
+                self.col_suf = 1
+                self.col_pos = 2
+            self.tags = tags
+            try:
+                self.SUF = [t[self.col_suf] for t in self.tags]
+                self.SUF_l = [en.conjugate(t[self.col_suf], tense="infinitive") for t in self.tags]
+                self.POS = [t[self.col_pos] for t in self.tags]
+                self.WL = zip(self.SUF, self.POS)
+                self.v_idx = self._find_verb_idx()
+            except Exception, e:
+                print pformat(e)
+                print tags
+                raise
 
     def _find_verb_idx(self):
         verbpos = [idx for idx, sufpos in enumerate(zip(self.SUF,self.POS)) if sufpos[0] == self.v and "VB" in sufpos[1]]
         if verbpos:
             return verbpos[0]
         else:
-            verbpos = int(len(self.POS)/2)
-            return verbpos
+            verbpos = [idx for idx, sufpos in enumerate(zip(self.SUF_l,self.POS)) if sufpos[0] == self.v and "VB" in sufpos[1]]
+            if verbpos:
+                return verbpos[0]
+            else:
+                verbpos = int(len(self.SUF)/2)
+                return verbpos
 
     @classmethod
     def read_corpusfiles(self, corpuspath=""):

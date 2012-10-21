@@ -13,11 +13,10 @@ from datetime import datetime
 import logging
 logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG, filename='../log/'+logfilename)
-import os
+import os, glob
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
-from numpy import array
 from pattern.text import en
 from nltk.corpus import wordnet as wn
 try:
@@ -25,10 +24,16 @@ try:
 except:
     from tool.irstlm_moc import *
 import tool.altword_generator as altgen
+from classifier import BoltClassifier
+from sklearn.datasets import svmlight_format
 from sklearn import cross_validation
+import numpy as np
+import bolt
+from feature_extractor import SimpleFeatureExtractor
+
 
 class DetectorBase(object):
-    def __init__(self, corpusdictpath="", reportpath=""):
+    def __init__(self, corpusdictpath="", reportpath="", verbsetpath=""):
         if os.path.exists(corpusdictpath):
             with open(corpusdictpath, "rb") as f:
                 corpusdict = pickle.load(f)
@@ -43,9 +48,13 @@ class DetectorBase(object):
             os.makedirs(reportdir)
         self.ngram_len = 5
         # Todo: make it take any given path to the dictionary
-        self.altword_dic_path = "./tool/ranked_alt20.pickle2"
-        self.altword_dic = pickle.load(open(self.altword_dic_path, "rb"))
-        self.altreader = altgen.AlternativeReader(self.altword_dic_path)
+        # self.altword_dic_path = "./tool/ranked_alt20.pickle2"
+        # self.altword_dic = pickle.load(open(self.altword_dic_path, "rb"))
+        # self.altreader = altgen.AlternativeReader(self.altword_dic_path)
+        self.verbsetpath = verbsetpath
+        self.verbset = pickle.load(open(self.verbsetpath, "rb"))
+        self.altword_dic = self.verbset["verbset"]
+        self.altreader = altgen.AlternativeGenerator(self.verbsetpath)
 
 
     def make_cases(self):
@@ -91,6 +100,238 @@ class DetectorBase(object):
         raise NotImplementedError
 
 
+class SupervisedDetector(DetectorBase):
+    """
+    Supervised (multiclass classification) based detector implementation
+    Currently, methods such as _mk_cases is just copied and did some modifications from the original
+    TODO:
+        Better, smart implementation for shared codes such as _mk_cases
+    """
+    def readmodels(self, path_dataset_root="", modeltype="sgd"):
+        dirlist = glob.glob(os.path.join(path_dataset_root, "*"))
+        namelist = [os.path.basename(p) for p in dirlist]
+        self.verb2modelpath = {vn : p for (vn, p) in zip(namelist, dirlist)}
+        self.models = {}
+        self.fmaps = {}
+        self.label2id = {}
+        self.tempdir = os.path.dirname(path_dataset_root)
+        if os.path.basename(self.tempdir) == "dataset":
+            self.tempdir = os.path.join(path_dataset_root, os.pardir)
+        if not os.path.exists(self.tempdir):
+            os.makedirs(self.tempdir)
+        for setname, modelroot in self.verb2modelpath.iteritems():
+            with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
+                self.models[setname] = pickle.load(mf)
+            with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
+                self.fmaps[setname] = pickle.load(mf)
+            with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
+                self.label2id[setname] = pickle.load(mf)
+        self.datapath = os.path.join(self.tempdir, "dataset.svmlight")
+
+
+    def __addcheckpoints(self, doc=None):
+        cp_list = []
+        for tag_for_sent in doc["gold_tags"]:
+            vblist = [(idx, tag[1]) for idx, tag in enumerate(tag_for_sent) if "VB" in tag[2] and tag[5] != "be.01"]
+            # print pformat(tag_for_sent)
+            if vblist:
+                cp_list.append([(tuple[0], tuple[1], tuple[1], "NoError") for tuple in vblist])
+            else:
+                cp_list.append([])
+        # print "Checkpoints_VB: ", pformat(cp_list)
+        return cp_list
+
+
+    def _mk_cases(self, docname="", doc=None, is_withCP=True):
+        if docname and doc:
+            try:
+                gold_tags = doc["gold_tags"]; test_tags = doc["RVtest_tags"]
+                gold_text = doc["gold_text"]; test_text = doc["RVtest_text"]
+                gold_words = doc["gold_words"]; test_words = doc["RVtest_words"]
+                gold_pas = doc["gold_PAS"]; test_pas = doc["RVtest_PAS"]
+                if is_withCP is True:
+                    checkpoints = doc["errorposition"]
+                    for cpid, cp in enumerate(checkpoints):
+                        testkey = docname + "_checkpoint_RV_" + str(cpid)
+                        cp_pos = cp[0]
+                        incorr = cp[1]
+                        gold = cp[2]
+                        test_wl = test_words[cpid]
+                        self.testcases[testkey]["gold_text"] = gold_text[cpid]
+                        self.testcases[testkey]["test_text"] = test_text[cpid]
+                        self.testcases[testkey]["checkpoint_idx"] = cp_pos
+                        self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
+                        self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
+                        self.testcases[testkey]["type"] = "RV"
+                        self.testcases[testkey]["features"] = mk_features(tags=test_tags[cpid], v=incorr)
+                        self.case_keys.append(testkey)
+                else:
+                    checkpoints = self.__addcheckpoints(doc)
+                    for s_id, sent_cp in enumerate(checkpoints):
+                        if sent_cp:
+                            for cpid, cp in enumerate(sent_cp):
+                                if cp:
+                                    testkey = docname + "_checkpoint_VB_" + str(s_id) + "." + str(cpid)
+                                    cp_pos = cp[0]
+                                    incorr = cp[1]
+                                    gold = cp[2]
+                                    test_wl = test_words[s_id]
+                                    self.testcases[testkey]["gold_text"] = gold_text[s_id]
+                                    self.testcases[testkey]["test_text"] = test_text[s_id]
+                                    self.testcases[testkey]["gold_words"] = gold_words[s_id]
+                                    self.testcases[testkey]["test_words"] = test_words[s_id]
+                                    self.testcases[testkey]["checkpoint_idx"] = cp_pos
+                                    self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
+                                    self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
+                                    self.testcases[testkey]["type"] = ""
+                                    self.testcases[testkey]["features"] = mk_features(tags=test_tags[s_id], v=incorr)
+                                    self.case_keys.append(testkey)
+            except Exception, e:
+                logging.debug("error catched in _mk_cases")
+                raise
+                # logging.debug(pformat(docname))
+                # logging.debug(pformat(doc))
+                # logging.debug(pformat(e))
+
+    def _bolt_pred(self, model=None):
+        if model:
+            test = bolt.io.MemoryDataset.load(self.datapath)
+            X = test.instances
+            Y = [p for p in model.predict(X)]
+            if Y:
+                return Y[0]
+
+
+    def get_classification(self):
+        """
+        calculate scores of given instances
+        """
+        for testid in self.case_keys:
+            case = self.testcases[testid]
+            strfeature = case["features"]
+            setname = case["incorrect_label"]
+            y = case["gold_label"]
+            try:
+                model = self.models[setname]
+                fmap = self.fmaps[setname]
+                lmap = self.label2id[setname]
+                print "SupervisedDetector: model for %s is found :)"%setname
+                case["incorr_classid"] = lmap[setname]
+                case["is_incorr_in_Vset"] = True
+            except KeyError:
+                print "SupervisedDetector: model for %s is not found :("%setname
+                model = None
+                fmap = None
+                lmap = None
+                case["incorr_classid"] = None
+                case["is_incorr_in_Vset"] = False
+            try:
+                classid = lmap[y]
+                case["gold_classid"] = classid
+                case["is_gold_in_Vset"] = True
+            except (KeyError, TypeError):
+                classid = -100
+                case["gold_classid"] = classid
+                case["is_gold_in_Vset"] = False
+            if model and fmap:
+                _X = fmap.transform(strfeature)
+                _Y = np.array([classid])
+                with open(self.datapath+"temp", "wb") as f:
+                    svmlight_format.dump_svmlight_file(_X, _Y, f, comment=None)
+                with open(self.datapath+"temp", "rb") as f:
+                    cleaned = f.readlines()[2:]
+                with open(self.datapath, "wb") as f:
+                    f.writelines(cleaned)
+                    os.remove(self.datapath+"temp")
+                output = self._bolt_pred(model)
+                case["classifier_output"] = output
+            else:
+                case["classifier_output"] = -100
+
+
+    def _check(self, true_error, org, cls_out):
+        if true_error:
+            if org == cls_out:
+                return 0
+            else:
+                return 1
+        else:
+            if org == cls_out:
+                return 0
+            else:
+                return 1
+
+
+    def mk_report(self):
+        """
+        Classes:
+            0: Not a verb error
+            1: Verb error
+        """
+        from sklearn import metrics
+        self.truelabels = []
+        self.syslabels = [] 
+        labels = [0 ,1]
+        names = ["not_verb-error", "verb-error"]
+        for id, case in self.testcases.iteritems():
+            try:
+                gold = case["gold_classid"]
+                org = case["incorr_classid"]
+                cls_out = case["classifier_output"]
+                tmp_l = []
+                if case["type"] == "RV":
+                    self.syslabels.append(self._check(True, org, cls_out))
+                    self.truelabels.append(1)
+                else:
+                    self.syslabels.append(self._check(False, org, cls_out))
+                    self.truelabels.append(0)
+            except Exception, e:
+                logging.debug(pformat(e))
+                raise
+
+        with open(self.reportpath, "w") as rf:
+            ytrue = np.array(self.truelabels)
+            ysys = np.array(self.syslabels)
+            print ytrue
+            print ysys
+            # skf = cross_validation.StratifiedKFold(ytrue, k=5)
+            # for tridx, teidx in skf:
+            #     _ytrue = ytrue[teidx]
+            #     _ysys = ysys[teidx]
+            #     clsrepo_lm = metrics.classification_report(_ytrue, _ysys, target_names=names)
+            #     cm_lm = metrics.confusion_matrix(_ytrue, _ysys, labels=np.array([0,1]))
+            #     print clsrepo_lm
+            #     print pformat(cm_lm)
+            #     rf.write(clsrepo_lm)
+            #     rf.write("\n\n")
+            clsrepo_lm = metrics.classification_report(np.array(ytrue), np.array(ysys), target_names=names)
+            cm_lm = metrics.confusion_matrix(np.array(ytrue), np.array(ysys), labels=np.array([0,1]))
+            print clsrepo_lm
+            print pformat(cm_lm)
+            rf.write(clsrepo_lm)
+
+
+def mk_features(tags=[], v=""):
+    fe = SimpleFeatureExtractor(tags=tags, verb=v)
+    fe.ngrams(n=7)
+    # some more features are needed
+    return fe.features
+
+
+def detectmain_c(corpuspath="", model_root="", type="sgd", reportout="", verbsetpath=""):
+    try:
+        detector = SupervisedDetector(corpusdictpath=corpuspath, verbsetpath=verbsetpath, reportpath=reportout)
+        detector.make_cases()
+        detector.readmodels(path_dataset_root=model_root, modeltype=type)
+        detector.get_classification()
+        detector.mk_report()
+    except Exception, e:
+        print pformat(e)
+        raise
+
+#-------------------------------------------------------------------------------
+# LM models
+#-------------------------------------------------------------------------------
 
 class LM_Detector(DetectorBase):
     def read_LM_and_PASLM(self, path_IRSTLM="", path_PASLM=""):
@@ -169,23 +410,18 @@ class LM_Detector(DetectorBase):
         # print "Checkpoints_VB: ", pformat(cp_list)
         return cp_list
 
+
     def __read_altwords(self, orgword=""):
         return self.altreader.get_altwordlist(orgword)
-
 
 
     def _mk_cases(self, docname="", doc=None, is_withCP=True):
         if docname and doc:
             try:
-                gold_tags = doc["gold_tags"]
-                test_tags = doc["RVtest_tags"]
-                gold_text = doc["gold_text"]
-                test_text = doc["RVtest_text"]
-                gold_words = doc["gold_words"]
-                test_words = doc["RVtest_words"]
-                gold_pas = doc["gold_PAS"]
-                test_pas = doc["RVtest_PAS"]
-
+                gold_tags = doc["gold_tags"]; test_tags = doc["RVtest_tags"]
+                gold_text = doc["gold_text"]; test_text = doc["RVtest_text"]
+                gold_words = doc["gold_words"]; test_words = doc["RVtest_words"]
+                gold_pas = doc["gold_PAS"]; test_pas = doc["RVtest_PAS"]
                 if is_withCP is True:
                     checkpoints = doc["errorposition"]
                     for cpid, cp in enumerate(checkpoints):
@@ -499,23 +735,23 @@ class LM_Detector(DetectorBase):
             except:
                 pass
         with open(self.reportpath, "w") as rf:
-            ytrue = array(self.truelabels)
-            ysys = array(self.syslabels_lm)
+            ytrue = np.array(self.truelabels)
+            ysys = np.array(self.syslabels_lm)
             skf = cross_validation.StratifiedKFold(ytrue, k=5)
             for tridx, teidx in skf:
                 _ytrue = ytrue[teidx]
                 _ysys = ysys[teidx]
                 clsrepo_lm = metrics.classification_report(_ytrue, _ysys, target_names=names)#, labels=labels, target_names=names)
-                cm_lm = metrics.confusion_matrix(_ytrue, _ysys, labels=array([0,1]))
+                cm_lm = metrics.confusion_matrix(_ytrue, _ysys, labels=np.array([0,1]))
                 print clsrepo_lm
                 print pformat(cm_lm)
                 rf.write(clsrepo_lm)
                 rf.write("\n\n")
-            # clsrepo_lm_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm_paslm), target_names=names)#, labels=labels, target_names=names)
-            # clsrepo_paslm = metrics.classification_report(array(self.truelabels), array(self.syslabels_paslm), target_names=names)#, labels=labels, target_names=names)
+            # clsrepo_lm_paslm = metrics.classification_report(np.array(self.truelabels), np.array(self.syslabels_lm_paslm), target_names=names)#, labels=labels, target_names=names)
+            # clsrepo_paslm = metrics.classification_report(np.array(self.truelabels), np.array(self.syslabels_paslm), target_names=names)#, labels=labels, target_names=names)
             # print clsrepo_lm_paslm
-            clsrepo_lm = metrics.classification_report(array(self.truelabels), array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
-            cm_lm = metrics.confusion_matrix(array(self.truelabels), array(self.syslabels_lm), labels=array([0,1]))
+            clsrepo_lm = metrics.classification_report(np.array(self.truelabels), np.array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
+            cm_lm = metrics.confusion_matrix(np.array(self.truelabels), np.array(self.syslabels_lm), labels=np.array([0,1]))
             print clsrepo_lm
             print pformat(cm_lm)
             # try:
@@ -525,9 +761,9 @@ class LM_Detector(DetectorBase):
             #     logging.debug(pformat(fileouterror))
 
 
-def detectmain(corpuspath="", lmpath="", paslmpath="", reportout=""):
+def detectmain(corpuspath="", lmpath="", paslmpath="", reportout="", verbsetpath=""):
     try:
-        detector = LM_Detector(corpusdictpath=corpuspath, reportpath=reportout)
+        detector = LM_Detector(corpusdictpath=corpuspath, reportpath=reportout, verbsetpath=verbsetpath)
         detector.make_cases()
         detector.read_LM_and_PASLM(path_IRSTLM=lmpath, path_PASLM=paslmpath)
         if lmpath:
@@ -548,11 +784,9 @@ if __name__=='__main__':
     argv = sys.argv
     argc = len(argv)
     description =   """
-                    Nyanco.detector
+                    Nyanco.detector\nthis detects verb replacement errors (RV) in FCE dataset,using several methods.
 
-                    this detects verb replacement errors (RV) in FCE dataset,
-                    using several methods.
-                    """
+                    \n\npython detector.py -M classifier -t sgd -m ../sandbox/classify/tiny/datasets -v ../sandbox/classify/verbset_tiny.pkl2 -c ../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2 -o ../log/classifier_detector_test"""
     ap = argparse.ArgumentParser(description=description)
     ap.add_argument("-p", "--pas_lm_path", action="store", 
                     help="path to PAS_LM (python collections.Counter object, as pickle)")
@@ -562,6 +796,14 @@ if __name__=='__main__':
                     help="path of output report file")
     ap.add_argument("-c", '--corpus_pickle_file', action="store",
                     help="path of pickled corpus made by corpusreader2.py and test_corpushandler.py")
+    ap.add_argument("-M", '--model', action="store",
+                    help="classifier or lm")
+    ap.add_argument("-t", '--model_type', action="store",
+                    help="sgd | pegasos | pa")
+    ap.add_argument("-m", '--model_dir_root', action="store",
+                    help="root path of dataset/model directory")
+    ap.add_argument("-v", '--verbset', action="store",
+                    help="root path of verbset pickle")
     args = ap.parse_args()
 
     if (args.corpus_pickle_file and args.output_file and args.lm and args.pas_lm_path):
@@ -581,6 +823,13 @@ if __name__=='__main__':
         detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+
+    elif (args.corpus_pickle_file and args.output_file and args.model=='classifier'):
+        print "Using Classifier models"
+        detectmain_c(corpuspath=args.corpus_pickle_file, reportout=args.output_file, verbsetpath=args.verbset, model_root=args.model_dir_root, type=args.model_type)
+        endtime = time.time()
+        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+
 
     else:
         ap.print_help()

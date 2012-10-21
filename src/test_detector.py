@@ -56,6 +56,17 @@ class TestDetector:
         detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
         raise Exception
 
+class TestCLSDetector:
+    def setUp(self):
+        pass
+    @attr("classifier_detector")
+    def test_classifier(self):
+        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2"
+        self.model_root = "../sandbox/classify/tiny/datasets"
+        self.verbsetpath = "../sandbox/classify/verbset_tiny.pkl2"
+        self.output = "../log/classifier_test"
+        detectmain_c(corpuspath=self.corpuspath, model_root=self.model_root, type="ap", reportout=self.output, verbsetpath=self.verbsetpath)
+        raise Exception
 # ------------------------------------------------------------------
 # For detector version 1 (will be removed)
 # ------------------------------------------------------------------
