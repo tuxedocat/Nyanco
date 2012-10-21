@@ -156,7 +156,7 @@ class BoltClassifier(Classifier):
         else:
             raise NotImplementedError
         if model == "ap":
-            trainer.train(self.glm, self.training_dataset, verbose=0, shuffle=True)
+            trainer.train(self.glm, self.training_dataset, verbose=0, shuffle=False)
         else:
             ova = bolt.OVA(trainer)
             ova.train(self.glm, self.training_dataset, verbose=1, shuffle=True)
@@ -212,9 +212,9 @@ def train_boltclassifier_batch(dataset_dir="", modeltype="sgd"):
     for idd, dir in enumerate(set_names):
         modelfilename = os.path.join(dir, "model_%s.pkl2"%modeltype)
         dspath = os.path.join(dir, "dataset.svmlight")
-        print "Batch trainer (bolt %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd, len(set_names))
+        print "Batch trainer (bolt %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
         train_boltclassifier(dataset_path=dspath, output_path=modelfilename, modeltype=modeltype)
-        print "Batch trainer (bolt %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd, len(set_names))
+        print "Batch trainer (bolt %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
         print "Batch trainer selftest..."
         _selftest(modelfilename, dspath)
         print "Batch trainer selftest... done!"
