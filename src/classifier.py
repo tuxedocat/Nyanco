@@ -156,7 +156,7 @@ class BoltClassifier(Classifier):
         else:
             raise NotImplementedError
         if model == "ap":
-            trainer.train(self.glm, self.training_dataset, verbose=0, shuffle=False)
+            trainer.train(self.glm, self.training_dataset, verbose=0, shuffle=True)
         else:
             ova = bolt.OVA(trainer)
             ova.train(self.glm, self.training_dataset, verbose=1, shuffle=True)
