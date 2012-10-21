@@ -33,7 +33,7 @@ from feature_extractor import SimpleFeatureExtractor
 
 
 class CaseMaker(object):
-    def __init__(self, verbcorpus_dir="", verbset_path="", dataset_dir=""):
+    def __init__(self, verbcorpus_dir="", verbset_path="", dataset_dir="", restart_from=""):
         if not verbcorpus_dir and verbset_path and model_dir and dataset_dir:
             raise TypeError
         else:
@@ -49,7 +49,31 @@ class CaseMaker(object):
         v_names = [os.path.basename(path).split(".")[0] for path in vcorpus_filenames]
         self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names, vcorpus_filenames)}
         self.nullfeature = {"NULL":1}
+        if restart_from:
+            try:
+                p_idx = self.verbs.index(restart_from)
+                print "CaseMaker: restart from verb '%s' in #%d of list"%(restart_from, p_idx)
+                self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names[p_idx:], vcorpus_filenames[p_idx:])}
+                self.verbs = self.verbs[p_idx:]
+                old_vs = {v : vs for (v, vs) in self.verbsets.iteritems()}
+                self.verbsets = {}
+                for vn in self.verbs:
+                    self.verbsets[vn] = old_vs[vn]
+                print pformat(self.verbs)
+                print pformat(self.verbsets)
 
+            except Exception, e:
+                print e
+                raise e
+
+    def _is_validXY(self, X=[], Y=[]):
+        try:
+            if X.shape[0] == Y.shape[0]:
+                return True
+            else:
+                return False
+        except:
+            return False
 
     def make_fvectors(self):
         """
@@ -99,6 +123,9 @@ class CaseMaker(object):
                 print "CaseMaker make_fvectors: seems feature vector for the set %s is empty..."%setname
                 print pformat(e)
                 print fvectors_str
+                X = np.array([])
+                Y = np.array([])
+            if not self._is_validXY(X, Y):
                 X = np.array([])
                 Y = np.array([])
             dir_n = os.path.join(self.dataset_dir, setname)
@@ -202,8 +229,8 @@ class BoltClassifier(Classifier):
         return pred
 
 
-def make_fvectors(verbcorpus_dir, verbset_path, dataset_dir):
-    CM = CaseMaker(verbcorpus_dir, verbset_path, dataset_dir)
+def make_fvectors(verbcorpus_dir, verbset_path, dataset_dir, restart_from):
+    CM = CaseMaker(verbcorpus_dir, verbset_path, dataset_dir, restart_from)
     CM.make_fvectors()
 
 def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd"):
@@ -244,8 +271,8 @@ if __name__=='__main__':
     starttime = time.time()
     argv = sys.argv
     argc = len(argv)
-    description = """python classifier.py -M prepare -c ../sandbox/classify/tiny/out -v ../sandbox/classify/verbset_tiny.pkl2 -d ../sandbox/classify/tiny/datasets\n
-python classifier.py -M train_save -d ../sandbox/classify/tiny/datasets -m sgd
+    description = """python classifier.py -M prepare -c ../sandbox/classify/tiny/out -v ../sandbox/classify/verbset_tiny.pkl2 -d ../sandbox/classify/tiny/datasets --restart_from get\n
+python classifier.py -M train_save -d ../sandbox/classify/tiny/datasets -m sgd 
 """
     ap = argparse.ArgumentParser(description=description)
     ap.add_argument("-c", "--verbcorpus_path", action="store", 
@@ -260,10 +287,13 @@ python classifier.py -M train_save -d ../sandbox/classify/tiny/datasets -m sgd
                     help="model store for .svmlight examples")
     ap.add_argument("-M", '--Mode', action="store",
                     help="set 'prepare' for making f_vectors, and 'train_save' for training and saving the models")
+    ap.add_argument("-r", '--restart_from', action="store",
+                    help="input previous stop point (e.g. want)")
+
     args = ap.parse_args()
 
     if (args.Mode=="prepare"):
-        make_fvectors(args.verbcorpus_path, args.verbset_path, args.dataset_dir)
+        make_fvectors(args.verbcorpus_path, args.verbset_path, args.dataset_dir, args.restart_from)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
     elif (args.Mode=="train_save"):
