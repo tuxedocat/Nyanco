@@ -32,6 +32,7 @@ class FeatureExtractorBase(object):
         self.features = defaultdict(float)
         self.v = verb
         self.gen_fn = lambda x,y,z: "_".join([x, str(y), z])
+        self.nullfeature = {"NULL":1}
         try:
             self.tags = [t for t in tags if not t is ""]
             if len(tags[0].split("\t")) == 14:
@@ -69,7 +70,11 @@ class FeatureExtractorBase(object):
             except Exception, e:
                 print pformat(e)
                 print tags
-                raise
+        except Exception, e:
+            print pformat(e)
+            print tags
+            self.features.update(self.nullfeature)
+
 
     def _find_verb_idx(self):
         verbpos = [idx for idx, sufpos in enumerate(zip(self.SUF,self.POS)) if sufpos[0] == self.v and "VB" in sufpos[1]]
@@ -119,21 +124,25 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
             suf_ngram: {"suf_-2_the": 1, "suf_-1_cat": 1, "suf_0_eats": 1,...}
             pos_ngram: {"suf_-2_DT": 1, "suf_-1_NN": 1, "suf_0_VBZ": 1,...}
         """
-        if not v_idx:
-            v_idx = self.v_idx
-        suf_ngram = {}
-        pos_ngram = {}
-        window = int((n - 1)/2)
-        if not v_idx:
-            v_idx = 0
-        core = self.WL[v_idx]
-        _left = [word for index, word in enumerate(self.WL) if index < v_idx][-window:]
-        _right = [word for index, word in enumerate(self.WL) if index > v_idx][:window]
-        concat = _left + [core] + _right
-        suf_ngram = {self.gen_fn("SUF", i-window, w[0]):1 for i, w in enumerate(concat)}
-        pos_ngram = {self.gen_fn("POS", i-window, w[1]):1 for i, w in enumerate(concat)}
-        self.features.update(suf_ngram)
-        self.features.update(pos_ngram)
+        try:
+            if not v_idx:
+                v_idx = self.v_idx
+            suf_ngram = {}
+            pos_ngram = {}
+            window = int((n - 1)/2)
+            if not v_idx:
+                v_idx = 0
+            core = self.WL[v_idx]
+            _left = [word for index, word in enumerate(self.WL) if index < v_idx][-window:]
+            _right = [word for index, word in enumerate(self.WL) if index > v_idx][:window]
+            concat = _left + [core] + _right
+            suf_ngram = {self.gen_fn("SUF", i-window, w[0]):1 for i, w in enumerate(concat)}
+            pos_ngram = {self.gen_fn("POS", i-window, w[1]):1 for i, w in enumerate(concat)}
+            self.features.update(suf_ngram)
+            self.features.update(pos_ngram)
+        except Exception, e:
+            print pformat(e)
+            self.features.update(self.nullfeature)
 
     @classmethod
     def read_wordnet_tag(self):
