@@ -737,16 +737,16 @@ class LM_Detector(DetectorBase):
         with open(self.reportpath, "w") as rf:
             ytrue = np.array(self.truelabels)
             ysys = np.array(self.syslabels_lm)
-            skf = cross_validation.StratifiedKFold(ytrue, k=5)
-            for tridx, teidx in skf:
-                _ytrue = ytrue[teidx]
-                _ysys = ysys[teidx]
-                clsrepo_lm = metrics.classification_report(_ytrue, _ysys, target_names=names)#, labels=labels, target_names=names)
-                cm_lm = metrics.confusion_matrix(_ytrue, _ysys, labels=np.array([0,1]))
-                print clsrepo_lm
-                print pformat(cm_lm)
-                rf.write(clsrepo_lm)
-                rf.write("\n\n")
+            # skf = cross_validation.StratifiedKFold(ytrue, k=5)
+            # for tridx, teidx in skf:
+            #     _ytrue = ytrue[teidx]
+            #     _ysys = ysys[teidx]
+            #     clsrepo_lm = metrics.classification_report(_ytrue, _ysys, target_names=names)#, labels=labels, target_names=names)
+            #     cm_lm = metrics.confusion_matrix(_ytrue, _ysys, labels=np.array([0,1]))
+            #     print clsrepo_lm
+            #     print pformat(cm_lm)
+            #     rf.write(clsrepo_lm)
+            #     rf.write("\n\n")
             # clsrepo_lm_paslm = metrics.classification_report(np.array(self.truelabels), np.array(self.syslabels_lm_paslm), target_names=names)#, labels=labels, target_names=names)
             # clsrepo_paslm = metrics.classification_report(np.array(self.truelabels), np.array(self.syslabels_paslm), target_names=names)#, labels=labels, target_names=names)
             # print clsrepo_lm_paslm
