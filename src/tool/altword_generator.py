@@ -91,7 +91,7 @@ class AlternativeGenerator(object):
 class AlternativeReader(object):
     def __init__(self, verbset_path=""):
         try:
-            verset = pickle.load(open(verbset_path, "rb"))
+            verbset = pickle.load(open(verbset_path, "rb"))
             self.altdic = verbset
         except Exception, e:
             print e
