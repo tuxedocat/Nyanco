@@ -774,6 +774,9 @@ def detectmain(corpuspath="", lmpath="", paslmpath="", reportout="", verbsetpath
             detector.PASLM_count()
         detector.detect()
         detector.mk_report()
+    except Exception, e:
+        print pformat(e)
+        raise
     finally :
         detector.cleanup()
 
