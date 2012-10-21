@@ -146,15 +146,17 @@ class BoltClassifier(Classifier):
             print pformat(e)
 
 
-    def train(self, model="sgd", params={"reg":0.0001, "epochs": 30}):
+    def train(self, model="sgd", params={"reg":0.00001, "epochs": 30, "SGDLoss":"ModifiedHuber"}):
         if "reg" in params:
             reg = params["reg"]
         if "epochs" in params:
             epochs = params["epochs"]
+        if "SGDLoss" in params:
+            epochs = params["epochs"]
         self.glm = bolt.GeneralizedLinearModel(m=self.training_dataset.dim, 
                                                k=len(self.training_dataset.classes))
         if model == "sgd":
-            trainer = bolt.SGD(bolt.Hinge(), reg=reg, epochs=epochs)
+            trainer = bolt.SGD(bolt.ModifiedHuber(), reg=reg, epochs=epochs)
         elif model == "pegasos":
             trainer = bolt.PEGASOS(reg=reg, epochs=epochs)
         elif model == "ap":
