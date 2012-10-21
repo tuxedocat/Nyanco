@@ -734,7 +734,7 @@ class LM_Detector(DetectorBase):
                 self.report.append(tmpdic_r)
             except Exception, e:
                 print pformat(e)
-                raise
+                print pformat(case)
 
         with open(self.reportpath, "w") as rf:
             ytrue = np.array(self.truelabels)
