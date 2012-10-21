@@ -91,7 +91,8 @@ class AlternativeGenerator(object):
 class AlternativeReader(object):
     def __init__(self, verbset_path=""):
         verset = pickle.load(open(verbset_path, "rb"))
-        self.altdic = verbset["verbset"]
+        self.altdic = verbset
+        # self.altdic = verbset["verbset"]
 
     def get_altwordlist(self, verb=""):
         try:
