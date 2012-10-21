@@ -198,7 +198,7 @@ def make_fvectors(verbcorpus_dir, verbset_path, dataset_dir):
     CM.make_fvectors()
 
 def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd"):
-    default = {"reg":0.0001, "epochs": 30}
+    default = {"reg":0.0001, "epochs": 5}
     classifier = BoltClassifier()
     classifier.read_traincases(dataset_path)
     classifier.train(model=modeltype, params=default)
