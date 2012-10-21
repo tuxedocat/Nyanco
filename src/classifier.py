@@ -80,7 +80,8 @@ class CaseMaker(object):
         Create feature vectors for given datasets, for classifiers as SVM^light format
         using feature_extraction's classes
         """
-        for setname, vset in self.verbsets.iteritems(): # setname is str, vset is list
+        for setname in self.verbs: # setname is str, vset is list
+            vset = self.verbsets[setname]
             if vset:
                 print "CaseMaker make_fvectors: working on set '%s'"%setname
                 vectorizer = DictVectorizer(sparse=True)
