@@ -29,7 +29,7 @@ class AlternativeGenerator(object):
     Takes surface of a word and its wordnet synset name if given, 
     Returns alternative candidates as a list (10 alternatives is maximum as default setting)
     """
-    def __init__(self, suf="", wncat="", maxnum=20, pos="VB", include_hyponyms=False, include_uncertain=False):
+    def __init__(self, suf="", wncat="", maxnum=20, pos="VB", include_hyponyms=False, include_uncertain=False, score=True):
         self.surface = suf
         self.pos = pos
         self.wncat = wncat
@@ -37,6 +37,7 @@ class AlternativeGenerator(object):
         self.include_hyponyms = include_hyponyms
         self.include_uncertain = include_uncertain
         self.alternatives = []
+        self.score = score
 
 
     def generate_from_wordnet(self):
@@ -46,7 +47,7 @@ class AlternativeGenerator(object):
         elif self.include_uncertain:
             self.synsetnames = wn.synsets(self.surface, pos=self._posmap())
         for synset in self.synsetnames:
-            tmp = [w[0] for w in self._traverse_synsets(synset)]
+            tmp = [w[0] for w in self._traverse_synsets(synset=synset, score=self.score)]
             for alt in tmp:
                 if len(self.alternatives) >= self.maxnum_cand:
                     break
@@ -57,7 +58,7 @@ class AlternativeGenerator(object):
         return self.alternatives
 
 
-    def _traverse_synsets(self, synset=None, depth=1):
+    def _traverse_synsets(self, synset=None, depth=1, score=True):
         """
         starting from given synset, traverse synsets.
         firstly, take hypernym of given synset, then try to find hyponyms 
