@@ -215,11 +215,11 @@ class SupervisedDetector(DetectorBase):
                 model = self.models[setname]
                 fmap = self.fmaps[setname]
                 lmap = self.label2id[setname]
-                print "SupervisedDetector: model for %s is found :)"%setname
+                logging.debug("SupervisedDetector: model for %s is found :)"%setname)
                 case["incorr_classid"] = lmap[setname]
                 case["is_incorr_in_Vset"] = True
             except KeyError:
-                print "SupervisedDetector: model for %s is not found :("%setname
+                logging.debug("SupervisedDetector: model for %s is not found :("%setname)
                 model = None
                 fmap = None
                 lmap = None
@@ -279,6 +279,7 @@ class SupervisedDetector(DetectorBase):
                 org = case["incorr_classid"]
                 cls_out = case["classifier_output"]
                 tmp_l = []
+                assert case["is_incorr_in_Vset"] == True
                 if case["type"] == "RV":
                     self.syslabels.append(self._check(True, org, cls_out))
                     self.truelabels.append(1)
@@ -287,7 +288,6 @@ class SupervisedDetector(DetectorBase):
                     self.truelabels.append(0)
             except Exception, e:
                 logging.debug(pformat(e))
-                raise
 
         with open(self.reportpath, "w") as rf:
             ytrue = np.array(self.truelabels)
