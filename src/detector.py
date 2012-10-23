@@ -752,11 +752,12 @@ class LM_Detector(DetectorBase):
             # clsrepo_lm_paslm = metrics.classification_report(np.array(self.truelabels), np.array(self.syslabels_lm_paslm), target_names=names)#, labels=labels, target_names=names)
             # clsrepo_paslm = metrics.classification_report(np.array(self.truelabels), np.array(self.syslabels_paslm), target_names=names)#, labels=labels, target_names=names)
             # print clsrepo_lm_paslm
-            clsrepo_lm = metrics.classification_report(np.array(self.truelabels), np.array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
+            # clsrepo_lm = metrics.classification_report(np.array(self.truelabels), np.array(self.syslabels_lm), target_names=names)#, labels=labels, target_names=names)
+            
             cm_lm = metrics.confusion_matrix(np.array(self.truelabels), np.array(self.syslabels_lm), labels=np.array([0,1]))
-            print clsrepo_lm
+            # print clsrepo_lm
             rf.write("\n\n")
-            rf.write(clsrepo_lm)
+            # rf.write(clsrepo_lm)
             print pformat(cm_lm)
             # try:
             #     for repo in self.report:
