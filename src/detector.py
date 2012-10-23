@@ -270,7 +270,8 @@ class SupervisedDetector(DetectorBase):
         """
         from sklearn import metrics
         self.truelabels = []
-        self.syslabels = [] 
+        self.syslabels = []
+        self.gold_in_Cset = []
         labels = [0 ,1]
         names = ["not_verb-error", "verb-error"]
         for id, case in self.testcases.iteritems():
@@ -286,6 +287,8 @@ class SupervisedDetector(DetectorBase):
                 else:
                     self.syslabels.append(self._check(False, org, cls_out))
                     self.truelabels.append(0)
+                if case["is_gold_in_Vset"] == True:
+                    self.gold_in_Cset.append(1)
             except Exception, e:
                 logging.debug(pformat(e))
 
@@ -308,6 +311,7 @@ class SupervisedDetector(DetectorBase):
             cm_lm = metrics.confusion_matrix(np.array(ytrue), np.array(ysys), labels=np.array([0,1]))
             print clsrepo_lm
             print pformat(cm_lm)
+            print "num. of OOV case", len(self.gold_in_Cset)
             rf.write(clsrepo_lm)
 
 
