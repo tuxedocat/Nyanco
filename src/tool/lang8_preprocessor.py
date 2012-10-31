@@ -43,18 +43,18 @@ class Sentence(Entity):
 """
 session.close()
 for docid, tuple in enumerate(zip(docidlist, orgsentlist, annotatedlist)):
-        for sentid, sentpair in enumerate(zip(orgsentlist[docid], annotatedlist[docid])):
-                try:
-                        if sentpair[1]:
-                                Sentence(doc_id=docid, 
-                                                 sent_id=sentid, 
-                                                 original_text=unicode(sentpair[0]), 
-                                                 annotated_raw=unicode("".join(sentpair[1])), 
-                                                 annotated_verb=u" ", 
-                                                 comments=u" ", 
-                                                 flags=u" ", 
-                                                 proficiency_level=u" ")
-                except:
-                        pass
+    for sentid, sentpair in enumerate(zip(tuple[1], tuple[2])):
+        try:
+            if sentpair[1]:
+                Sentence(doc_id=tuple[0], 
+                         sent_id=sentid, 
+                         original_text=unicode(sentpair[0]), 
+                         annotated_raw=unicode("".join(sentpair[1])), 
+                         annotated_verb=u"", 
+                         comments=u"", 
+                         flags=u"", 
+                         proficiency_level=u"")
+        except:
+            pass
 session.commit()
 """
