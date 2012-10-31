@@ -47,13 +47,13 @@ for docid, tuple in enumerate(zip(docidlist, orgsentlist, annotatedlist)):
                 try:
                         if sentpair[1]:
                                 Sentence(doc_id=docid, 
-                                                 sent_id=sentid, 
-                                                 original_text=unicode(sentpair[0]), 
-                                                 annotated_raw=unicode("".join(sentpair[1])), 
-                                                 annotated_verb=u" ", 
-                                                 comments=u" ", 
-                                                 flags=u" ", 
-                                                 proficiency_level=u" ")
+                                         sent_id=sentid, 
+                                         original_text=unicode(sentpair[0]), 
+                                         annotated_raw=unicode("".join(sentpair[1])), 
+                                         annotated_verb=u" ", 
+                                         comments=u" ", 
+                                         flags=u" ", 
+                                         proficiency_level=u" ")
                 except:
                         pass
 session.commit()
