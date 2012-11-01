@@ -24,7 +24,7 @@ import re
 re_l8tags = re.compile(r"(\[(|\/)\w+-\w+\])|(\[sline\].*\[/sline\])", re.UNICODE)
 
 def removetags(l8str):
-    return re_l8tags.sub("", l8str.replace("\n", "", 100))
+    return re_l8tags.sub("", l8str.replace("\n", "", 10), 100)
 
 def filterout():
     try:
@@ -32,7 +32,8 @@ def filterout():
         for k in db.iterkeys():
             try:
                 db[k]["correct_notags"] = removetags(db[k]["correct_raw"])
-            except:
+            except Exception, e:
+                print e
                 pass
     except Exception, e:
         print e
