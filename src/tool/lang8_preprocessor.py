@@ -2,6 +2,8 @@
 # coding: utf-8
 '''
 Nyanco/src/tool/lang8_preprocessor.py
+
+Dirty preprocessing for lang8 data, done in iPython interactive shell mainly....
 '''
 __author__ = "Yu Sawai"
 __copyright__ = "Copyright 2012, Yu Sawai"
@@ -14,9 +16,33 @@ import os
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
+import shelve # note: use only DbfinameShelve since there's no bsddb in pine servers
+import re
+
+# re_sline = re.compile(r"(\[sline\].*\[/sline\])", re.UNICODE)
+# re_tags = re.compile(r"(\[(|\/)\w+-\w+\])", re.UNICODE)
+re_l8tags = re.compile(r"(\[(|\/)\w+-\w+\])|(\[sline\].*\[/sline\])", re.UNICODE)
+
+def removetags(l8str):
+    return re_l8tags.sub("", l8str.replace("\n", "", 100))
+
+def filterout():
+    try:
+        db = shelve.DbfilenameShelf("../../sandbox/lang8/eng.shelve", writeback=True)
+        for k in db.iterkeys():
+            try:
+                db[k]["correct_notags"] = removetags(db[k]["correct_raw"])
+            except:
+                pass
+    except Exception, e:
+        print e
+    finally:
+        db.close()
 
 
 
+
+# Used in iPython
 def savetoshelve(docids, orgs, annots, shelvedb):
     for idx, docid in enumerate(docids):
         did = str(docid)
