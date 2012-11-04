@@ -13,6 +13,7 @@ __status__ = "Prototyping"
 from datetime import datetime
 import logging
 import os
+import difflib
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
@@ -39,6 +40,39 @@ def filterout():
         print e
     finally:
         db.close()
+
+
+# Get diff from original/correction pair sentences
+def _decode_diff(_o, _a, dt):
+    o_i1 = dt[1]; o_i2 = dt[2]
+    a_i1 = dt[3]; a_i2 = dt[4]
+    return _o[o_i1:o_i2], _a[a_i1:a_i2]
+
+
+def _tdiff(_o, _a):
+    replaced = [t for t in difflib.SequenceMatcher(None, _o, _a).get_opcodes() if t[0] == 'replace']
+    if replaced:
+        tmp = [_decode_diff(_o, _a, dt) for dt in replaced]
+        # print tmp
+        for tt in tmp:
+            o = tt[0]
+            a = tt[1]
+            _res = [t for t in zip(o,a) if "VB" in t[0][1] and "VB" in t[1][1]]
+            if _res:
+                print _res
+                for r in _res:
+                    return r
+            # print  [(t[0][0], t[1][0]) for t in tmp if "VB" in t[0][1] and "VB" in t[1][1]]
+
+
+def get_diff(_o, _a):
+    if hasattr(_o, "upper"):
+        _o = _o.split()
+    if hasattr(_a, "upper"):
+        _a = _a.split()
+    isfound = False
+    while isfound is False:
+        _tdiff(_o, _a)
 
 
 
