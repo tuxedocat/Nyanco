@@ -28,9 +28,10 @@ def removetags(l8str):
 
 def filterout():
     try:
-        db = shelve.DbfilenameShelf("../../sandbox/lang8/eng.shelve", writeback=True)
-        for k in db.iterkeys():
+        db = shelve.DbfilenameShelf("../../sandbox/lang8/eng.shelve")
+        for idx, k in enumerate(db.iterkeys()):
             try:
+                print "Processing #%d sentence"%(idx+1)
                 db[k]["correct_notags"] = removetags(db[k]["correct_raw"])
             except Exception, e:
                 print e
