@@ -10,6 +10,7 @@ __version__ = "0"
 __status__ = "Prototyping"
 
 from datetime import datetime
+
 import logging
 logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG, filename='../log/'+logfilename)

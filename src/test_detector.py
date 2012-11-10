@@ -133,3 +133,6 @@ class TestCLSDetector:
     # def test_detect(self):
     #     detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
     #     raise Exception
+if __name__ == '__main__':
+    import nose
+    nose.run(argv=[__file__, '--with-doctest', '-vv', '-s'])
