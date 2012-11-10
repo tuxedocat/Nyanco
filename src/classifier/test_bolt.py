@@ -57,3 +57,7 @@ class TestBoltClassifier(object):
         pred = [p for p in glm.predict(self.test3c.iterinstances())]
         print sklearn.metrics.classification_report(self.correct, array(pred))
         raise Exception
+
+if __name__ == '__main__':
+    import nose
+    nose.run(argv=[__file__, '--with-doctest', '-vv', '-s'])
