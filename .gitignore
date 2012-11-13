@@ -1,8 +1,6 @@
 *.py[co]
 *.*~
 *.pickle
-*.pkl
-*.pkl2
 .DS_Store
 log/*
 
@@ -45,6 +43,7 @@ train
 
 
 # sandbox test files
+sandbox/classify/dataset*
 sandbox/afp_eng_199405_raw.cleaned
 sandbox/pas/afp_eng_*
 sandbox/fce_corpus/tmp*
