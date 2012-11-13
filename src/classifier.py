@@ -44,8 +44,10 @@ class CaseMaker(object):
         self.dataset_dir = dataset_dir
         self.verbset_path = verbset_path
         verbset_load = pickle.load(open(verbset_path,"rb"))
-        self.verbs = verbset_load["verbs"]
-        self.verbsets = verbset_load["verbset"]
+        self.verbs = verbset_load.keys()
+        self.verbsets = verbset_load
+#        self.verbs = verbset_load["verbs"]
+#        self.verbsets = verbset_load["verbset"]
         vcorpus_filenames = glob.glob(os.path.join(self.corpusdir, "*.pkl2"))
         v_names = [os.path.basename(path).split(".")[0] for path in vcorpus_filenames]
         self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names, vcorpus_filenames)}

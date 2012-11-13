@@ -17,6 +17,7 @@ import os
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
+from copy import deepcopy
 from pattern.text import en
 from nose.plugins.attrib import attr
 import random
@@ -127,7 +128,8 @@ def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
     import glob
     ukwacfiles = glob.glob(ukwac_prefix+"*.parsed")
     raw_verbset = pickle.load(open(verbset_path, "rb"))
-    verbset = raw_verbset["verbset"]
+#    verbset = raw_verbset["verbset"]
+    verbset = deepcopy(raw_verbset)
     verbs, conjdic = _retrieve_unique_verbs(verbset)
     output_dic = defaultdict(list)
     if shuffle is True:
