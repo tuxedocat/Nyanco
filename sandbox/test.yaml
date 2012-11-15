@@ -37,20 +37,21 @@ tiny_sgd:
         - classifier
     dir_log: ../log
 
-# tiny_ap: 
-#     pipeline: 
-#         - train
-#         - detect
-#     verbset: classify/verbset_tiny.pkl2
-#     dir_ukwac: classify
-#     num_tsamples: 30
-#     features: 
-#         - suf_ngram
-#         - ngram # srl, dep, topic
-#     classifier: ap # ap, pa1, pa2
-#     classifier_args: {epoch: 10} # loss: huber, reg: l1, epoch: 5
-#     dir_out: classify
-#     dir_train: classify
-#     detector_option: 
-#         - classifier
-#     dir_log: ../log
+
+tiny_ap: 
+    pipeline: 
+        - full
+    verbset: ../sandbox/classify/vs_tiny.pkl2
+    dir_ukwac: ../sandbox/classify/
+    num_tsamples: 30
+    features: 
+        - suf_ngram
+        - ngram # srl, dep, topic
+    classifier: ap # ap, pa1, pa2
+    classifier_args: {loss: hinge, reg: l2, epoch: 10} # loss: huber, reg: l1, epoch: 5
+    dir_out: ../sandbox/classify/
+    dir_train: ../sandbox/classify/
+    fce_path: ../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2
+    detector_option: 
+        - classifier
+    dir_log: ../log

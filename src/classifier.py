@@ -278,7 +278,7 @@ class BoltClassifier(Classifier):
 
 
 def make_fvectors(verbcorpus_dir="", verbset_path="", dataset_dir="", restart_from=""):
-    CM = CaseMaker(verbcorpus_dir="", verbset_path="", dataset_dir="", restart_from="")
+    CM = CaseMaker(verbcorpus_dir=verbcorpus_dir, verbset_path=verbset_path, dataset_dir=dataset_dir, restart_from=restart_from)
     CM.make_fvectors()
 
 def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd", 

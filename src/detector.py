@@ -50,8 +50,8 @@ class DetectorBase(object):
         # Todo: make it take any given path to the dictionary
         # self.altword_dic_path = "./tool/ranked_alt20.pickle2"
         # self.altword_dic = pickle.load(open(self.altword_dic_path, "rb"))
-        self.altreader = altgen.AlternativeReader(self.verbsetpath)
         self.verbsetpath = verbsetpath
+        self.altreader = altgen.AlternativeReader(self.verbsetpath)
         self.verbset = pickle.load(open(self.verbsetpath, "rb"))
 
 

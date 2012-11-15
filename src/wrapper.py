@@ -82,7 +82,7 @@ class Experiment(object):
                                      verbset_path=self.vs,
                                      dataset_dir=self.dsdir)
         if "full" or "tain" in self.pl:
-            clasifier.train_boltclassifier_batch(dataset_dir=self.dsdir, 
+            classifier.train_boltclassifier_batch(dataset_dir=self.dsdir, 
                                                  modeltype=self.model, 
                                                  verbset_path=self.vs, 
                                                  selftest=False, 
