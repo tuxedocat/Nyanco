@@ -29,6 +29,9 @@ class ClassifierExample(object):
 
 
 def is_verbincluded(verb="", sent=[]):
+    """
+    This is obsolete
+    """
     i_suf = 1
     i_pos = 4
     i_ne = 10
@@ -46,6 +49,13 @@ def is_verbincluded(verb="", sent=[]):
     return vflag
 
 def is_verbincluded2(verb="", sent="", conjs=[]):
+    """
+    This is for checking whether given sentence contains any of conjugation of the verb
+    @args
+        verb, sentence(as string), conjs(conjugation of the verb)
+    @returns
+        vflag (True if the verb is in sentence else False)
+    """
     vflag = False
     cand = [c+"\t_\t_\tVB" for c in conjs]
     if sent:
@@ -59,6 +69,9 @@ def is_verbincluded2(verb="", sent="", conjs=[]):
     return vflag
 
 def _get_conjs(verb=""):
+    """
+    Generate possible conjugation of given verb
+    """
     return [en.conjugate(verb, c) for c in tense]
 
 
@@ -81,6 +94,7 @@ def _retrieve_unique_verbs(verbset={}):
         vconj_dic[v] = _get_conjs(v)
     return allv, vconj_dic
 
+
 def _extract_sents(corpus=[], verb="", sample_max_num = 10000, conjs = []):
     """
     this will extract training sentences (parsed file format) into given output directory
@@ -99,6 +113,7 @@ def _extract_sents(corpus=[], verb="", sample_max_num = 10000, conjs = []):
     except KeyboardInterrupt:
         raise KeyboardInterrupt
     return v_corpus
+
 
 def _save_vcorpus(verb="", v_corpus=[], output_dir=""):
     if not os.path.exists(output_dir):
@@ -156,7 +171,7 @@ def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
     except KeyboardInterrupt:
         print "Interrupted by user... aborting"
     except CorpusFileCountOverlimit:
-        print "Reached file count limitation... aboting"
+        print "Reached file count limitation... aborting"
     finally:
         _save_vcorpusdic(output_dic, output_dir)
     print "Extracting sentences: done"

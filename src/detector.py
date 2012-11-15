@@ -48,13 +48,11 @@ class DetectorBase(object):
             os.makedirs(reportdir)
         self.ngram_len = 5
         # Todo: make it take any given path to the dictionary
-        self.altword_dic_path = "./tool/ranked_alt20.pickle2"
-        self.altword_dic = pickle.load(open(self.altword_dic_path, "rb"))
-        self.altreader = altgen.AlternativeReader(self.altword_dic_path)
+        # self.altword_dic_path = "./tool/ranked_alt20.pickle2"
+        # self.altword_dic = pickle.load(open(self.altword_dic_path, "rb"))
+        self.altreader = altgen.AlternativeReader(self.verbsetpath)
         self.verbsetpath = verbsetpath
         self.verbset = pickle.load(open(self.verbsetpath, "rb"))
-        # self.altword_dic = self.verbset["verbset"]
-        # self.altreader = altgen.AlternativeGenerator(self.verbsetpath)
 
 
     def make_cases(self):

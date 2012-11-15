@@ -97,7 +97,6 @@ class AlternativeReader(object):
         except Exception, e:
             print e
             raise
-        # self.altdic = verbset["verbset"]
 
     def get_altwordlist(self, verb=""):
         try:

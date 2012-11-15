@@ -18,6 +18,7 @@ from collections import defaultdict
 from pprint import pformat
 from time import time
 import glob
+from copy import deepcopy
 
 # Currently, assuming bolt online classifier toolkit as sgd/pegasos classifier
 # and scikit-learn as utilities and for svm models
@@ -285,8 +286,8 @@ def _selftest(modelpath="", dspath=""):
 
 def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path=""):
     vs_file = pickle.load(open(verbset_path, "rb"))
-    verbs = vs_file["verbs"]
-    verbsets = vs_file["verbset"]
+    verbs = vs_file.keys()
+    verbsets = deepcopy(vs_file)
     set_names = [os.path.join(dataset_dir, v) for v in verbs]
     # set_names = glob.glob(os.path.join(dataset_dir, "*"))
     # v_names = [os.path.basename(path) for path in set_names]
