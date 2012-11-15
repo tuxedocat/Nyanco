@@ -415,3 +415,16 @@ sandbox/classify/tiny/datasets/have/dataset.svmlight
 sandbox/classify/tiny/datasets/tell/dataset.svmlight
 sandbox/classify/tiny/datasets/wonder/dataset.svmlight
 sandbox/classify/tiny/ukwac_s_.parsed
+/sandbox/classify/out/
+/sandbox/classify/tiny/out/
+/sandbox/classify/tiny/datasets/wonder/
+/sandbox/classify/tiny/datasets2/
+/sandbox/classify/tiny/
+/sandbox/classify/verbsets/
+/sandbox/evaluation/
+/sandbox/fce2/
+/sandbox/fce/
+/sandbox/irstlm_sample/chunkLM/map/
+/sandbox/irstlm_sample/chunkLM/lm/
+/sandbox/irstlm_sample/chunkLM/
+/sandbox/irstlm_sample/
