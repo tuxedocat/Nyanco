@@ -284,7 +284,7 @@ def _selftest(modelpath="", dspath=""):
     from sklearn.metrics import classification_report
     print classification_report(correct, np.array(pred))
 
-def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path=""):
+def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False):
     vs_file = pickle.load(open(verbset_path, "rb"))
     verbs = vs_file.keys()
     verbsets = deepcopy(vs_file)
@@ -298,9 +298,10 @@ def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path="")
         print "Batch trainer (bolt %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
         train_boltclassifier(dataset_path=dspath, output_path=modelfilename, modeltype=modeltype)
         print "Batch trainer (bolt %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
-        print "Batch trainer selftest..."
-        _selftest(modelfilename, dspath)
-        print "Batch trainer selftest... done!"
+        if selftest:
+            print "Batch trainer selftest..."
+            _selftest(modelfilename, dspath)
+            print "Batch trainer selftest... done!"
 
 
 if __name__=='__main__':
@@ -328,7 +329,8 @@ python classifier.py -M train_save -d ../sandbox/classify/tiny/datasets -m sgd
                     help="set 'prepare' for making f_vectors, and 'train_save' for training and saving the models")
     ap.add_argument("-r", '--restart_from', action="store",
                     help="input previous stop point (e.g. want)")
-
+    ap.add_argument('--selftest', action="store_true",
+                    help="If selftest of classifier is needed")
     args = ap.parse_args()
 
     if (args.Mode=="prepare"):
@@ -336,7 +338,7 @@ python classifier.py -M train_save -d ../sandbox/classify/tiny/datasets -m sgd
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
     elif (args.Mode=="train_save"):
-        train_boltclassifier_batch(args.dataset_dir, args.modeltype, args.verbset_path)
+        train_boltclassifier_batch(args.dataset_dir, args.modeltype, args.verbset_path, args.selftest)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
     else:
