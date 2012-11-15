@@ -40,8 +40,9 @@ class CaseMaker(object):
         else:
             print "CaseMaker: successfully imported bolt and sklearn"
         self.corpusdir = verbcorpus_dir
-        if not os.path.exists(dataset_dir):
-            os.makedirs(dataset_dir)
+        if not os.path.exists(os.path.abspath(dataset_dir)):
+            print dataset_dir
+            os.makedirs(os.path.abspath(dataset_dir))
         self.dataset_dir = dataset_dir
         self.verbset_path = verbset_path
         verbset_load = pickle.load(open(verbset_path,"rb"))
@@ -53,20 +54,20 @@ class CaseMaker(object):
         v_names = [os.path.basename(path).split(".")[0] for path in vcorpus_filenames]
         self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names, vcorpus_filenames)}
         self.nullfeature = {"NULL":1}
-        if restart_from:
-            try:
-                p_idx = self.verbs.index(restart_from)
-                print "CaseMaker: restart from verb '%s' in #%d of list"%(restart_from, p_idx)
-                self.verbs = self.verbs[p_idx:]
-                old_vs = {v : vs for (v, vs) in self.verbsets.iteritems()}
-                self.verbsets = {}
-                for vn in self.verbs:
-                    self.verbsets[vn] = old_vs[vn]
-                print pformat(self.verbs)
-                print pformat(self.verbsets)
+        # if restart_from:
+        #     try:
+        #         p_idx = self.verbs.index(restart_from)
+        #         print "CaseMaker: restart from verb '%s' in #%d of list"%(restart_from, p_idx)
+        #         self.verbs = self.verbs[p_idx:]
+        #         old_vs = {v : vs for (v, vs) in self.verbsets.iteritems()}
+        #         self.verbsets = {}
+        #         for vn in self.verbs:
+        #             self.verbsets[vn] = old_vs[vn]
+        #         print pformat(self.verbs)
+        #         print pformat(self.verbsets)
 
-            except Exception, e:
-                print e
+        #     except Exception, e:
+        #         print e
 
     def _is_validXY(self, X=[], Y=[]):
         try:
@@ -212,20 +213,32 @@ class BoltClassifier(Classifier):
             print pformat(e)
 
 
-    def train(self, model="sgd", params={"reg":0.00001, "epochs": 10, "SGDLoss":"ModifiedHuber"}):
+    def train(self, model="sgd", opt={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
         try:
-            if "reg" in params:
-                reg = params["reg"]
-            if "epochs" in params:
-                epochs = params["epochs"]
-            if "SGDLoss" in params:
-                epochs = params["epochs"]
+            if "lambda" in opt:
+                l = opt["lambda"]
+            if "epochs" in opt:
+                epochs = opt["epochs"]
+            if "loss" in opt:
+                loss = opt["loss"]
+                if loss == "huber":
+                    loss = bolt.ModifiedHuber()
+                elif loss == "hinge":
+                    loss = bolt.Hinge()
+            if "reg" in opt:
+                reg = opt["reg"]
+                if reg == "L1":
+                    reg = 1
+                elif reg == "L2":
+                    reg = 2
+                else:
+                    reg =3
             self.glm = bolt.GeneralizedLinearModel(m=self.training_dataset.dim, 
                                                    k=len(self.training_dataset.classes))
             if model == "sgd":
-                trainer = bolt.SGD(bolt.ModifiedHuber(), reg=reg, epochs=epochs)
+                trainer = bolt.SGD(loss=loss, reg=l, epochs=epochs, norm=reg)
             elif model == "pegasos":
-                trainer = bolt.PEGASOS(reg=reg, epochs=epochs)
+                trainer = bolt.PEGASOS(reg=l, epochs=epochs)
             elif model == "ap":
                 trainer = bolt.AveragedPerceptron(epochs=epochs)
             else:
@@ -264,15 +277,15 @@ class BoltClassifier(Classifier):
         return pred
 
 
-def make_fvectors(verbcorpus_dir, verbset_path, dataset_dir, restart_from):
-    CM = CaseMaker(verbcorpus_dir, verbset_path, dataset_dir, restart_from)
+def make_fvectors(verbcorpus_dir="", verbset_path="", dataset_dir="", restart_from=""):
+    CM = CaseMaker(verbcorpus_dir="", verbset_path="", dataset_dir="", restart_from="")
     CM.make_fvectors()
 
-def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd"):
-    default = {"reg":0.0001, "epochs": 10}
+def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd", 
+                            cls_option={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
     classifier = BoltClassifier()
     classifier.read_traincases(dataset_path)
-    classifier.train(model=modeltype, params=default)
+    classifier.train(model=modeltype, opt=cls_option)
     classifier.save_model(output_path)
 
 def _selftest(modelpath="", dspath=""):
@@ -284,7 +297,8 @@ def _selftest(modelpath="", dspath=""):
     from sklearn.metrics import classification_report
     print classification_report(correct, np.array(pred))
 
-def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False):
+def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False, 
+                                cls_option={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
     vs_file = pickle.load(open(verbset_path, "rb"))
     verbs = vs_file.keys()
     verbsets = deepcopy(vs_file)

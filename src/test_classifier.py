@@ -58,12 +58,13 @@ class TestCaseMaker_huge:
 @attr("bolt")
 class TestBoltClassifier(object):
     def setUp(self):
+        pass
+
+    def test3classSGD(self):
         self.train3c = bolt.io.MemoryDataset.load("../sandbox/classify/npy/have/dataset.svmlight")
         self.test3c = bolt.io.MemoryDataset.load("../sandbox/classify/npy/have/dataset.svmlight")
         self.test3cone = bolt.io.MemoryDataset.load("../sandbox/classify/npy/have/testset.svmlight")
         self.correct = self.test3c.labels
-
-    def test3classSGD(self):
         glm = bolt.GeneralizedLinearModel(m=self.train3c.dim, k=len(self.train3c.classes), biasterm = False)
         sgd = bolt.SGD(bolt.Hinge(), reg = 0.0001, epochs = 5)
         ova = bolt.OVA(sgd)
@@ -89,15 +90,12 @@ class TestBoltClassifier(object):
             pred2 = [p for p in glm.predict(self.test3c.iterinstances())]
             assert pred == pred2
     
-
+    @attr("bolt_actual")
     def test_actual_train_predict(self):
         BC = BoltClassifier()
-        BC.read_traincases("../sandbox/classify/npy/have/dataset.svmlight")
+        BC.read_traincases("../sandbox/classify/tiny/datasets/have/dataset.svmlight")
         BC.train(model="sgd")
-        pred = BC.predict(testset_path="../sandbox/classify/npy/have/testset.svmlight")
-        print pred
-        pred = BC.predict(testset_path="../sandbox/classify/npy/have/dataset.svmlight")
-        print sklearn.metrics.classification_report(self.correct, array(pred))
+        pred = BC.predict(testset_path="../sandbox/classify/tiny/datasets/have/dataset.svmlight")
         raise Exception
 
 
