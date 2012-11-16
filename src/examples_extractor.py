@@ -92,7 +92,7 @@ def _retrieve_unique_verbs(verbset={}):
     allv = set(all_v)
     for v in allv:
         vconj_dic[v] = _get_conjs(v)
-    return allv, vconj_dic
+    return list(allv), vconj_dic
 
 
 def _extract_sents(corpus=[], verb="", sample_max_num = 10000, conjs = []):
@@ -143,7 +143,6 @@ def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
     import glob
     ukwacfiles = glob.glob(ukwac_prefix+"*.parsed")
     raw_verbset = pickle.load(open(verbset_path, "rb"))
-#    verbset = raw_verbset["verbset"]
     verbset = deepcopy(raw_verbset)
     verbs, conjdic = _retrieve_unique_verbs(verbset)
     output_dic = defaultdict(list)
@@ -180,33 +179,33 @@ class CorpusFileCountOverlimit(Exception):
     pass
 
 
-def extract_training_examples(ukwac_prefix = "", verbset_path = "", max_num = 10000, shuffle=False, top_n_verbs=30):
-    """
-    Extract training examples from given (parsed and separated) ukWaC corpus and given verbset
+# def extract_training_examples(ukwac_prefix = "", verbset_path = "", max_num = 10000, shuffle=False, top_n_verbs=30):
+    # """
+    # Extract training examples from given (parsed and separated) ukWaC corpus and given verbset
 
-    Extracted instances will be saved under given output path, like following:
-        set of verb1: outputprefix/verb1/dataset_verb1.pkl2
+    # Extracted instances will be saved under given output path, like following:
+        # set of verb1: outputprefix/verb1/dataset_verb1.pkl2
 
-    @args
-        ukwac_prefix: is prefix of the path, to parsed ukwac files
-        verbset_path: is prefix of the path, to pickled verbset
-        max_num: is a number, that restrict the maximum numbers of each verb's sample
-        shuffle: if True, corpus files will be shuffled
-    @returns
-        None
-    """
-    import glob
-    filelist = glob.glob(ukwac_prefix+"*.parsed")
-    verbset = pickle.load(open(verbset_path, "rb"))
-    verblist = verbset["verbs"]
-    vset = verbset["verbset"]
-    for verb in verblist:
-        for cfname in filelist:
-            corpus = open(cfname, 'r').read().split("\n\n")
-            corpus = [s.split("\n") for s in corpus]
+    # @args
+        # ukwac_prefix: is prefix of the path, to parsed ukwac files
+        # verbset_path: is prefix of the path, to pickled verbset
+        # max_num: is a number, that restrict the maximum numbers of each verb's sample
+        # shuffle: if True, corpus files will be shuffled
+    # @returns
+        # None
+    # """
+    # import glob
+    # filelist = glob.glob(ukwac_prefix+"*.parsed")
+    # verbset = pickle.load(open(verbset_path, "rb"))
+    # verblist = verbset["verbs"]
+    # vset = verbset["verbset"]
+    # for verb in verblist:
+        # for cfname in filelist:
+            # corpus = open(cfname, 'r').read().split("\n\n")
+            # corpus = [s.split("\n") for s in corpus]
 
 
-    return None
+    # return None
 
 
 @attr("extract_tiny")
