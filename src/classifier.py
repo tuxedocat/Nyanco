@@ -54,20 +54,20 @@ class CaseMaker(object):
         v_names = [os.path.basename(path).split(".")[0] for path in vcorpus_filenames]
         self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names, vcorpus_filenames)}
         self.nullfeature = {"NULL":1}
-        # if restart_from:
-        #     try:
-        #         p_idx = self.verbs.index(restart_from)
-        #         print "CaseMaker: restart from verb '%s' in #%d of list"%(restart_from, p_idx)
-        #         self.verbs = self.verbs[p_idx:]
-        #         old_vs = {v : vs for (v, vs) in self.verbsets.iteritems()}
-        #         self.verbsets = {}
-        #         for vn in self.verbs:
-        #             self.verbsets[vn] = old_vs[vn]
-        #         print pformat(self.verbs)
-        #         print pformat(self.verbsets)
+        if restart_from:
+            try:
+                p_idx = self.verbs.index(restart_from)
+                print "CaseMaker: restart from verb '%s' in #%d of list"%(restart_from, p_idx)
+                self.verbs = self.verbs[p_idx:]
+                old_vs = {v : vs for (v, vs) in self.verbsets.iteritems()}
+                self.verbsets = {}
+                for vn in self.verbs:
+                    self.verbsets[vn] = old_vs[vn]
+                print pformat(self.verbs)
+                print pformat(self.verbsets)
 
-        #     except Exception, e:
-        #         print e
+            except Exception, e:
+                print e
 
     def _is_validXY(self, X=[], Y=[]):
         try:
@@ -94,6 +94,7 @@ class CaseMaker(object):
                 _casedict = defaultdict(list)
                 _casedict["label2id"] = _classname2id
                 for v in [t[0] for t in vset]:
+                    print "CaseMaker make_fvectors: working on verb '%s'"%v
                     try:
                         with open(self.vcorpus_filedic[v], "rb") as vcf:
                             _corpusdict[v] = pickle.load(vcf)

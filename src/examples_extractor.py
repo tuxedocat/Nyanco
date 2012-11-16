@@ -24,29 +24,26 @@ import random
 tense = ["1sg", "3sg", "pl", "past"]
 
 
-class ClassifierExample(object):
-    pass
 
-
-def is_verbincluded(verb="", sent=[]):
-    """
-    This is obsolete
-    """
-    i_suf = 1
-    i_pos = 4
-    i_ne = 10
-    conjs = ["1sg", "3sg", "pl", "past"]
-    v_conjs = [en.conjugate(verb, c) for c in conjs]
-    tags = [tuple(l.split("\t")) for l in sent]
-    vflag = False
-    if tags:
-        for tt in tags:
-            try:
-                if tt[i_suf] in v_conjs and "VB" in tt[i_pos]:
-                    vflag = True
-            except IndexError, e:
-                pass
-    return vflag
+# def is_verbincluded(verb="", sent=[]):
+#     """
+#     This is obsolete
+#     """
+#     i_suf = 1
+#     i_pos = 4
+#     i_ne = 10
+#     conjs = ["1sg", "3sg", "pl", "past"]
+#     v_conjs = [en.conjugate(verb, c) for c in conjs]
+#     tags = [tuple(l.split("\t")) for l in sent]
+#     vflag = False
+#     if tags:
+#         for tt in tags:
+#             try:
+#                 if tt[i_suf] in v_conjs and "VB" in tt[i_pos]:
+#                     vflag = True
+#             except IndexError, e:
+#                 pass
+#     return vflag
 
 def is_verbincluded2(verb="", sent="", conjs=[]):
     """

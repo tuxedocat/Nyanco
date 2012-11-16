@@ -16,7 +16,10 @@ from nose.plugins.attrib import attr
 import yaml
 
 @attr("wrapper")
-class TestExpWrapper:
+class TestWrapper:
     def setUp(self):
-        path = "../sandbox/test.yaml"
-        do_experiments(path)
+        self.cpath = "../sandbox/test.yaml"
+
+    def wrappertest_tiny(self):
+        do_experiment(self.cpath)
+        raise Exception

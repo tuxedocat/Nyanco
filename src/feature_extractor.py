@@ -47,7 +47,7 @@ class FeatureExtractorBase(object):
                 raise IndexError
             try:
                 self.SUF = [line.split("\t")[self.col_suf] for line in self.tags]
-                self.SUF_l = [en.conjugate(line.split("\t")[self.col_suf], tense="infinitive") for line in self.tags]
+                # self.SUF_l = [en.conjugate(line.split("\t")[self.col_suf], tense="infinitive") for line in self.tags]
                 self.POS = [line.split("\t")[self.col_pos] for line in self.tags]
                 self.WL = zip(self.SUF, self.POS)
                 self.v_idx = self._find_verb_idx()
@@ -64,7 +64,7 @@ class FeatureExtractorBase(object):
             self.tags = tags
             try:
                 self.SUF = [t[self.col_suf] for t in self.tags]
-                self.SUF_l = [en.conjugate(t[self.col_suf], tense="infinitive") for t in self.tags]
+                # self.SUF_l = [en.conjugate(t[self.col_suf], tense="infinitive") for t in self.tags]
                 self.POS = [t[self.col_pos] for t in self.tags]
                 self.WL = zip(self.SUF, self.POS)
                 self.v_idx = self._find_verb_idx()
@@ -82,7 +82,7 @@ class FeatureExtractorBase(object):
         if verbpos:
             return verbpos[0]
         else:
-            verbpos = [idx for idx, sufpos in enumerate(zip(self.SUF_l,self.POS)) if sufpos[0] == self.v and "VB" in sufpos[1]]
+            # verbpos = [idx for idx, sufpos in enumerate(zip(self.SUF_l,self.POS)) if sufpos[0] == self.v and "VB" in sufpos[1]]
             if verbpos:
                 return verbpos[0]
             else:
