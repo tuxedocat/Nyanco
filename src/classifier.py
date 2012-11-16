@@ -188,7 +188,7 @@ class CaseMaker(object):
             #     pass
             # print "CaseMaker make_fvectors: saved Null model."
 #----------------------------------------------------------------------------------------------------
-class Classifier(object):
+class BaseClassifier(object):
     def __init__(self):
         pass
 
@@ -202,7 +202,7 @@ class Classifier(object):
         raise NotImplementedError
 
 
-class BoltClassifier(Classifier):
+class BoltClassifier(BaseClassifier):
     def __init__(self):
         self.models = ["sgd", "pegasos", "ap"]
 
@@ -304,9 +304,6 @@ def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path="",
     verbs = vs_file.keys()
     verbsets = deepcopy(vs_file)
     set_names = [os.path.join(dataset_dir, v) for v in verbs]
-    # set_names = glob.glob(os.path.join(dataset_dir, "*"))
-    # v_names = [os.path.basename(path) for path in set_names]
-    # fndic = {vn : dn for (vn, dn) in zip(v_names, set_names)}
     for idd, dir in enumerate(set_names):
         modelfilename = os.path.join(dir, "model_%s.pkl2"%modeltype)
         dspath = os.path.join(dir, "dataset.svmlight")
