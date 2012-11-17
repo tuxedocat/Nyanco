@@ -34,39 +34,28 @@ class Experiment(object):
         self.c = conf
         self.pl = conf["pipeline"]
         self.vs = conf["verbset"]
+        self.toolkit = conf["toolkit"]
         self.vsname = os.path.basename(self.vs).split(".")[0]
         if "full" or "extract_examples" in self.pl:
             self.native_c = conf["dir_ukwac"]
             self.numts = conf["num_tsamples"]
             self.ext_dir = os.path.join(conf["dir_out"], self.vsname+"_%s"%(str(self.numts)))
-            # examples_extractor.extract_sentence_for_verbs(ukwac_prefix=self.native_c,
-            #                                              output_dir=self.ext_dir,
-            #                                              verbset_path=self.vs,
-            #                                              sample_max_num=self.numts,
-            #                                              shuffle=True)
+
         if "full" or "make_features" in self.pl:
             self.features = conf["features"]
-            self.vcdir = self.ext_dir
+            try:
+                self.vcdir = self.ext_dir
+            except:
+                self.vcdir = os.path.join(conf["dir_out"], self.vsname+"_%s"%(str(self.numts)))
             self.dsdir = os.path.join(conf["dir_train"], self.name) #+ "_" + "_".join(self.features))
-            # classifier.make_fvectors(self.vcdir, self.vs, self.dsdir)
         if "full" or "tain" in self.pl:
             self.model = conf["classifier"]
             self.cls_opts = conf["classifier_args"]
-            # clasifier.train_boltclassifier_batch(dataset_dir=self.dsdir, 
-            #                                      modeltype=self.model, 
-            #                                      verbset_path=self.vs, 
-            #                                      selftest=False, 
-            #                                      cls_option=self.cls_opts)
+
         if "full" or "detect" in self.pl:
             self.dir_log = os.path.join(conf["dir_log"], self.name)
             self.dopt = conf["detector_option"]
             self.fcepath = conf["fce_path"]
-            # if self.dopt == "classifier":
-            #     detector.detectmain_c(corpuspath=self.fcepath, 
-            #                           model_root=self.dsdir, 
-            #                           type=self.model, 
-            #                           reportout=self.dir_log, 
-            #                           verbsetpath=self.vs)
 
 
 
@@ -80,9 +69,17 @@ class Experiment(object):
         if "full" or "make_features" in self.pl:
             classifier.make_fvectors(verbcorpus_dir=self.vcdir,
                                      verbset_path=self.vs,
-                                     dataset_dir=self.dsdir)
+                                     dataset_dir=self.dsdir,
+                                     f_types=self.features)
         if "full" or "tain" in self.pl:
-            classifier.train_boltclassifier_batch(dataset_dir=self.dsdir, 
+            if self.toolkit == "bolt":
+                classifier.train_boltclassifier_batch(dataset_dir=self.dsdir, 
+                                                 modeltype=self.model, 
+                                                 verbset_path=self.vs, 
+                                                 selftest=False, 
+                                                 cls_option=self.cls_opts)
+            elif self.toolkit == "sklearn":
+                classifier.train_sklearn_classifier_batch(dataset_dir=self.dsdir, 
                                                  modeltype=self.model, 
                                                  verbset_path=self.vs, 
                                                  selftest=False, 

@@ -30,6 +30,7 @@ from sklearn import cross_validation
 import numpy as np
 import bolt
 from feature_extractor import SimpleFeatureExtractor
+from tool.sparse_matrices import *
 
 
 class DetectorBase(object):
@@ -105,7 +106,7 @@ class SupervisedDetector(DetectorBase):
     TODO:
         Better, smart implementation for shared codes such as _mk_cases
     """
-    def readmodels(self, path_dataset_root="", modeltype="sgd"):
+    def readmodels(self, path_dataset_root="", modeltype="sgd", toolkit="sklearn"):
         dirlist = glob.glob(os.path.join(path_dataset_root, "*"))
         namelist = [os.path.basename(p) for p in dirlist]
         self.verb2modelpath = {vn : p for (vn, p) in zip(namelist, dirlist)}
@@ -113,18 +114,25 @@ class SupervisedDetector(DetectorBase):
         self.fmaps = {}
         self.label2id = {}
         self.tempdir = os.path.dirname(path_dataset_root)
+        self.toolkit = toolkit
         if os.path.basename(self.tempdir) == "dataset":
             self.tempdir = os.path.join(path_dataset_root, os.pardir)
         if not os.path.exists(self.tempdir):
             os.makedirs(self.tempdir)
         for setname, modelroot in self.verb2modelpath.iteritems():
-            with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
-                self.models[setname] = pickle.load(mf)
+            try:
+                with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
+                    self.models[setname] = pickle.load(mf)
+            except:
+                raise
             with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
                 self.fmaps[setname] = pickle.load(mf)
             with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
                 self.label2id[setname] = pickle.load(mf)
-        self.datapath = os.path.join(self.tempdir, "dataset.svmlight")
+        if self.toolkit == "sklearn":
+            self.datapath = [os.path.join(self.tempdir, "X.npz"), os.path.join(self.tempdir, "Y.npy")]
+        elif self.toolkit == "bolt":
+            self.datapath = os.path.join(self.tempdir, "dataset.svmlight")
 
 
     def __addcheckpoints(self, doc=None):
@@ -199,6 +207,9 @@ class SupervisedDetector(DetectorBase):
             if Y:
                 return Y[0]
 
+    def _sklearn_pred(self, model=None, X=None, Y=None):
+        if model:
+            return model.predict(X)
 
     def get_classification(self):
         """
@@ -234,14 +245,17 @@ class SupervisedDetector(DetectorBase):
             if model and fmap:
                 _X = fmap.transform(strfeature)
                 _Y = np.array([classid])
-                with open(self.datapath+"temp", "wb") as f:
-                    svmlight_format.dump_svmlight_file(_X, _Y, f, comment=None)
-                with open(self.datapath+"temp", "rb") as f:
-                    cleaned = f.readlines()[2:]
-                with open(self.datapath, "wb") as f:
-                    f.writelines(cleaned)
-                    os.remove(self.datapath+"temp")
-                output = self._bolt_pred(model)
+                if self.toolkit == "bolt":
+                    with open(self.datapath+"temp", "wb") as f:
+                        svmlight_format.dump_svmlight_file(_X, _Y, f, comment=None)
+                    with open(self.datapath+"temp", "rb") as f:
+                        cleaned = f.readlines()[2:]
+                    with open(self.datapath, "wb") as f:
+                        f.writelines(cleaned)
+                        os.remove(self.datapath+"temp")
+                    output = self._bolt_pred(model)
+                elif self.toolkit == "sklearn":
+                    output = self._sklearn_pred(model, _X, _Y)
                 case["classifier_output"] = output
             else:
                 case["classifier_output"] = -100
