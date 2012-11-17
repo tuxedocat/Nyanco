@@ -23,32 +23,34 @@ tiny_sgd:
     pipeline: 
         - full
     verbset: ../sandbox/classify/vs_tiny.pkl2
-    dir_ukwac: ../sandbox/classify/
-    num_tsamples: 30
+    dir_ukwac: ../sandbox/classify/tiny/
+    num_tsamples: 300
     features: 
         - suf_ngram
         - ngram # srl, dep, topic
     classifier: sgd # ap, pa1, pa2
-    classifier_args: {loss: hinge, reg: l2, epoch: 10} # loss: huber, reg: l1, epoch: 5
+    toolkit: sklearn
+    classifier_args: {loss: hinge, reg: l2, epochs: 10, alpha : 0.0001, muticpu: -1} # loss: huber, reg: l1, epoch: 5
     dir_out: ../sandbox/classify/
     dir_train: ../sandbox/classify/
-    fce_path: ../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2
+    fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
     detector_option: 
         - classifier
     dir_log: ../log
 
 
-tiny_ap: 
+tiny_sk: 
     pipeline: 
         - full
     verbset: ../sandbox/classify/vs_tiny.pkl2
-    dir_ukwac: ../sandbox/classify/
+    dir_ukwac: ../sandbox/classify/tiny/
     num_tsamples: 30
     features: 
         - suf_ngram
         - ngram # srl, dep, topic
-    classifier: ap # ap, pa1, pa2
-    classifier_args: {loss: hinge, reg: l2, epoch: 10} # loss: huber, reg: l1, epoch: 5
+    toolkit: sklearn
+    classifier: sgd # ap, pa1, pa2
+    classifier_args: {loss: hinge, reg: l2, epochs: 10, alpha: 0.0001, muticpu: -1} # loss: huber, reg: l1, epoch: 5
     dir_out: ../sandbox/classify/
     dir_train: ../sandbox/classify/
     fce_path: ../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2

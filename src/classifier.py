@@ -25,35 +25,39 @@ from copy import deepcopy
 try: 
     import bolt
     from sklearn.feature_extraction import DictVectorizer
+    from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
+    from sklearn.multiclass import OutputCodeClassifier
+    from sklearn.linear_model import SGDClassifier, Perceptron
     from sklearn import preprocessing
-    from sklearn.datasets.svmlight_format import *
+    # from sklearn.datasets.svmlight_format import *
+    from svmlight_loader import *
     import numpy as np
+    import scipy as sp
 except:
     raise ImportError
 from feature_extractor import SimpleFeatureExtractor
+from tool.sparse_matrices import *
 
 
 class CaseMaker(object):
-    def __init__(self, verbcorpus_dir="", verbset_path="", dataset_dir="", restart_from=""):
+    def __init__(self, verbcorpus_dir=None, verbset_path=None, dataset_dir=None, restart_from=None, f_types=None):
         if not verbcorpus_dir and verbset_path and model_dir and dataset_dir:
+            print "CaseMaker: Invalid data path(s)... aborted."
             raise TypeError
         else:
-            print "CaseMaker: successfully imported bolt and sklearn"
+            pass
         self.corpusdir = verbcorpus_dir
         if not os.path.exists(os.path.abspath(dataset_dir)):
-            print dataset_dir
             os.makedirs(os.path.abspath(dataset_dir))
         self.dataset_dir = dataset_dir
         self.verbset_path = verbset_path
-        verbset_load = pickle.load(open(verbset_path,"rb"))
-        self.verbs = verbset_load.keys()
-        self.verbsets = verbset_load
-#        self.verbs = verbset_load["verbs"]
-#        self.verbsets = verbset_load["verbset"]
+        self.verbsets = pickle.load(open(verbset_path,"rb"))
+        self.verbs = self.verbsets.keys()
         vcorpus_filenames = glob.glob(os.path.join(self.corpusdir, "*.pkl2"))
         v_names = [os.path.basename(path).split(".")[0] for path in vcorpus_filenames]
         self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names, vcorpus_filenames)}
-        self.nullfeature = {"NULL":1}
+        self.nullfeature = {"__NULL__":1}
+        self.featuretypes = f_types # list like object is expected
         if restart_from:
             try:
                 p_idx = self.verbs.index(restart_from)
@@ -65,9 +69,9 @@ class CaseMaker(object):
                     self.verbsets[vn] = old_vs[vn]
                 print pformat(self.verbs)
                 print pformat(self.verbsets)
-
             except Exception, e:
                 print e
+
 
     def _is_validXY(self, X=[], Y=[]):
         try:
@@ -79,77 +83,89 @@ class CaseMaker(object):
             return False
 
 
+    def _read_verbcorpus(self, vset=None):
+        _corpusdict = defaultdict(list)
+        for v in [t[0] for t in vset]:
+            print "CaseMaker make_fvectors: working on verb '%s'"%v
+            try:
+                with open(self.vcorpus_filedic[v], "rb") as vcf:
+                    _corpusdict[v] = pickle.load(vcf)
+            except:
+                _corpusdict[v] = [[]]
+        return _corpusdict
+
+
+    def _get_features(self, v="", v_corpus=None, cls2id=None):
+        _flist = []
+        _labellist_int = []
+        _labellist_str = []
+        _labelid = cls2id[v]
+        if v_corpus:
+            for sid, s in enumerate(v_corpus):
+                fe = SimpleFeatureExtractor(s, verb=v)
+                if "ngram" in self.featuretypes:
+                    fe.ngrams(n=5)
+                if "srl" in self.featuretypes:
+                    pass
+                _flist.append(fe.features)
+                _labellist_int.append(_labelid)
+                _labellist_str.append(v)
+        else:
+            _flist.append(self.nullfeature)
+            _labellist_int.append(_labelid)
+            _labellist_str.append(v)
+        return _flist, _labellist_str, _labellist_int
+
+
     def make_fvectors(self):
         """
-        Create feature vectors for given datasets, for classifiers as SVM^light format
-        using feature_extraction's classes
+        Create feature vectors for given datasets, save dataset as numpy npz files
         """
-        for setname in self.verbs: # setname is str, vset is list
-            vset = self.verbsets[setname]
+        for setname, vset in self.verbsets.iteritems(): # setname is str, vset is list of tuples e.g. ("get", 25)
             if vset:
                 print "CaseMaker make_fvectors: working on set '%s'"%setname
                 vectorizer = DictVectorizer(sparse=True)
                 _classname2id = {vt[0]: id for id, vt in enumerate(vset)}
-                _corpusdict = {}
                 _casedict = defaultdict(list)
                 _casedict["label2id"] = _classname2id
-                for v in [t[0] for t in vset]:
-                    print "CaseMaker make_fvectors: working on verb '%s'"%v
-                    try:
-                        with open(self.vcorpus_filedic[v], "rb") as vcf:
-                            _corpusdict[v] = pickle.load(vcf)
-                    except:
-                        _corpusdict[v] = [[]]
+                _corpusdict = self._read_verbcorpus(vset)
+
+                # Get feature vector for each sentence 
                 for v, v_corpus in _corpusdict.iteritems():
-                    _flist = []
-                    _labellist_int = []
-                    _labellist_str = []
-                    _labelid = _classname2id[v]
-                    if v_corpus:
-                        for sid, s in enumerate(v_corpus):
-                            fe = SimpleFeatureExtractor(s, verb=v)
-                            fe.ngrams(n=5)
-                            # some other features!
-                            # then finally...
-                            _flist.append(fe.features)
-                            _labellist_int.append(_labelid)
-                            _labellist_str.append(v)
-                    else:
-                        _flist.append(self.nullfeature)
-                        _labellist_int.append(_labelid)
-                        _labellist_str.append(v)
+                    _flist, _labellist_str, _labellist_int = self._get_features(v, v_corpus, _classname2id)
                     _casedict["X_str"] += _flist
                     _casedict["Y_str"] += _labellist_str
                     _casedict["Y"] += _labellist_int
                 fvectors_str = _casedict["X_str"]
+
                 try:
-                    print "CaseMaker make_fvectors: Transforming string ID feature vectors"
+                    print "CaseMaker make_fvectors: Transforming string ID feature vectors into sparse matrix"
                     X = vectorizer.fit_transform(fvectors_str)
                     Y = np.array(_casedict["Y"])
+                    if not self._is_validXY(X, Y):
+                        raise UnboundLocalError
                 except UnboundLocalError, e:
                     print "CaseMaker make_fvectors: seems feature vector for the set %s is empty..."%setname
                     print pformat(e)
                     print fvectors_str
-                    X = np.array([])
-                    Y = np.array([])
-                if not self._is_validXY(X, Y):
-                    X = np.array([])
-                    Y = np.array([])
+                    # X = np.array([])
+                    X = vectorizer.fit_transform(self.nullfeature)
+                    Y = np.array([0.])
                 dir_n = os.path.join(self.dataset_dir, setname)
                 if not os.path.exists(dir_n):
                     os.makedirs(dir_n)
-                fn = os.path.join(dir_n, "dataset.svmlight")
+                fn_x = os.path.join(dir_n, "X")
+                fn_y = os.path.join(dir_n, "Y")
+                try:
+                    save_sparse_matrix(fn_x, X)
+                    np.save(fn_y, Y)
+                except:
+                    print "CaseMaker make_fvectors: Error occurred while saving npy, npz models"
+                    raise
                 fn_cdic = os.path.join(dir_n, "casedict.pkl2")
                 fn_fmap = os.path.join(dir_n, "featuremap.pkl2")
                 fn_label2id = os.path.join(dir_n, "label2id.pkl2")
-                with open(fn+"temp", "wb") as f:
-                    print "CaseMaker make_fvectors: Saving examples as SVMlight format..."
-                    dump_svmlight_file(X, Y, f, comment=None)
-                with open(fn+"temp", "rb") as f:
-                    cleaned = f.readlines()[2:]
-                with open(fn, "wb") as f:
-                    f.writelines(cleaned)
-                    os.remove(fn+"temp")
+                self.save_svmlight_file(dir_n, X, Y)
                 with open(fn_fmap, "wb") as f:
                     pickle.dump(vectorizer, f, -1)
                 with open(fn_label2id, "wb") as f:
@@ -168,38 +184,161 @@ class CaseMaker(object):
                 reduced = {"verbs": verbs2, "verbset": vs2}
                 pickle.dump(reduced, f)
             dir_n = os.path.join(self.dataset_dir, setname)
-            # if os.path.exists(dir_n):
-            #     shutil.rmtree(dir_n, ignore_errors=True)
             print "CaseMaker make_fvectors NOTIFICATION: Verbset is modified since there is null verbset"
-            # dir_n = os.path.join(self.dataset_dir, setname)
-            # if not os.path.exists(dir_n):
-            #     os.makedirs(dir_n)
-            # fn = os.path.join(dir_n, "dataset.svmlight")
-            # fn_cdic = os.path.join(dir_n, "casedict.pkl2")
-            # fn_fmap = os.path.join(dir_n, "featuremap.pkl2")
-            # fn_label2id = os.path.join(dir_n, "label2id.pkl2")
-            # with open(fn, "wb") as f:
-            #     pass
-            # with open(fn_cdic, "wb") as f:
-            #     pass
-            # with open(fn_fmap, "wb") as f:
-            #     pass
-            # with open(fn_label2id, "wb") as f:
-            #     pass
-            # print "CaseMaker make_fvectors: saved Null model."
+
+
+    def save_svmlight_file(self, dir_n=None, X=None, Y=None):
+        fn = os.path.join(dir_n, "dataset.svmlight")
+        with open(fn, "wb") as f:
+            dump_svmlight_file(X.tocsr(), Y, f)
+            print "CaseMaker make_fvectors: Saving examples as SVMlight format..."
+
+
+    # def save_svmlight_file(self, dir_n=None):
+    #     fn = os.path.join(dir_n, "dataset.svmlight")
+    #     fn_cdic = os.path.join(dir_n, "casedict.pkl2")
+    #     fn_fmap = os.path.join(dir_n, "featuremap.pkl2")
+    #     fn_label2id = os.path.join(dir_n, "label2id.pkl2")
+    #     with open(fn+"temp", "wb") as f:
+    #         print "CaseMaker make_fvectors: Saving examples as SVMlight format..."
+    #         dump_svmlight_file(X, Y, f, comment=None)
+    #     with open(fn+"temp", "rb") as f:
+    #         cleaned = f.readlines()[2:]
+    #     with open(fn, "wb") as f:
+    #         f.writelines(cleaned)
+    #         os.remove(fn+"temp")
+    #     with open(fn_fmap, "wb") as f:
+    #         pickle.dump(vectorizer, f, -1)
+    #     with open(fn_label2id, "wb") as f:
+    #         pickle.dump(_casedict["label2id"], f, -1)
+    #     with open(fn_cdic, "wb") as pf:
+    #         cdic = {"setname":setname}
+    #         cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
+    #         cdic["label2id"] = _casedict["label2id"]
+    #         cdic["featuremap"] = vectorizer
+    #         pickle.dump(cdic, pf, -1)
+
+
+def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, restart_from=None, f_types=None):
+    CM = CaseMaker(verbcorpus_dir=verbcorpus_dir, verbset_path=verbset_path, dataset_dir=dataset_dir, restart_from=restart_from, f_types=f_types)
+    CM.make_fvectors()
+
+
 #----------------------------------------------------------------------------------------------------
 class BaseClassifier(object):
-    def __init__(self):
-        pass
+    def __init__(self, mtype=None, opts=None):
+        self.glm = None
+        self.opts = opts
+        self.multicpu = 1
+        self.modeltype = mtype
 
-    def read(self, x, y):
-        raise NotImplementedError
+
+    def setopts(self): 
+        if "lambda" in self.opts:
+            self.lmd = self.opts["lambda"]
+        if "epochs" in self.opts:
+            self.epochs = self.opts["epochs"]
+        if "loss" in self.opts:
+            self.loss = self.opts["loss"]
+        if "reg" in self.opts:
+            self.reg = self.opts["reg"]
+        if "alpha" in self.opts:
+            self.alpha = self.opts["alpha"]
+        if "multicpu" in self.opts:
+            self.multicpu = -1
+
+
+    def save_model(self, output_path=None):
+        try:
+            with open(output_path, "wb") as f:
+                pickle.dump(self.glm, f, -1)
+        except Exception, e:
+            print pformat(e)
+            with open(output_path, "wb") as f: 
+                pass
+
+
+    def load_model(self, model_path=None):
+        try:
+            with open(model_path, "rb") as f:
+                self.glm = pickle.load(f)
+        except:
+            raise
+
 
     def train(self):
         raise NotImplementedError
 
     def predict(self):
         raise NotImplementedError
+
+
+class SklearnClassifier(BaseClassifier):
+    def load_dataset(self, dataset_path=None):
+        try:
+            self.X = load_sparse_matrix(os.path.join(dataset_path, "X.npz"))
+            self.Y = np.load(os.path.join(dataset_path, "Y.npy"))
+        except IOError:
+            print "Seems model files (X.npz, Y.npy) are not found..."
+
+
+    def trainSGD(self):
+        sgd = SGDClassifier(loss=self.loss, penalty=self.reg, alpha=self.alpha, n_iter=self.epochs,
+                            shuffle=True, n_jobs=self.multicpu)
+        print "Classifier (sklearn SGD): training the model"
+        self.glm = OneVsRestClassifier(sgd).fit(self.X, self.Y)
+        # self.glm = OneVsOne(sgd).fit(self.X, self.Y)
+        print "Classifier (sklearn SGD): Done."
+
+
+    def predict(self, testset_path=None, X=None, Y=None):
+        fn_x = os.path.join(testset_path, "X.npz")
+        fn_y = os.path.join(testset_path, "Y.npy")
+        Xtest = load_sparse_matrix(fn_x)
+        Ytest = np.load(fn_y)
+        pred = self.glm.predict(Xtest)
+        return pred
+
+
+def train_sklearn_classifier(dataset_dir="", output_path="", modeltype="sgd", 
+                            cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
+    classifier = SklearnClassifier(mtype=modeltype, opts=cls_option)
+    classifier.setopts()
+    classifier.load_dataset(dataset_dir)
+    if modeltype == "sgd":
+        classifier.trainSGD()
+    modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
+    classifier.save_model(modelfilename)
+    # _selftest_sk(modelfilename, dataset_dir)
+
+
+def _selftest_sk(modelpath="", dspath=""):
+    X = load_sparse_matrix(os.path.join(dspath, "X.npz"))
+    glm = pickle.load(open(modelpath, "rb"))
+    Y = np.load(os.path.join(dspath, "Y.npy"))
+    pred = glm.predict(X)
+    from sklearn.metrics import classification_report
+    print classification_report(Y, pred)
+
+
+def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False, 
+                                cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
+    vs_file = pickle.load(open(verbset_path, "rb"))
+    verbs = vs_file.keys()
+    verbsets = deepcopy(vs_file)
+    set_names = [os.path.join(dataset_dir, v) for v in verbs]
+    for idd, dir in enumerate(set_names):
+        # modelfilename = os.path.join(dir, "model_%s.pkl2"%modeltype)
+        dspath = os.path.join(dir)
+        print "Batch trainer (sklearn %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
+        train_sklearn_classifier(dataset_dir=dspath, output_path=dir, modeltype=modeltype, cls_option=cls_option)
+        print "Batch trainer (sklearn %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
+        if selftest:
+            print "Batch trainer selftest..."
+            _selftest_sk(modelfilename, dspath)
+            print "Batch trainer selftest... done!"
+
+
 
 
 class BoltClassifier(BaseClassifier):
@@ -253,7 +392,7 @@ class BoltClassifier(BaseClassifier):
             print pformat(e)
 
 
-    def save_model(self, output_path=""):
+    def save_model(self, output_path=None):
         try:
             with open(output_path, "wb") as f:
                 pickle.dump(self.glm, f, -1)
@@ -262,25 +401,20 @@ class BoltClassifier(BaseClassifier):
             with open(output_path, "wb") as f: 
                 pass
 
-    def load_model(self, model_path=""):
+    def load_model(self, model_path=None):
         try:
             with open(model_path, "rb") as f:
                 self.glm = pickle.load(f)
         except:
             raise
 
-    def predict(self, testset_path="", testset_array=[]):
+    def predict(self, testset_path=None, testset_array=None):
         if testset_array:
             raise NotImplementedError
         elif testset_path:
             testset = bolt.io.MemoryDataset.load(testset_path)
         pred = [p for p in self.glm.predict(testset.iterinstances())]
         return pred
-
-
-def make_fvectors(verbcorpus_dir="", verbset_path="", dataset_dir="", restart_from=""):
-    CM = CaseMaker(verbcorpus_dir=verbcorpus_dir, verbset_path=verbset_path, dataset_dir=dataset_dir, restart_from=restart_from)
-    CM.make_fvectors()
 
 def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd", 
                             cls_option={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
@@ -295,10 +429,12 @@ def _selftest(modelpath="", dspath=""):
     correct = boltdataset.labels
     testset = boltdataset.instances
     pred = [p for p in glm.predict(testset)]
+    predc = [p for p in glm.predict(testset, confidence=True)]
+    print predc
     from sklearn.metrics import classification_report
     print classification_report(correct, np.array(pred))
 
-def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False, 
+def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=True, 
                                 cls_option={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
     vs_file = pickle.load(open(verbset_path, "rb"))
     verbs = vs_file.keys()

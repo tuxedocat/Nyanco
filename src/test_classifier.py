@@ -17,15 +17,13 @@ except:
     raise ImportError
 import sklearn
 from sklearn.datasets import fetch_20newsgroups
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.feature_extraction import DictVectorizer 
 from sklearn.linear_model import SGDClassifier
-from sklearn.grid_search import GridSearchCV
-from sklearn.pipeline import Pipeline
 from time import time
-from svmlight_loader import *
-from numpy import array
+import numpy as np
 from classifier import *
+from tool.sparse_matrices import *
 
 @attr("make_trcases")
 class TestCaseMaker:
@@ -70,7 +68,7 @@ class TestBoltClassifier(object):
         ova = bolt.OVA(sgd)
         ova.train(glm, self.train3c, verbose=1, shuffle=True)
         pred = [p for p in glm.predict(self.test3c.iterinstances())]
-        one_tc = array(self.test3c.instances[0])
+        one_tc = np.array(self.test3c.instances[0])
         pred_c = [p for p in glm.predict(self.test3c.iterinstances(), confidence=True)]
         pred_one = [p for p in glm.predict(self.test3cone.iterinstances(), confidence=True)]
         # print sklearn.metrics.classification_report(self.correct, array(pred))
@@ -112,7 +110,7 @@ class TestBoltClassifier1(object):
         ova = bolt.OVA(sgd)
         ova.train(glm, self.train3c, verbose=1, shuffle=True)
         pred = [p for p in glm.predict(self.test3c.iterinstances())]
-        print sklearn.metrics.classification_report(self.correct, array(pred))
+        print sklearn.metrics.classification_report(self.correct, np.array(pred))
         raise Exception
 
     def test3classPEGASOS(self):
@@ -121,7 +119,7 @@ class TestBoltClassifier1(object):
         ova = bolt.OVA(sgd)
         ova.train(glm, self.train3c, verbose=1, shuffle=True)
         pred = [p for p in glm.predict(self.test3c.iterinstances())]
-        print sklearn.metrics.classification_report(self.correct, array(pred))
+        print sklearn.metrics.classification_report(self.correct, np.array(pred))
         raise Exception
 
     def test3classAP(self):
@@ -129,7 +127,40 @@ class TestBoltClassifier1(object):
         ap = bolt.AveragedPerceptron(epochs = 50)
         ap.train(glm, self.train3c, verbose=1, shuffle=True)
         pred = [p for p in glm.predict(self.test3c.iterinstances())]
-        print sklearn.metrics.classification_report(self.correct, array(pred))
+        print sklearn.metrics.classification_report(self.correct, np.array(pred))
         raise Exception
 
 
+@attr("sklearn")
+class TestSklearnClassifier(object):
+    def setUp(self):
+        self.vec = DictVectorizer()
+        X = self.vec.fit_transform([{"cat":1, "dog":0.4, "katze":0}, {"cat":0.1, "dog":0.5, "katze":1}])
+        save_sparse_matrix("../sandbox/npy/X", X)
+        self.X = load_sparse_matrix("../sandbox/npy/X.npz")
+        self.Y = np.array([0, 1])
+        Xm = self.vec.fit_transform([{"cat":1, "dog":0.4, "katze":0}, {"cat":0.1, "dog":0.5, "katze":1},
+                                    {"cat":0.1, "dog":0.5, "katze":0.1}, {"cat":0.1, "dog":0, "katze":1}])
+        self.Ym = np.array([0, 1, 2, 3])
+        save_sparse_matrix("../sandbox/npy/Xm", Xm)
+        self.Xm = load_sparse_matrix("../sandbox/npy/Xm.npz")
+
+    def test_sklearnSGD(self):
+        clf = SGDClassifier(loss = "hinge", penalty="l1")
+        clf.fit(self.X, self.Y)
+        pred = clf.predict(self.X)
+        np.testing.assert_array_equal(self.Y, pred)
+
+    def test_sklearnSGD_MC(self):
+        clf = SGDClassifier(loss = "hinge", penalty="l1")
+        ovr = OneVsRestClassifier(clf).fit(self.Xm, self.Ym)
+        pred = ovr.predict(self.Xm)
+        np.testing.assert_array_equal(self.Ym, pred)
+
+    def test_actualSGD(self):
+        dspath = "../sandbox/classify/tiny_sgd/have"
+        outpath = dspath
+        type = "sgd"
+        opts = {"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}
+        train_sklearn_classifier(dataset_dir=dspath, output_path=outpath, modeltype=type, cls_option=opts)
+        modelpath = os.path.join(dspath, "model_sgd.pkl2")
