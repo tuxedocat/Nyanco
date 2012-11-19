@@ -211,6 +211,10 @@ class SupervisedDetector(DetectorBase):
         if model:
             return model.predict(X)
 
+    def _sklearn_pred_proba(self, model=None, X=None, Y=None):
+        if model:
+            return model.predict_proba(X)[0]
+
     def get_classification(self):
         """
         calculate scores of given instances
@@ -256,6 +260,7 @@ class SupervisedDetector(DetectorBase):
                     output = self._bolt_pred(model)
                 elif self.toolkit == "sklearn":
                     output = self._sklearn_pred(model, _X, _Y)
+                    print self._sklearn_pred_proba(model, _X, _Y)
                 case["classifier_output"] = output
             else:
                 case["classifier_output"] = -100
