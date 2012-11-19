@@ -118,8 +118,11 @@ class SupervisedDetector(DetectorBase):
         if not os.path.exists(self.tempdir):
             os.makedirs(self.tempdir)
         for setname, modelroot in self.verb2modelpath.iteritems():
-            with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
-                self.models[setname] = pickle.load(mf)
+            try:
+                with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
+                    self.models[setname] = pickle.load(mf)
+            except:
+                self.models[setname] = None
             with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
                 self.fmaps[setname] = pickle.load(mf)
             with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
