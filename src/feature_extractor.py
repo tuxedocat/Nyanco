@@ -117,13 +117,13 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
         """
         Make a query for ngram frequency counter
         @takes:
-            n :: N gram size (if n=5, [-2 -1 word +1 +2])
+            n :: N gram size (if n=5, [-2 -1 +1 +2])
             v_idx:: int, positional index of the checkpoint
             w_list:: list, words of a sentence
             alt_candidates:: list, alternative candidates if given
         @returns:
-            suf_ngram: {"suf_-2_the": 1, "suf_-1_cat": 1, "suf_0_eats": 1,...}
-            pos_ngram: {"suf_-2_DT": 1, "suf_-1_NN": 1, "suf_0_VBZ": 1,...}
+            suf_ngram: {"suf_-2_the": 1, "suf_-1_cat": 1, ...}
+            pos_ngram: {"suf_-2_DT": 1, "suf_-1_NN": 1, ...}
         """
         try:
             if not v_idx:
@@ -134,9 +134,9 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
             if not v_idx:
                 v_idx = 0
             core = self.WL[v_idx]
-            _left = [word for index, word in enumerate(self.WL) if index < v_idx][-window:]
-            _right = [word for index, word in enumerate(self.WL) if index > v_idx][:window]
-            concat = _left + [core] + _right
+            _left = [word for index, word in enumerate(self.WL) if index < v_idx and index != v_idx][-window:]
+            _right = [word for index, word in enumerate(self.WL) if index > v_idx and index != v_idx][:window]
+            concat = _left + _right
             suf_ngram = {self.gen_fn("SUF", i-window, w[0]):1 for i, w in enumerate(concat)}
             pos_ngram = {self.gen_fn("POS", i-window, w[1]):1 for i, w in enumerate(concat)}
             self.features.update(suf_ngram)

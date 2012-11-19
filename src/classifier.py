@@ -232,7 +232,6 @@ class BaseClassifier(object):
         self.multicpu = 1
         self.modeltype = mtype
 
-
     def setopts(self): 
         if "lambda" in self.opts:
             self.lmd = self.opts["lambda"]
@@ -246,7 +245,8 @@ class BaseClassifier(object):
             self.alpha = self.opts["alpha"]
         if "multicpu" in self.opts:
             self.multicpu = -1
-
+        if "shuffle" in self.opts:
+            self.shuffle = True
 
     def save_model(self, output_path=None):
         try:
@@ -257,14 +257,12 @@ class BaseClassifier(object):
             with open(output_path, "wb") as f: 
                 pass
 
-
     def load_model(self, model_path=None):
         try:
             with open(model_path, "rb") as f:
                 self.glm = pickle.load(f)
         except:
             raise
-
 
     def train(self):
         raise NotImplementedError
@@ -281,15 +279,12 @@ class SklearnClassifier(BaseClassifier):
         except IOError:
             print "Seems model files (X.npz, Y.npy) are not found..."
 
-
     def trainSGD(self):
         sgd = SGDClassifier(loss=self.loss, penalty=self.reg, alpha=self.alpha, n_iter=self.epochs,
                             shuffle=True, n_jobs=self.multicpu)
         print "Classifier (sklearn SGD): training the model"
         self.glm = OneVsRestClassifier(sgd).fit(self.X, self.Y)
-        # self.glm = OneVsOne(sgd).fit(self.X, self.Y)
         print "Classifier (sklearn SGD): Done."
-
 
     def predict(self, testset_path=None, X=None, Y=None):
         fn_x = os.path.join(testset_path, "X.npz")
@@ -298,6 +293,32 @@ class SklearnClassifier(BaseClassifier):
         Ytest = np.load(fn_y)
         pred = self.glm.predict(Xtest)
         return pred
+
+    def predict_proba(self, testset_path=None, X=None, Y=None):
+        """
+        Parameters
+        ----------
+        testset_path: path prefix for testset .npz and .npy file
+
+        X: {array-like, sparse matrix}, shape = [n_samples, n_features]
+            Data.
+
+        Y : numpy array of shape [n_samples]
+            Multi-class targets.
+
+        Returns
+        -------
+        pred_p: {array-like}, shape = {n_samples, n_classes}
+        """
+        if hasattr(self.glm, "predict_proba"):
+            fn_x = os.path.join(testset_path, "X.npz")
+            fn_y = os.path.join(testset_path, "Y.npy")
+            Xtest = load_sparse_matrix(fn_x)
+            Ytest = np.load(fn_y)
+            pred_p = self.glm.predict_proba(Xtest)
+            return pred_p
+        else:
+            raise NotImplementedError
 
 
 def train_sklearn_classifier(dataset_dir="", output_path="", modeltype="sgd", 
@@ -328,7 +349,6 @@ def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path
     verbsets = deepcopy(vs_file)
     set_names = [os.path.join(dataset_dir, v) for v in verbs]
     for idd, dir in enumerate(set_names):
-        # modelfilename = os.path.join(dir, "model_%s.pkl2"%modeltype)
         dspath = os.path.join(dir)
         print "Batch trainer (sklearn %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
         train_sklearn_classifier(dataset_dir=dspath, output_path=dir, modeltype=modeltype, cls_option=cls_option)
@@ -337,7 +357,6 @@ def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path
             print "Batch trainer selftest..."
             _selftest_sk(modelfilename, dspath)
             print "Batch trainer selftest... done!"
-
 
 
 
