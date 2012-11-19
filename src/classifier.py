@@ -294,7 +294,7 @@ class SklearnClassifier(BaseClassifier):
         pred = self.glm.predict(Xtest)
         return pred
 
-    def predict_proba(self, testset_path=None, X=None, Y=None):
+    def predict_prob(self, testset_path=None, X=None, Y=None):
         """
         Parameters
         ----------
@@ -310,12 +310,12 @@ class SklearnClassifier(BaseClassifier):
         -------
         pred_p: {array-like}, shape = {n_samples, n_classes}
         """
-        if hasattr(self.glm, "predict_proba"):
+        if hasattr(self.glm, "predict_prob"):
             fn_x = os.path.join(testset_path, "X.npz")
             fn_y = os.path.join(testset_path, "Y.npy")
             Xtest = load_sparse_matrix(fn_x)
             Ytest = np.load(fn_y)
-            pred_p = self.glm.predict_proba(Xtest)
+            pred_p = self.glm.predict_prob(Xtest)
             return pred_p
         else:
             raise NotImplementedError

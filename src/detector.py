@@ -213,7 +213,7 @@ class SupervisedDetector(DetectorBase):
 
     def _sklearn_pred_proba(self, model=None, X=None, Y=None):
         if model:
-            return model.predict_proba(X)[0]
+            return model.predict_prob(X)[0]
 
     def get_classification(self):
         """
