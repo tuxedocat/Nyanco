@@ -124,7 +124,7 @@ class SupervisedDetector(DetectorBase):
                 with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
                     self.models[setname] = pickle.load(mf)
             except:
-                raise
+                self.models[setname] = None
             with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
                 self.fmaps[setname] = pickle.load(mf)
             with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
