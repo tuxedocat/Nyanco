@@ -48,9 +48,6 @@ class DetectorBase(object):
         if not os.path.exists(reportdir):
             os.makedirs(reportdir)
         self.ngram_len = 5
-        # Todo: make it take any given path to the dictionary
-        # self.altword_dic_path = "./tool/ranked_alt20.pickle2"
-        # self.altword_dic = pickle.load(open(self.altword_dic_path, "rb"))
         self.verbsetpath = verbsetpath
         self.altreader = altgen.AlternativeReader(self.verbsetpath)
         self.verbset = pickle.load(open(self.verbsetpath, "rb"))
@@ -328,7 +325,7 @@ class SupervisedDetector(DetectorBase):
             cm_lm = metrics.confusion_matrix(np.array(ytrue), np.array(ysys), labels=np.array([0,1]))
             print clsrepo_lm
             print pformat(cm_lm)
-            print "num. of OOV case", len(self.gold_in_Cset)
+            print "num. of [words in FCE-gold which are covered by Cset] case", len(self.gold_in_Cset)
             rf.write(clsrepo_lm)
 
 
