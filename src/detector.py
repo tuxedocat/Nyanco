@@ -276,15 +276,15 @@ class SupervisedDetector(DetectorBase):
         """
         try:
             probdist = probdist.tolist()
-            logging.debug(pformat(("kbest_detector: probdist = ", probdist)))
-            logging.debug(pformat(("kbest_detector: original word's idx = ", orgidx)))
+            # logging.debug(pformat(("kbest_detector: probdist = ", probdist)))
+            # logging.debug(pformat(("kbest_detector: original word's idx = ", orgidx)))
             orgscore = probdist[orgidx]
             probs = [(i, p) for i, p in enumerate(probdist) if i != orgidx]#
             probs.sort(key=lambda x: x[1], reverse=True)
-            logging.debug(pformat(("kbest_detector: probdist without orgidx = ", str(probs))))
+            # logging.debug(pformat(("kbest_detector: probdist without orgidx = ", str(probs))))
             kbscore = sum([p[1] for p in probs[:k]])
-            logging.debug(pformat(("kbest_detector: original word's score = ", orgidx)))
-            logging.debug(pformat(("kbest_detector: kbest words score sum = ", kbscore)))
+            # logging.debug(pformat(("kbest_detector: original word's score = ", orgidx)))
+            # logging.debug(pformat(("kbest_detector: kbest words score sum = ", kbscore)))
             if orgscore > kbscore:
                 return 0
             else:
