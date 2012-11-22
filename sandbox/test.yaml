@@ -21,21 +21,21 @@
 
 tiny_maxentsgd: 
     pipeline: 
-        - full
+        - detect
     verbset: ../sandbox/classify/vs_tiny.pkl2
-    dir_ukwac: ../sandbox/classify/
+    dir_ukwac: ../sandbox/classify/tiny/
     num_tsamples: 300
     features: 
         - suf_ngram
         - ngram # srl, dep, topic
     classifier: sgd # ap, pa1, pa2
     toolkit: sklearn
-    classifier_args: {loss: log, reg: l2, epochs: 10, alpha : 0.0001, muticpu: -1} # loss: huber, reg: l1, epoch: 5
+    classifier_args: {loss: log, reg: l2, epochs: 10, alpha : 0.0001, muticpu: 4} # loss: huber, reg: l1, epoch: 5
     dir_out: ../sandbox/classify/
     dir_train: ../sandbox/classify/
     fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
-    detector_option: 
-        - classifier
+    detector: classifier_1best
+    detector_options: {ranker_k: 5}
     dir_log: ../log
 
 

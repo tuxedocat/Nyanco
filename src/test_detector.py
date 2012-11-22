@@ -59,13 +59,21 @@ class TestDetector:
 class TestCLSDetector:
     def setUp(self):
         pass
-    @attr("classifier_detector")
+    @attr("kbest_detector")
     def test_classifier(self):
-        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2"
-        self.model_root = "../sandbox/classify/tiny/datasets"
-        self.verbsetpath = "../sandbox/classify/verbset_tiny.pkl2"
+        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2.pkl2"
+        self.model_root = "../sandbox/classify/tiny_maxentsgd/"
+        self.verbsetpath = "../sandbox/classify/vs_tiny.pkl2"
         self.output = "../log/classifier_test"
-        detectmain_c(corpuspath=self.corpuspath, model_root=self.model_root, type="ap", reportout=self.output, verbsetpath=self.verbsetpath)
+        detectmain_c(corpuspath=self.corpuspath, model_root=self.model_root, type="sgd", reportout=self.output, verbsetpath=self.verbsetpath, d_algo="kbest")
+        raise Exception
+    @attr("1best_detector")
+    def test_classifier2(self):
+        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2.pkl2"
+        self.model_root = "../sandbox/classify/tiny_maxentsgd/"
+        self.verbsetpath = "../sandbox/classify/vs_tiny.pkl2"
+        self.output = "../log/classifier_test"
+        detectmain_c(corpuspath=self.corpuspath, model_root=self.model_root, type="sgd", reportout=self.output, verbsetpath=self.verbsetpath, d_algo="nya")
         raise Exception
 # ------------------------------------------------------------------
 # For detector version 1 (will be removed)
