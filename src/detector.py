@@ -332,6 +332,8 @@ class SupervisedDetector(DetectorBase):
                 if case["type"] == "RV":
                     self.syslabels.append(0)
                     self.truelabels.append(1)
+                    self.listRV.append(1)
+                    self.listRV_sys.append(0)
                 else:
                     self.syslabels.append(0)
                     self.truelabels.append(0)
