@@ -36,11 +36,11 @@ class Experiment(object):
         self.vs = conf["verbset"]
         self.toolkit = conf["toolkit"]
         self.vsname = os.path.basename(self.vs).split(".")[0]
+        self.cls_opts = conf["classifier_args"]
         if "full" or "extract_examples" in self.pl:
             self.native_c = conf["dir_ukwac"]
             self.numts = conf["num_tsamples"]
             self.ext_dir = os.path.join(conf["dir_out"], self.vsname+"_%s"%(str(self.numts)))
-
         if "full" or "make_features" in self.pl:
             self.features = conf["features"]
             try:
@@ -50,28 +50,26 @@ class Experiment(object):
             self.dsdir = os.path.join(conf["dir_train"], self.name) #+ "_" + "_".join(self.features))
         if "full" or "tain" in self.pl:
             self.model = conf["classifier"]
-            self.cls_opts = conf["classifier_args"]
-
         if "full" or "detect" in self.pl:
             self.dir_log = os.path.join(conf["dir_log"], self.name)
-            self.dopt = conf["detector_option"]
+            self.dtype = conf["detector"]
+            self.dopt = conf["detector_options"]
             self.fcepath = conf["fce_path"]
 
 
-
     def execute(self):
-        if "full" or "extract_examples" in self.pl:
+        if "extract_examples" in self.pl:
             examples_extractor.extract_sentence_for_verbs(ukwac_prefix=self.native_c,
                                                          output_dir=self.ext_dir,
                                                          verbset_path=self.vs,
                                                          sample_max_num=self.numts,
                                                          shuffle=True)
-        if "full" or "make_features" in self.pl:
+        if "make_features" in self.pl:
             classifier.make_fvectors(verbcorpus_dir=self.vcdir,
                                      verbset_path=self.vs,
                                      dataset_dir=self.dsdir,
                                      f_types=self.features)
-        if "full" or "tain" in self.pl:
+        if "tain" in self.pl:
             if self.toolkit == "bolt":
                 classifier.train_boltclassifier_batch(dataset_dir=self.dsdir, 
                                                  modeltype=self.model, 
@@ -84,12 +82,26 @@ class Experiment(object):
                                                  verbset_path=self.vs, 
                                                  selftest=False, 
                                                  cls_option=self.cls_opts)
-        if "full" or "detect" in self.pl:
-            detector.detectmain_c(corpuspath=self.fcepath, 
-                                  model_root=self.dsdir, 
-                                  type=self.model, 
+        if "detect" in self.pl:
+            if "classifier" in self.dtype:
+                k = self.dopt["ranker_k"] if "ranker_k" in self.dopt else 5
+                d_algo = "kbest" if "kbest" in self.dtype else "suddendeath"
+                detector.detectmain_c(corpuspath=self.fcepath, 
+                                      model_root=self.dsdir, 
+                                      type=self.model, 
+                                      reportout=self.dir_log, 
+                                      verbsetpath=self.vs,
+                                      d_algo=d_algo,
+                                      ranker_k=k)
+            elif self.dtype == "lm":
+                lmpath = self.dopt["LM_path"] if "LM_path" in self.dopt else ""
+                paslmpath = self.dopt["PASLM_path"] if "PASLM_path" in self.dopt else ""
+                detect.detectmain(corpuspath=self.fcepath, 
                                   reportout=self.dir_log, 
-                                  verbsetpath=self.vs)
+                                  lmpath=self.lmpath, 
+                                  paslmpath=args.pas_lm_path, 
+                                  verbsetpath=args.verbset)
+
         print "done!"
 
 

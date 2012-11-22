@@ -13,24 +13,19 @@ from datetime import datetime
 import logging
 logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG, filename='../log/'+logfilename)
-import os, glob
+import os
+import glob
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
-from pattern.text import en
-from nltk.corpus import wordnet as wn
-try:
-    from lsa_test.irstlm import *
-except:
-    from tool.irstlm_moc import *
-import tool.altword_generator as altgen
-from classifier import BoltClassifier
+import numpy as np
 from sklearn.datasets import svmlight_format
 from sklearn import cross_validation
-import numpy as np
-import bolt
 from feature_extractor import SimpleFeatureExtractor
+import bolt
+import tool.altword_generator as altgen
 from tool.sparse_matrices import *
+from classifier import *
 
 
 class DetectorBase(object):
@@ -103,7 +98,7 @@ class SupervisedDetector(DetectorBase):
     TODO:
         Better, smart implementation for shared codes such as _mk_cases
     """
-    def readmodels(self, path_dataset_root="", modeltype="sgd", toolkit="sklearn"):
+    def readmodels(self, path_dataset_root="", modeltype="sgd", toolkit="sklearn", d_algo="kbest", ranker_k=5):
         dirlist = glob.glob(os.path.join(path_dataset_root, "*"))
         namelist = [os.path.basename(p) for p in dirlist]
         self.verb2modelpath = {vn : p for (vn, p) in zip(namelist, dirlist)}
@@ -112,6 +107,10 @@ class SupervisedDetector(DetectorBase):
         self.label2id = {}
         self.tempdir = os.path.dirname(path_dataset_root)
         self.toolkit = toolkit
+        self.d_algo = d_algo
+        if self.d_algo == "kbest":
+            print "SupervisedDetector: using k-best algorithm"
+        self.k = ranker_k
         if os.path.basename(self.tempdir) == "dataset":
             self.tempdir = os.path.join(path_dataset_root, os.pardir)
         if not os.path.exists(self.tempdir):
@@ -143,7 +142,6 @@ class SupervisedDetector(DetectorBase):
                 cp_list.append([])
         # print "Checkpoints_VB: ", pformat(cp_list)
         return cp_list
-
 
     def _mk_cases(self, docname="", doc=None, is_withCP=True):
         if docname and doc:
@@ -190,11 +188,8 @@ class SupervisedDetector(DetectorBase):
                                     self.testcases[testkey]["features"] = mk_features(tags=test_tags[s_id], v=incorr)
                                     self.case_keys.append(testkey)
             except Exception, e:
-                logging.debug("error catched in _mk_cases")
+                logging.debug(pformat(("error catched in _mk_cases, docname", docname, e)))
                 raise
-                # logging.debug(pformat(docname))
-                # logging.debug(pformat(doc))
-                # logging.debug(pformat(e))
 
     def _bolt_pred(self, model=None):
         if model:
@@ -206,7 +201,7 @@ class SupervisedDetector(DetectorBase):
 
     def _sklearn_pred(self, model=None, X=None, Y=None):
         if model:
-            return model.predict(X)
+            return model.predict(X)[0]
 
     def _sklearn_pred_prob(self, model=None, X=None, Y=None):
         if model:
@@ -214,7 +209,7 @@ class SupervisedDetector(DetectorBase):
 
     def get_classification(self):
         """
-        calculate scores of given instances
+        get classification results
         """
         for testid in self.case_keys:
             case = self.testcases[testid]
@@ -225,16 +220,16 @@ class SupervisedDetector(DetectorBase):
                 model = self.models[setname]
                 fmap = self.fmaps[setname]
                 lmap = self.label2id[setname]
-                logging.debug("SupervisedDetector: model for %s is found :)"%setname)
+                # logging.debug("SupervisedDetector: model for %s is found :)"%setname)
                 case["incorr_classid"] = lmap[setname]
-                case["is_incorr_in_Vset"] = True
+                case["is_cp_in_set"] = True
             except KeyError:
-                logging.debug("SupervisedDetector: model for %s is not found :("%setname)
+                # logging.debug("SupervisedDetector: model for %s is not found :("%setname)
                 model = None
                 fmap = None
                 lmap = None
                 case["incorr_classid"] = None
-                case["is_incorr_in_Vset"] = False
+                case["is_cp_in_set"] = False
             try:
                 classid = lmap[y]
                 case["gold_classid"] = classid
@@ -257,23 +252,93 @@ class SupervisedDetector(DetectorBase):
                     output = self._bolt_pred(model)
                 elif self.toolkit == "sklearn":
                     output = self._sklearn_pred(model, _X, _Y)
-                    print self._sklearn_pred_prob(model, _X, _Y)
+                    output_classprob = self._sklearn_pred_prob(model, _X, _Y)
                 case["classifier_output"] = output
+                case["classifier_classprob"] = output_classprob
             else:
-                case["classifier_output"] = -100
+                case["classifier_output"] = -1
+                case["classifier_classprob"] = [-1.0]
 
 
-    def _check(self, true_error, org, cls_out):
-        if true_error:
-            if org == cls_out:
+    def _kbest_detector(self, probdist=None, k=5, orgidx=None):
+        """
+        k-best detection algorithm
+
+        Parameters
+        ------------
+        is_RV_tagged: bool, True if the checkpoint is RV tagged one in FCE dataset else False
+        probdist: np.array like object, row vector, contains assignment probabilities of each class
+        k: threshold to determine the sum of k-best scores
+
+        Returns
+        ------------
+        output: integer, 1 if it is labelled as an error else 0
+        """
+        try:
+            probdist = probdist.tolist()
+            logging.debug(pformat(("kbest_detector: probdist = ", probdist)))
+            logging.debug(pformat(("kbest_detector: original word's idx = ", orgidx)))
+            orgscore = probdist[orgidx]
+            probs = [(i, p) for i, p in enumerate(probdist) if i != orgidx]#
+            probs.sort(key=lambda x: x[1], reverse=True)
+            logging.debug(pformat(("kbest_detector: probdist without orgidx = ", str(probs))))
+            kbscore = sum([p[1] for p in probs[:k]])
+            logging.debug(pformat(("kbest_detector: original word's score = ", orgidx)))
+            logging.debug(pformat(("kbest_detector: kbest words score sum = ", kbscore)))
+            if orgscore > kbscore:
                 return 0
             else:
                 return 1
+        except:
+            raise
+
+
+    def _basedetector(self, org=None, cls_out=None):
+        # logging.debug(pformat("basedetector: org %i vs. cls %i"%(org, cls_out)))
+        if org == cls_out:
+            return 0
         else:
-            if org == cls_out:
-                return 0
-            else:
-                return 1
+            return 1
+
+
+    def detect(self):
+        self.truelabels = []
+        self.syslabels = []
+        self.gold_in_Cset = []
+        self.listRV = []
+        self.listRV_sys = []
+        for id, case in self.testcases.iteritems():
+            try:
+                gold = case["gold_classid"]
+                org = case["incorr_classid"]
+                cls_out = case["classifier_output"]
+                probdist = case["classifier_classprob"]
+                tmp_l = []
+                assert case["is_cp_in_set"] == True
+                if self.d_algo == "kbest":
+                    sysout = self._kbest_detector(probdist=probdist, k=self.k, orgidx=org)
+                else:
+                    sysout = self._basedetector(org=org, cls_out=cls_out)
+                self.syslabels.append(sysout)
+                if case["type"] == "RV":
+                    self.truelabels.append(1)
+                    self.listRV.append(1)
+                    self.listRV_sys.append(sysout)
+                else:
+                    self.truelabels.append(0)
+                if case["is_gold_in_Vset"] == True:
+                    self.gold_in_Cset.append(1)
+            except AssertionError:
+                if case["type"] == "RV":
+                    self.syslabels.append(0)
+                    self.truelabels.append(1)
+                else:
+                    self.syslabels.append(0)
+                    self.truelabels.append(0)
+
+            except Exception, e:
+                logging.debug(pformat(e))
+                raise
 
 
     def mk_report(self):
@@ -283,34 +348,12 @@ class SupervisedDetector(DetectorBase):
             1: Verb error
         """
         from sklearn import metrics
-        self.truelabels = []
-        self.syslabels = []
-        self.gold_in_Cset = []
-        labels = [0 ,1]
+        labels = [0, 1]
         names = ["not_verb-error", "verb-error"]
-        for id, case in self.testcases.iteritems():
-            try:
-                gold = case["gold_classid"]
-                org = case["incorr_classid"]
-                cls_out = case["classifier_output"]
-                tmp_l = []
-                assert case["is_incorr_in_Vset"] == True
-                if case["type"] == "RV":
-                    self.syslabels.append(self._check(True, org, cls_out))
-                    self.truelabels.append(1)
-                else:
-                    self.syslabels.append(self._check(False, org, cls_out))
-                    self.truelabels.append(0)
-                if case["is_gold_in_Vset"] == True:
-                    self.gold_in_Cset.append(1)
-            except Exception, e:
-                logging.debug(pformat(e))
-
         with open(self.reportpath, "w") as rf:
-            ytrue = np.array(self.truelabels)
-            ysys = np.array(self.syslabels)
-            print ytrue
-            print ysys
+            detect_precision = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t])/float(len(self.truelabels))
+            detect_recall = len([1 for (g, t) in zip(self.listRV, self.listRV_sys) if g == t])/float(len(self.listRV))
+            false_alarm = 1 - detect_precision
             # skf = cross_validation.StratifiedKFold(ytrue, k=5)
             # for tridx, teidx in skf:
             #     _ytrue = ytrue[teidx]
@@ -321,40 +364,57 @@ class SupervisedDetector(DetectorBase):
             #     print pformat(cm_lm)
             #     rf.write(clsrepo_lm)
             #     rf.write("\n\n")
-            clsrepo_lm = metrics.classification_report(np.array(ytrue), np.array(ysys), target_names=names)
-            cm_lm = metrics.confusion_matrix(np.array(ytrue), np.array(ysys), labels=np.array([0,1]))
+            ytrue = np.array(self.truelabels)
+            ysys = np.array(self.syslabels)
+            clsrepo_lm = metrics.classification_report(ytrue, ysys, target_names=names)
+            cm_lm = metrics.confusion_matrix(ytrue, ysys, labels=np.array(labels))
             print clsrepo_lm
             print pformat(cm_lm)
             print "num. of [words in FCE-gold which are covered by Cset] case", len(self.gold_in_Cset)
-            rf.write(clsrepo_lm)
+            print 
+            dp = "DetectPrecision = %3.4f \n"%detect_precision
+            dr = "DetectRecall = %3.4f \n"%detect_recall
+            fa = "FalseAlarm = %3.4f \n"%false_alarm
+            print dp, dr, fa
+            rf.write(clsrepo_lm); rf.write("\n\n")
+            rf.write(dp); rf.write("\n")
+            rf.write(dr); rf.write("\n")
+            rf.write(fa); rf.write("\n")
 
 
 def mk_features(tags=[], v=""):
     fe = SimpleFeatureExtractor(tags=tags, verb=v)
-    fe.ngrams(n=7)
+    fe.ngrams(n=5)
     # some more features are needed
     return fe.features
 
 
-def detectmain_c(corpuspath="", model_root="", type="sgd", reportout="", verbsetpath=""):
+def detectmain_c(corpuspath="", model_root="", type="sgd", reportout="", verbsetpath="", d_algo="kbest",ranker_k=5):
     try:
-        detector = SupervisedDetector(corpusdictpath=corpuspath, verbsetpath=verbsetpath, reportpath=reportout)
+        detector = SupervisedDetector(corpusdictpath=corpuspath,
+                                      verbsetpath=verbsetpath,
+                                      reportpath=reportout)
         detector.make_cases()
-        detector.readmodels(path_dataset_root=model_root, modeltype=type)
+        detector.readmodels(path_dataset_root=model_root, modeltype=type, d_algo=d_algo, ranker_k=ranker_k)
         detector.get_classification()
+        detector.detect()
         detector.mk_report()
     except Exception, e:
         print pformat(e)
         raise
 
+
 #-------------------------------------------------------------------------------
 # LM models
 #-------------------------------------------------------------------------------
-
 class LM_Detector(DetectorBase):
     def read_LM_and_PASLM(self, path_IRSTLM="", path_PASLM=""):
+        try:
+            from lsa_test.irstlm import initLM, deleteLM, getSentenceScore
+        except:
+            from tool.irstlm_moc import initLM, deleteLM, getSentenceScore
         if path_IRSTLM:
-            self.LM = initLM(5, path_IRSTLM)
+            self.LM = self.initLM(5, path_IRSTLM)
             logging.debug(pformat("IRSTLM's LM is loaded from %s"%path_IRSTLM))
         if path_PASLM:
             self.pasCounter = pickle.load(open(path_PASLM))
@@ -363,7 +423,7 @@ class LM_Detector(DetectorBase):
 
     def cleanup(self):
         print "Deleting LM...."
-        deleteLM(self.LM)
+        self.deleteLM(self.LM)
         logging.debug("IRSTLM_LM has been deleted from memory")
         print "Deleting LM has been completed" 
 
@@ -508,7 +568,7 @@ class LM_Detector(DetectorBase):
             for org_q in case["LM_queries"]["org"]:
                 logging.debug(pformat(org_q))
                 try:
-                    score = getSentenceScore(self.LM, org_q)
+                    score = self.getSentenceScore(self.LM, org_q)
                     logging.debug(pformat(score))
                 except TypeError:
                     score = -100
@@ -516,7 +576,7 @@ class LM_Detector(DetectorBase):
             for alt_q in case["LM_queries"]["alt"]:
                 logging.debug(pformat(alt_q))
                 try:
-                    score = getSentenceScore(self.LM, alt_q)
+                    score = self.getSentenceScore(self.LM, alt_q)
                     logging.debug(pformat(score))
                 except TypeError:
                     score = -100
@@ -854,7 +914,6 @@ if __name__=='__main__':
         detectmain_c(corpuspath=args.corpus_pickle_file, reportout=args.output_file, verbsetpath=args.verbset, model_root=args.model_dir_root, type=args.model_type)
         endtime = time.time()
         print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
-
 
     else:
         ap.print_help()
