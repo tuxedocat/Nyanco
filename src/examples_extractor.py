@@ -143,8 +143,13 @@ def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
     import glob
     ukwacfiles = glob.glob(ukwac_prefix+"*.parsed")
     raw_verbset = pickle.load(open(verbset_path, "rb"))
-    verbset = deepcopy(raw_verbset)
-    verbs, conjdic = _retrieve_unique_verbs(verbset)
+    if hasattr(raw_verbset, "iteritems"):
+        verbset = deepcopy(raw_verbset)
+        verbs, conjdic = _retrieve_unique_verbs(verbset)
+    elif hasattr(raw_verbset, "append"):
+        verbs = deepcopy(raw_verbset)
+        conjdic = {v:_get_conjs(v) for v in verbs}
+
     output_dic = defaultdict(list)
     if shuffle is True:
         random.seed(output_dir+verbset_path)
@@ -179,16 +184,16 @@ class CorpusFileCountOverlimit(Exception):
     pass
 
 
-def extract_parallel(ukwac_prefix = "", output_dir="",
-                     verbset_path = "", sample_max_num = 10000, shuffle=True):
+def extract_sentence_p(ukwac_prefix = "", output_dir="",
+                       verbset_path = "", sample_max_num = 10000, shuffle=True):
     """
     A wrapper for extracting parsed sentences which containing the verbs in given verbset
     """
     import glob
     ukwacfiles = glob.glob(ukwac_prefix+"*.parsed")
     raw_verbset = pickle.load(open(verbset_path, "rb"))
-    verbset = deepcopy(raw_verbset)
-    verbs, conjdic = _retrieve_unique_verbs(verbset)
+    verbs = deepcopy(raw_verbset)
+    conjdic = {v:_get_conjs(v) for v in verbs}
     output_dic = defaultdict(list)
     if shuffle is True:
         random.seed(output_dir+verbset_path)
@@ -200,19 +205,15 @@ def extract_parallel(ukwac_prefix = "", output_dir="",
                 corpus = cf.read().split("\n\n")
                 print "IO: Reading corpus... done!"
             try:
-                p = Pool(4)
-                args = [(corpus, conjdic[v], sample_max_num) for v in verbs]
-                result = p.map(_extract_sents_p, args)
-                output_dic = {v:item for v, item in zip(verbs, result)}
-                # for v in verbs:
-                #     conjlist = conjdic[v]
-                #     if len(output_dic[v]) > sample_max_num:
-                #         output_dic[v] = output_dic[v][:sample_max_num]
-                #         verbs.remove(v)
-                if fc >= 5:
-                    raise CorpusFileCountOverlimit
-                    # print "Extraction: verb = '%s' (%d remaining)"%(v, len(verbs)), "\t\tworking on file %s"%file
-                # output_dic[v] += _extract_sents(corpus, v, sample_max_num, conjlist)
+                for v in verbs:
+                    conjlist = conjdic[v]
+                    if len(output_dic[v]) > sample_max_num:
+                        output_dic[v] = output_dic[v][:sample_max_num]
+                        verbs.remove(v)
+                    if fc >= 7:
+                        raise CorpusFileCountOverlimit
+                    print "Extraction: verb = '%s' (%d remaining)"%(v, len(verbs)), "\t\tworking on file %s"%file
+                    output_dic[v] += _extract_sents(corpus, v, sample_max_num, conjlist)
             except CorpusFileCountOverlimit:
                 raise CorpusFileCountOverlimit
     except KeyboardInterrupt:
@@ -223,39 +224,10 @@ def extract_parallel(ukwac_prefix = "", output_dir="",
         _save_vcorpusdic(output_dic, output_dir)
     print "Extracting sentences: done"
 
-def _extract_sents_p(args=None):
-    """
-    this will extract training sentences (parsed file format) into given output directory
-    """
-    corpus = args[0]
-    conjs = args[1]
-    sample_max_num = args[2]
-    v_corpus = []
-    try:
-        for sid, sentence in enumerate(corpus):
-            if is_verbincluded2(sentence, conjs):
-                s = sentence.split("\n") 
-                v_corpus.append(s)
-            elif sid % 10000 == 0:
-                if len(v_corpus) >= sample_max_num:
-                    break
-            else:
-                pass
-    except KeyboardInterrupt:
-        raise KeyboardInterrupt
-    return v_corpus
-
-
 @attr("extract_tiny")
 def test_extract_small():
     extract_sentence_for_verbs(ukwac_prefix="../sandbox/classify/", output_dir="../sandbox/classify/test_out",
                                 verbset_path="../sandbox/classify/vs_tiny.pkl2", sample_max_num=1000)
-
-@attr("extract_p")
-def test_extract_parallel():
-    extract_parallel(ukwac_prefix="../sandbox/classify/", output_dir="../sandbox/classify/test_out",
-                                verbset_path="../sandbox/classify/vs_tiny.pkl2", sample_max_num=1000)
-
 
 
 if __name__=='__main__':
@@ -279,9 +251,15 @@ if __name__=='__main__':
                     help="max number of sentence that you need to collect")
     ap.add_argument("-s", '--shuffle', action="store_true",
                     help="if you want to shuffle the corpus files...")
+    ap.add_argument("-p", '--parallel', action="store_true",
+                    help="Pseudo parallel execution via gnu parallel")
     args = ap.parse_args()
 
-    if (args.ukwacparsed_path):
+
+    if args.parallel:
+        extract_sentence_p(ukwac_prefix=args.ukwacparsed_path, output_dir=args.output_dir,
+                                    verbset_path=args.verbset, sample_max_num=args.maximum_num, shuffle=args.shuffle)
+    elif (args.ukwacparsed_path):
         extract_sentence_for_verbs(ukwac_prefix=args.ukwacparsed_path, output_dir=args.output_dir,
                                     verbset_path=args.verbset, sample_max_num=args.maximum_num, shuffle=args.shuffle)
         endtime = time.time()
