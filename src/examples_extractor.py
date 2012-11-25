@@ -18,6 +18,8 @@ from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
 from copy import deepcopy
+from multiprocessing import Pool
+from tool.betterpool import Pool2
 from pattern.text import en
 from nose.plugins.attrib import attr
 import random
@@ -25,31 +27,12 @@ tense = ["1sg", "3sg", "pl", "past"]
 
 
 
-# def is_verbincluded(verb="", sent=[]):
-#     """
-#     This is obsolete
-#     """
-#     i_suf = 1
-#     i_pos = 4
-#     i_ne = 10
-#     conjs = ["1sg", "3sg", "pl", "past"]
-#     v_conjs = [en.conjugate(verb, c) for c in conjs]
-#     tags = [tuple(l.split("\t")) for l in sent]
-#     vflag = False
-#     if tags:
-#         for tt in tags:
-#             try:
-#                 if tt[i_suf] in v_conjs and "VB" in tt[i_pos]:
-#                     vflag = True
-#             except IndexError, e:
-#                 pass
-#     return vflag
-
-def is_verbincluded2(verb="", sent="", conjs=[]):
+def is_verbincluded_p(sent_conjlist_pair=None):
     """
     This is for checking whether given sentence contains any of conjugation of the verb
-    @args
-        verb, sentence(as string), conjs(conjugation of the verb)
+    Parameters
+    -----------
+        corpus_conjlist_pair: ("")
     @returns
         vflag (True if the verb is in sentence else False)
     """
@@ -65,11 +48,30 @@ def is_verbincluded2(verb="", sent="", conjs=[]):
             pass
     return vflag
 
+def is_verbincluded2(sent="", conjs=[]):
+    """
+    This is for checking whether given sentence contains any of conjugation of the verb
+    @args
+        sentence(as string), conjs(conjugation of the verb)
+    @returns
+        vflag (True if the verb is in sentence else False)
+    """
+    vflag = False
+    if sent:
+        try:
+            for c in conjs:
+                if c in sent:
+                    vflag = True
+                    break
+        except IndexError, e:
+            pass
+    return vflag
+
 def _get_conjs(verb=""):
     """
     Generate possible conjugation of given verb
     """
-    return [en.conjugate(verb, c) for c in tense]
+    return [en.conjugate(verb, c)+"\t_\t_\tVB" for c in tense]
 
 
 def _is_dic_len_over(dic={}, max_len=0):
@@ -99,8 +101,8 @@ def _extract_sents(corpus=[], verb="", sample_max_num = 10000, conjs = []):
     v_corpus = []
     try:
         for sid, sentence in enumerate(corpus):
-            s = sentence.split("\n") 
-            if is_verbincluded2(verb, sentence, conjs):
+            if is_verbincluded2(sentence, conjs):
+                s = sentence.split("\n") 
                 v_corpus.append(s)
             elif sid % 10000 == 0:
                 if len(v_corpus) >= sample_max_num:
@@ -131,6 +133,7 @@ def _save_vcorpusdic(vcorpusdic={}, output_dir=""):
             print "IO: Pickling %d sentences containing verb '%s'"%(len(vc), vn)
             pickle.dump(vc, pf, -1)
         print "IO: File %s is saved.\n\n"%filename
+
 
 def extract_sentence_for_verbs(ukwac_prefix = "", output_dir="",
                                verbset_path = "", sample_max_num = 10000, shuffle=True):
@@ -176,39 +179,83 @@ class CorpusFileCountOverlimit(Exception):
     pass
 
 
-# def extract_training_examples(ukwac_prefix = "", verbset_path = "", max_num = 10000, shuffle=False, top_n_verbs=30):
-    # """
-    # Extract training examples from given (parsed and separated) ukWaC corpus and given verbset
+def extract_parallel(ukwac_prefix = "", output_dir="",
+                     verbset_path = "", sample_max_num = 10000, shuffle=True):
+    """
+    A wrapper for extracting parsed sentences which containing the verbs in given verbset
+    """
+    import glob
+    ukwacfiles = glob.glob(ukwac_prefix+"*.parsed")
+    raw_verbset = pickle.load(open(verbset_path, "rb"))
+    verbset = deepcopy(raw_verbset)
+    verbs, conjdic = _retrieve_unique_verbs(verbset)
+    output_dic = defaultdict(list)
+    if shuffle is True:
+        random.seed(output_dir+verbset_path)
+        random.shuffle(ukwacfiles)
+    try:
+        for fc, file in enumerate(ukwacfiles):
+            print "IO: Reading corpus.... file count %d"%fc
+            with open(file, "r") as cf:
+                corpus = cf.read().split("\n\n")
+                print "IO: Reading corpus... done!"
+            try:
+                p = Pool(4)
+                args = [(corpus, conjdic[v], sample_max_num) for v in verbs]
+                result = p.map(_extract_sents_p, args)
+                output_dic = {v:item for v, item in zip(verbs, result)}
+                # for v in verbs:
+                #     conjlist = conjdic[v]
+                #     if len(output_dic[v]) > sample_max_num:
+                #         output_dic[v] = output_dic[v][:sample_max_num]
+                #         verbs.remove(v)
+                if fc >= 5:
+                    raise CorpusFileCountOverlimit
+                    # print "Extraction: verb = '%s' (%d remaining)"%(v, len(verbs)), "\t\tworking on file %s"%file
+                # output_dic[v] += _extract_sents(corpus, v, sample_max_num, conjlist)
+            except CorpusFileCountOverlimit:
+                raise CorpusFileCountOverlimit
+    except KeyboardInterrupt:
+        print "Interrupted by user... aborting"
+    except CorpusFileCountOverlimit:
+        print "Reached file count limitation... aborting"
+    finally:
+        _save_vcorpusdic(output_dic, output_dir)
+    print "Extracting sentences: done"
 
-    # Extracted instances will be saved under given output path, like following:
-        # set of verb1: outputprefix/verb1/dataset_verb1.pkl2
-
-    # @args
-        # ukwac_prefix: is prefix of the path, to parsed ukwac files
-        # verbset_path: is prefix of the path, to pickled verbset
-        # max_num: is a number, that restrict the maximum numbers of each verb's sample
-        # shuffle: if True, corpus files will be shuffled
-    # @returns
-        # None
-    # """
-    # import glob
-    # filelist = glob.glob(ukwac_prefix+"*.parsed")
-    # verbset = pickle.load(open(verbset_path, "rb"))
-    # verblist = verbset["verbs"]
-    # vset = verbset["verbset"]
-    # for verb in verblist:
-        # for cfname in filelist:
-            # corpus = open(cfname, 'r').read().split("\n\n")
-            # corpus = [s.split("\n") for s in corpus]
-
-
-    # return None
+def _extract_sents_p(args=None):
+    """
+    this will extract training sentences (parsed file format) into given output directory
+    """
+    corpus = args[0]
+    conjs = args[1]
+    sample_max_num = args[2]
+    v_corpus = []
+    try:
+        for sid, sentence in enumerate(corpus):
+            if is_verbincluded2(sentence, conjs):
+                s = sentence.split("\n") 
+                v_corpus.append(s)
+            elif sid % 10000 == 0:
+                if len(v_corpus) >= sample_max_num:
+                    break
+            else:
+                pass
+    except KeyboardInterrupt:
+        raise KeyboardInterrupt
+    return v_corpus
 
 
 @attr("extract_tiny")
 def test_extract_small():
-    extract_sentence_for_verbs(ukwac_prefix="../sandbox/classify/tiny/", output_dir="../sandbox/classify/tiny/out",
-                                verbset_path="../sandbox/verbset_tiny.pkl2", sample_max_num=1000)
+    extract_sentence_for_verbs(ukwac_prefix="../sandbox/classify/", output_dir="../sandbox/classify/test_out",
+                                verbset_path="../sandbox/classify/vs_tiny.pkl2", sample_max_num=1000)
+
+@attr("extract_p")
+def test_extract_parallel():
+    extract_parallel(ukwac_prefix="../sandbox/classify/", output_dir="../sandbox/classify/test_out",
+                                verbset_path="../sandbox/classify/vs_tiny.pkl2", sample_max_num=1000)
+
 
 
 if __name__=='__main__':
