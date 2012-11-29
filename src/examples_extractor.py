@@ -26,7 +26,6 @@ import random
 tense = ["1sg", "3sg", "pl", "past"]
 
 
-
 def is_verbincluded_p(sent_conjlist_pair=None):
     """
     This is for checking whether given sentence contains any of conjugation of the verb
@@ -210,7 +209,7 @@ def extract_sentence_p(ukwac_prefix = "", output_dir="",
                     if len(output_dic[v]) > sample_max_num:
                         output_dic[v] = output_dic[v][:sample_max_num]
                         verbs.remove(v)
-                    if fc >= 7:
+                    if fc >= 24:
                         raise CorpusFileCountOverlimit
                     print "Extraction: verb = '%s' (%d remaining)"%(v, len(verbs)), "\t\tworking on file %s"%file
                     output_dic[v] += _extract_sents(corpus, v, sample_max_num, conjlist)

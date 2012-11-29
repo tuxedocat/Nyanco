@@ -10,7 +10,6 @@ __version__ = "0"
 __status__ = "Prototyping"
 
 from datetime import datetime
-
 import logging
 logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG, filename='../log/'+logfilename)
@@ -20,7 +19,6 @@ from collections import defaultdict
 import cPickle as pickle
 from numpy import array
 from pattern.text import en
-from nltk.corpus import wordnet as wn
 
 try:
     from lsa_test.irstlm import *
@@ -29,52 +27,68 @@ except:
 
 
 class FeatureExtractorBase(object):
-    def __init__(self, tags=[], verb=""):
+    nullfeature = {"NULL":1}
+    conll_type = "full"
+    col_suf = 1
+    col_pos = 4
+    col_headid = 6
+    col_deprel = 7
+    col_netag = 10
+    col_srlrel = 12
+    col_srl = 13
+
+    @classmethod
+    def gen_fn(cls, l=None):
+        return "_".join(l)
+
+    @classmethod
+    def set_col_f(cls):
+        cls.conll_type = "full"
+        cls.col_suf = 1
+        cls.col_pos = 4
+        cls.col_headid = 6
+        cls.col_deprel = 7
+        cls.col_netag = 10
+        cls.col_srl = 12
+        cls.col_srlrel = 13
+
+    @classmethod
+    def set_col_r(cls):
+        cls.conll_type = "reduced"
+        cls.col_suf = 1
+        cls.col_pos = 2
+        cls.col_headid = 4
+        cls.col_deprel = 3
+        cls.col_netag = 5
+        cls.col_srl = 6
+        cls.col_srlrel = 7
+
+    def __init__(self, tags=[], verb="", v_idx=None, conll_type="full"):
+        try:
+            assert conll_type == self.__class__.conll_type
+        except AssertionError:
+            if conll_type == "reduced":
+                FeatureExtractorBase.set_col_r()
+            elif conll_type == "full":
+                FeatureExtractorBase.set_col_f()
         self.features = defaultdict(float)
         self.v = verb
-        self.gen_fn = lambda x,y,z: "_".join([x, str(y), z])
-        self.nullfeature = {"NULL":1}
         try:
-            self.tags = [t for t in tags if not t is ""]
-            if len(tags[0].split("\t")) == 14:
-                self.col_suf = 1
-                self.col_pos = 4
-            elif len(tags[0].split("\t")) == 8:
-                self.col_suf = 1
-                self.col_pos = 2
-            else:
-                print "FeatureExtractor: initializing... \nUnknown input format"
-                raise IndexError
-            try:
-                self.SUF = [line.split("\t")[self.col_suf] for line in self.tags]
-                # self.SUF_l = [en.conjugate(line.split("\t")[self.col_suf], tense="infinitive") for line in self.tags]
-                self.POS = [line.split("\t")[self.col_pos] for line in self.tags]
-                self.WL = zip(self.SUF, self.POS)
-                self.v_idx = self._find_verb_idx()
-            except Exception, e:
-                print pformat(e)
-                print tags
+            # for extracting features from parsed data (tab separated dataset in CoNLL like format)
+            self.tags = [t.split("\t") for t in tags if not t is ""]
         except AttributeError:
-            if len(tags[0]) == 14:
-                self.col_suf = 1
-                self.col_pos = 4
-            elif len(tags[0]) == 8:
-                self.col_suf = 1
-                self.col_pos = 2
+            # for extracting features from tags' list
             self.tags = tags
-            try:
-                self.SUF = [t[self.col_suf] for t in self.tags]
-                # self.SUF_l = [en.conjugate(t[self.col_suf], tense="infinitive") for t in self.tags]
-                self.POS = [t[self.col_pos] for t in self.tags]
-                self.WL = zip(self.SUF, self.POS)
-                self.v_idx = self._find_verb_idx()
-            except Exception, e:
-                print pformat(e)
-                print tags
+        try:
+            self.SUF = [t[FeatureExtractorBase.col_suf] for t in self.tags]
+            # self.SUF_l = [en.conjugate(t[self.col_suf], tense="infinitive") for t in self.tags]
+            self.POS = [t[FeatureExtractorBase.col_pos] for t in self.tags]
+            self.WL = zip(self.SUF, self.POS)
+            self.v_idx = self._find_verb_idx() if not v_idx else v_idx
         except Exception, e:
             print pformat(e)
-            print tags
-            self.features.update(self.nullfeature)
+            logging.debug(pformat(tags))
+            self.features.update(FeatureExtractorBase.nullfeature)
 
 
     def _find_verb_idx(self):
@@ -97,6 +111,7 @@ class FeatureExtractorBase(object):
         returns a dictionary for next process
         """
         corpusdict = defaultdict(list)
+        raise NotImplementedError
 
 
     def save_to_file(self):
@@ -112,7 +127,6 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
     More interesting features such as sentence wise topic models will be implemented in next update
     """
 
-    # @classmethod
     def ngrams(self, n=5, v_idx=None):
         """
         Make a query for ngram frequency counter
@@ -136,21 +150,93 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
             core = self.WL[v_idx]
             _left = [word for index, word in enumerate(self.WL) if index < v_idx and index != v_idx][-window:]
             _right = [word for index, word in enumerate(self.WL) if index > v_idx and index != v_idx][:window]
-            concat = _left + _right
-            suf_ngram = {self.gen_fn("SUF", i-window, w[0]):1 for i, w in enumerate(concat)}
-            pos_ngram = {self.gen_fn("POS", i-window, w[1]):1 for i, w in enumerate(concat)}
+            concat = _left + ["__CORE__"] + _right
+            suf_ngram = {SimpleFeatureExtractor.gen_fn(["SUF", str(i-window), w[0]]):1 for i, w in enumerate(concat) if w != "__CORE__"}
+            pos_ngram = {SimpleFeatureExtractor.gen_fn(["POS", str(i-window), w[1]]):1 for i, w in enumerate(concat) if w != "__CORE__"}
             self.features.update(suf_ngram)
             self.features.update(pos_ngram)
         except Exception, e:
             print pformat(e)
-            self.features.update(self.nullfeature)
+            self.features.update(SimpleFeatureExtractor.nullfeature)
 
-    @classmethod
-    def read_wordnet_tag(self):
-        raise NotImplementedError
-
-    @classmethod
-    def convert_to_scipy(self, casedict={}):
+    def chunk(self):
         raise NotImplementedError
 
 
+
+class FeatureExtractor(SimpleFeatureExtractor):
+    def dependency(self, v_idx=None):
+        try:
+            if not v_idx:
+                v_idx = self.v_idx
+            deps = [(t[FeatureExtractor.col_deprel], t[FeatureExtractor.col_suf]) for t in self.tags
+                    if int(t[FeatureExtractor.col_headid]) == v_idx+1]
+            depf = {FeatureExtractor.gen_fn(["DEP", d[0].upper(), d[1]]):1 for d in deps}
+            self.features.update(depf)
+        except Exception, e:
+            logging.debug(pformat(e))
+            self.features.update(FeatureExtractor.nullfeature)
+
+
+    def ne(self, v_idx=None):
+        try:
+            if not v_idx:
+                v_idx = self.v_idx
+            ne = self.tags[v_idx][FeatureExtractor.col_netag]
+            if not ne == "_":
+                ne_tag = {"V-NE_" + ne: 1}
+            else:
+                ne_tag = {}
+            self.features.update(ne_tag)
+        except Exception, e:
+            logging.debug(pformat(e))
+
+    @classmethod
+    def __format_srl(cls, srldic):
+        print srldic
+        srl= []
+        moc = ("","","","")
+        for pkey in srldic:
+            out = {}
+            out["PRED"] = (pkey[cls.col_suf], pkey[cls.col_pos], pkey[cls.col_deprel], pkey[cls.col_netag])
+            try:
+                a0 = srldic[pkey]["ARG0"]
+                out["ARG0"] = (a0[cls.col_suf], a0[cls.col_pos], a0[cls.col_deprel], a0[cls.col_netag])
+            except KeyError:
+                out["ARG0"] = moc 
+            try:
+                a1 = srldic[pkey]["ARG1"]
+                out["ARG1"] = (a1[cls.col_suf], a1[cls.col_pos], a1[cls.col_deprel], a1[cls.col_netag])
+            except KeyError:
+                out["ARG1"] = moc 
+            srl.append(out)
+        return srl
+
+
+    def srl(self, v_idx=None):
+        try:
+            if not v_idx:
+                v_idx = self.v_idx
+            self.tmp_ARG0 = []
+            self.tmp_ARG1 = []
+            self.tmp_PRED = defaultdict(dict)
+            for i, tt in enumerate(self.tags):
+                if tt[FeatureExtractor.col_srlrel] == "ARG0":
+                    self.tmp_ARG0.append(tt)
+                    predidx = int(tt[FeatureExtractor.col_srl]) - 1
+                    self.tmp_PRED[tuple(self.tags[predidx])].update({"ARG0":tt})
+                elif tt[FeatureExtractor.col_srlrel] == "ARG1":
+                    self.tmp_ARG1.append(tt)
+                    predidx = int(tt[FeatureExtractor.col_srl]) - 1
+                    self.tmp_PRED[tuple(self.tags[predidx])].update({"ARG1":tt})
+            print self.tmp_ARG0
+            print self.tmp_PRED
+            srl = FeatureExtractor.__format_srl(self.tmp_PRED)
+            print srl
+        except Exception, e:
+            logging.debug(pformat(e))
+            self.features.update(FeatureExtractor.nullfeature)
+
+
+    def topic(self):
+        raise NotImplementedError
