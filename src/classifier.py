@@ -25,7 +25,7 @@ from copy import deepcopy
 try: 
     import bolt
     from sklearn.feature_extraction import DictVectorizer
-    from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
+    from sklearn.multiclass import OneVsRestClassifier
     from sklearn.multiclass import OutputCodeClassifier
     from sklearn.linear_model import SGDClassifier, Perceptron
     from sklearn import preprocessing
@@ -106,6 +106,10 @@ class CaseMaker(object):
                 if "ngram" in self.featuretypes:
                     fe.ngrams(n=5)
                 if "srl" in self.featuretypes:
+                    pass
+                if "dep" in self.featuretypes:
+                    pass
+                if "topic" in self.featuretypes:
                     pass
                 _flist.append(fe.features)
                 _labellist_int.append(_labelid)
