@@ -27,15 +27,15 @@ except:
 
 
 class FeatureExtractorBase(object):
-    nullfeature = {"NULL":0}
-    conll_type = "full"
-    col_suf = 1
-    col_pos = 4
-    col_headid = 6
-    col_deprel = 7
-    col_netag = 10
-    col_srlrel = 12
-    col_srl = 13
+    nullfeature = {"NULL":1}
+    # conll_type = "full"
+    # col_suf = 1
+    # col_pos = 4
+    # col_headid = 6
+    # col_deprel = 7
+    # col_netag = 10
+    # col_srlrel = 12
+    # col_srl = 13
 
     @classmethod
     def gen_fn(cls, l=None):
@@ -49,8 +49,8 @@ class FeatureExtractorBase(object):
         cls.col_headid = 6
         cls.col_deprel = 7
         cls.col_netag = 10
-        cls.col_srl = 12
-        cls.col_srlrel = 13
+        cls.col_srlrel = 12 
+        cls.col_srl = 13
 
     @classmethod
     def set_col_r(cls):
@@ -60,25 +60,35 @@ class FeatureExtractorBase(object):
         cls.col_headid = 4
         cls.col_deprel = 3
         cls.col_netag = 5
-        cls.col_srl = 6
-        cls.col_srlrel = 7
+        cls.col_srlrel = 6
+        cls.col_srl = 7
 
     def __init__(self, tags=[], verb="", v_idx=None, conll_type="full"):
-        try:
-            assert conll_type == self.__class__.conll_type
-        except AssertionError:
-            if conll_type == "reduced":
-                FeatureExtractorBase.set_col_r()
-            elif conll_type == "full":
-                FeatureExtractorBase.set_col_f()
+        # try:
+        #     assert conll_type == self.__class__.conll_type
+        # except AssertionError:
+        #     if conll_type == "reduced":
+        #         FeatureExtractorBase.set_col_r()
+        #     elif conll_type == "full":
+        #         FeatureExtractorBase.set_col_f()
         self.features = defaultdict(float)
         self.v = verb
         try:
             # for extracting features from parsed data (tab separated dataset in CoNLL like format)
             self.tags = [t.split("\t") for t in tags if not t is ""]
+            _t = len(self.tags[0])
+            if _t == 14:
+                FeatureExtractorBase.set_col_f()
+            elif _t == 7:
+                FeatureExtractorBase.set_col_r()
         except AttributeError:
             # for extracting features from tags' list
             self.tags = tags
+            _t = len(self.tags[0])
+            if _t == 14:
+                FeatureExtractorBase.set_col_f()
+            elif _t == 7:
+                FeatureExtractorBase.set_col_r()
         try:
             self.SUF = [t[FeatureExtractorBase.col_suf] for t in self.tags]
             self.POS = [t[FeatureExtractorBase.col_pos] for t in self.tags]
@@ -90,7 +100,7 @@ class FeatureExtractorBase(object):
                 pass
                 # print "verb is ", tags[self.v_idx]
         except Exception, e:
-            print pformat(e)
+            # print pformat(e)
             # print pformat(tags)
             # logging.debug(pformat(tags))
             self.features.update(FeatureExtractorBase.nullfeature)
