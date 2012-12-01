@@ -56,7 +56,7 @@ class CaseMaker(object):
         vcorpus_filenames = glob.glob(os.path.join(self.corpusdir, "*.pkl2"))
         v_names = [os.path.basename(path).split(".")[0] for path in vcorpus_filenames]
         self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names, vcorpus_filenames)}
-        self.nullfeature = {"__NULL__":1}
+        self.nullfeature = {"NULL":1}
         self.featuretypes = f_types # list like object is expected
         if restart_from:
             try:

@@ -21,7 +21,7 @@ import cPickle as pickle
 import numpy as np
 from sklearn.datasets import svmlight_format
 from sklearn import cross_validation
-from feature_extractor import SimpleFeatureExtractor
+from feature_extractor import FeatureExtractor
 import bolt
 import tool.altword_generator as altgen
 from tool.sparse_matrices import *
@@ -164,7 +164,7 @@ class SupervisedDetector(DetectorBase):
                         self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
                         self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
                         self.testcases[testkey]["type"] = "RV"
-                        self.testcases[testkey]["features"] = mk_features(tags=test_tags[cpid], v=incorr, conll_type="full")
+                        self.testcases[testkey]["features"] = mk_features(tags=test_tags[cpid], v=incorr)
                         self.case_keys.append(testkey)
                 else:
                     checkpoints = self.__addcheckpoints(doc)
@@ -185,10 +185,11 @@ class SupervisedDetector(DetectorBase):
                                     self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
                                     self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
                                     self.testcases[testkey]["type"] = ""
-                                    self.testcases[testkey]["features"] = mk_features(tags=test_tags[s_id], v=incorr, conll_type="reduced")
+                                    self.testcases[testkey]["features"] = mk_features(tags=test_tags[s_id], v=incorr)
                                     self.case_keys.append(testkey)
             except Exception, e:
                 logging.debug(pformat(("error catched in _mk_cases, docname", docname, e)))
+                print pformat(e)
                 raise
 
     def _bolt_pred(self, model=None):
@@ -258,9 +259,12 @@ class SupervisedDetector(DetectorBase):
                         case["classifier_classprob"] = output_classprob
                     else:
                         case["classifier_output"] = -1
-                        case["classifier_classprob"] = [-1.0]
+                        case["classifier_classprob"] = np.array([-1.0])
                 except Exception, e:
                     print pformat(e)
+            else:
+                case["classifier_output"] = -1
+                case["classifier_classprob"] = np.array([-1.0])
 
 
     def _kbest_detector(self, probdist=None, k=5, orgidx=None):
