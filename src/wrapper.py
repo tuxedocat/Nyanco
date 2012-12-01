@@ -43,12 +43,11 @@ class Experiment(object):
             self.ext_dir = os.path.join(conf["dir_out"], self.vsname+"_%s"%(str(self.numts)))
         if "make_features" in self.pl:
             self.features = conf["features"]
-            self.vcdir = conf["verbcorpus_dir"]
-            # try:
-            #     self.vcdir = self.ext_dir
-            # except:
-            #     self.vcdir = os.path.join(conf["dir_out"], self.vsname+"_%s"%(str(self.numts)))
-            self.dsdir = os.path.join(conf["dir_train"], self.name) #+ "_" + "_".join(self.features))
+            try:
+                self.vcdir = self.ext_dir
+            except:
+                self.vcdir = conf["verbcorpus_dir"]
+            self.dsdir = os.path.join(conf["dir_train"], self.name) 
         if "tain" in self.pl:
             self.model = conf["classifier"]
         if "detect" in self.pl:

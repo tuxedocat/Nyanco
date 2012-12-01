@@ -169,7 +169,7 @@ class CaseMaker(object):
                 try:
                     save_sparse_matrix(fn_x, X)
                     np.save(fn_y, Y)
-                    "CaseMaker make_fvectors: saved Scipy matrices:: X %s and Y %s"%(fn_x, fn_y)
+                    print "CaseMaker make_fvectors: saved Scipy matrices:: X %s and Y %s"%(fn_x, fn_y)
                 except:
                     print "CaseMaker make_fvectors: Error occurred while saving npy, npz models"
                     raise
