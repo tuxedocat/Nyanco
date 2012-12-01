@@ -169,13 +169,14 @@ class CaseMaker(object):
                 try:
                     save_sparse_matrix(fn_x, X)
                     np.save(fn_y, Y)
+                    "CaseMaker make_fvectors: saved Scipy matrices:: X %s and Y %s"%(fn_x, fn_y)
                 except:
                     print "CaseMaker make_fvectors: Error occurred while saving npy, npz models"
                     raise
                 fn_cdic = os.path.join(dir_n, "casedict.pkl2")
                 fn_fmap = os.path.join(dir_n, "featuremap.pkl2")
                 fn_label2id = os.path.join(dir_n, "label2id.pkl2")
-                self.save_svmlight_file(dir_n, X, Y)
+                # self.save_svmlight_file(dir_n, X, Y)
                 with open(fn_fmap, "wb") as f:
                     pickle.dump(vectorizer, f, -1)
                 with open(fn_label2id, "wb") as f:
@@ -186,15 +187,17 @@ class CaseMaker(object):
                     cdic["label2id"] = _casedict["label2id"]
                     cdic["featuremap"] = vectorizer
                     pickle.dump(cdic, pf, -1)
-            print "CaseMaker make_fvectors: successfully done."
+            print "CaseMaker make_fvectors: successfully done for verb %s"%setname
         else:
-            with open(self.verbset_path+"_reduced","wb") as f:
-                verbs2 = [v for v in self.verbs if v != setname]
-                vs2 = {sn : vs for (sn, vs) in self.verbsets.iteritems() if sn != setname}
-                reduced = {"verbs": verbs2, "verbset": vs2}
-                pickle.dump(reduced, f)
-            dir_n = os.path.join(self.dataset_dir, setname)
-            print "CaseMaker make_fvectors NOTIFICATION: Verbset is modified since there is null verbset"
+            print "CaseMaker make_fvectors: NULL VERBSET !!"
+            pass
+            # with open(self.verbset_path+"_reduced","wb") as f:
+            #     verbs2 = [v for v in self.verbs if v != setname]
+            #     vs2 = {sn : vs for (sn, vs) in self.verbsets.iteritems() if sn != setname}
+            #     reduced = {"verbs": verbs2, "verbset": vs2}
+            #     pickle.dump(reduced, f)
+            # dir_n = os.path.join(self.dataset_dir, setname)
+            # print "CaseMaker make_fvectors NOTIFICATION: Verbset is modified since there is null verbset"
 
 
     def save_svmlight_file(self, dir_n=None, X=None, Y=None):

@@ -19,24 +19,26 @@
 #     dir_log: ../log
 
 
-tiny_maxentsgd: 
+tiny_maxentsgd2: 
     pipeline: 
         - extract_examples
         - make_features
         - train
         - detect
     verbset: ../sandbox/classify/vs_tiny.pkl2
-    dir_ukwac: ../sandbox/classify/
+    dir_ukwac: ../sandbox/classify/tiny/
     num_tsamples: 300
     features: 
         - ngram # srl, dep
         - dep
         - srl
+        - ne
     classifier: sgd # ap, pa1, pa2
     toolkit: sklearn
     classifier_args: {loss: log, reg: l2, epochs: 10, alpha : 0.0001, muticpu: 4} # loss: huber, reg: l1, epoch: 5
     dir_out: ../sandbox/classify/
     dir_train: ../sandbox/classify/
+    verbcorpus_dir: ../sandbox/classify/tiny_maxentsgd2/
     fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
     detector: classifier_kbest
     detector_options: {ranker_k: 5}
