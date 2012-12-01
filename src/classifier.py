@@ -35,7 +35,7 @@ try:
     import scipy as sp
 except:
     raise ImportError
-from feature_extractor import SimpleFeatureExtractor
+from feature_extractor import FeatureExtractor
 from tool.sparse_matrices import *
 
 
@@ -102,18 +102,24 @@ class CaseMaker(object):
         _labelid = cls2id[v]
         if v_corpus:
             for sid, s in enumerate(v_corpus):
-                fe = SimpleFeatureExtractor(s, verb=v)
-                if "ngram" in self.featuretypes:
-                    fe.ngrams(n=5)
-                if "srl" in self.featuretypes:
+                try:
+                    fe = FeatureExtractor(s, verb=v)
+                    if "ngram" in self.featuretypes:
+                        fe.ngrams(n=5)
+                    if "dep" in self.featuretypes:
+                        fe.dependency()
+                    if "srl" in self.featuretypes:
+                        fe.srl()
+                    if "ne" in self.featuretypes:
+                        fe.ne()
+                    if "errorprob" in self.featuretypes:
+                        pass
+                    _flist.append(fe.features)
+                    _labellist_int.append(_labelid)
+                    _labellist_str.append(v)
+                except ValueError:
+                    logging.debug(pformat("CaseMaker feature extraction: couldn't find the verb"))
                     pass
-                if "dep" in self.featuretypes:
-                    pass
-                if "topic" in self.featuretypes:
-                    pass
-                _flist.append(fe.features)
-                _labellist_int.append(_labelid)
-                _labellist_str.append(v)
         else:
             _flist.append(self.nullfeature)
             _labellist_int.append(_labelid)

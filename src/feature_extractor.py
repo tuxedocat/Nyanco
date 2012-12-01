@@ -27,7 +27,7 @@ except:
 
 
 class FeatureExtractorBase(object):
-    nullfeature = {"NULL":1}
+    nullfeature = {"NULL":0}
     conll_type = "full"
     col_suf = 1
     col_pos = 4
@@ -81,27 +81,33 @@ class FeatureExtractorBase(object):
             self.tags = tags
         try:
             self.SUF = [t[FeatureExtractorBase.col_suf] for t in self.tags]
-            # self.SUF_l = [en.conjugate(t[self.col_suf], tense="infinitive") for t in self.tags]
             self.POS = [t[FeatureExtractorBase.col_pos] for t in self.tags]
             self.WL = zip(self.SUF, self.POS)
             self.v_idx = self._find_verb_idx() if not v_idx else v_idx
+            if self.v_idx is None:
+                raise ValueError
+            else:
+                pass
+                # print "verb is ", tags[self.v_idx]
         except Exception, e:
             print pformat(e)
-            logging.debug(pformat(tags))
+            # print pformat(tags)
+            # logging.debug(pformat(tags))
             self.features.update(FeatureExtractorBase.nullfeature)
 
 
     def _find_verb_idx(self):
-        verbpos = [idx for idx, sufpos in enumerate(zip(self.SUF,self.POS)) if sufpos[0] == self.v and "VB" in sufpos[1]]
+        verbpos = [idx for idx, sufpos in enumerate(zip(self.SUF, self.POS)) if sufpos[0] == self.v and "VB" in sufpos[1]]
         if verbpos:
             return verbpos[0]
         else:
-            # verbpos = [idx for idx, sufpos in enumerate(zip(self.SUF_l,self.POS)) if sufpos[0] == self.v and "VB" in sufpos[1]]
+            SUF_l = [en.lemma(w) for w in self.SUF]
+            verbpos = [idx for idx, sufpos in enumerate(zip(SUF_l, self.POS)) if sufpos[0] == self.v and "VB" in sufpos[1]]
             if verbpos:
                 return verbpos[0]
             else:
-                verbpos = int(len(self.SUF)/2)
-                return verbpos
+                # verbpos = int(len(self.SUF)/2)
+                return None
 
     @classmethod
     def read_corpusfiles(self, corpuspath=""):
@@ -157,7 +163,7 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
             self.features.update(pos_ngram)
         except Exception, e:
             print pformat(e)
-            self.features.update(SimpleFeatureExtractor.nullfeature)
+            # self.features.update(SimpleFeatureExtractor.nullfeature)
 
     def chunk(self):
         raise NotImplementedError
@@ -171,11 +177,11 @@ class FeatureExtractor(SimpleFeatureExtractor):
                 v_idx = self.v_idx
             deps = [(t[FeatureExtractor.col_deprel], t[FeatureExtractor.col_suf]) for t in self.tags
                     if int(t[FeatureExtractor.col_headid]) == v_idx+1]
-            depf = {FeatureExtractor.gen_fn(["DEP", d[0].upper(), d[1]]):1 for d in deps}
-            self.features.update(depf)
+            depr = {FeatureExtractor.gen_fn(["DEP", d[0].upper(), d[1]]):1 for d in deps}
+            self.features.update(depr)
         except Exception, e:
             logging.debug(pformat(e))
-            self.features.update(FeatureExtractor.nullfeature)
+            # self.features.update(FeatureExtractor.nullfeature)
 
 
     def ne(self, v_idx=None):
@@ -193,7 +199,6 @@ class FeatureExtractor(SimpleFeatureExtractor):
 
     @classmethod
     def __format_srl(cls, srldic):
-        print srldic
         srl= []
         moc = ("","","","")
         for pkey in srldic:
@@ -220,22 +225,39 @@ class FeatureExtractor(SimpleFeatureExtractor):
             self.tmp_ARG0 = []
             self.tmp_ARG1 = []
             self.tmp_PRED = defaultdict(dict)
-            for i, tt in enumerate(self.tags):
-                if tt[FeatureExtractor.col_srlrel] == "ARG0":
-                    self.tmp_ARG0.append(tt)
-                    predidx = int(tt[FeatureExtractor.col_srl]) - 1
-                    self.tmp_PRED[tuple(self.tags[predidx])].update({"ARG0":tt})
-                elif tt[FeatureExtractor.col_srlrel] == "ARG1":
-                    self.tmp_ARG1.append(tt)
-                    predidx = int(tt[FeatureExtractor.col_srl]) - 1
-                    self.tmp_PRED[tuple(self.tags[predidx])].update({"ARG1":tt})
-            print self.tmp_ARG0
-            print self.tmp_PRED
-            srl = FeatureExtractor.__format_srl(self.tmp_PRED)
-            print srl
+            ARGS = [(l[FeatureExtractor.col_srlrel], l[FeatureExtractor.col_suf]) for l in self.tags 
+                    if l[FeatureExtractor.col_srl] != "_" and int(l[FeatureExtractor.col_srl]) - 1 == v_idx]
+            if ARGS:
+                srlf = {FeatureExtractor.gen_fn(["SRL", t[0], en.lemma(t[1])]):1 for t in ARGS}
+                self.features.update(srlf)
         except Exception, e:
             logging.debug(pformat(e))
-            self.features.update(FeatureExtractor.nullfeature)
+            # self.features.update(FeatureExtractor.nullfeature)
+
+    @classmethod
+    def _load_errorprobs(cls, vspath=None):
+        if vspath:
+            cls.dic_errorprobs = pickle.load(open(vspath, "rb"))
+        else:
+            raise IOError
+
+
+    def _read_errorprob(self):
+        try:
+            prob_v = FeatureExtractor.dic_errorprobs[self.v]
+        except KeyError:
+            prob_v = FeatureExtractor.dic_errorprobs[en.lemma(self.v)]
+        finally:
+            pass
+
+    def errorprob(self, vspath=None):
+        if FeatureExtractor.dic_errorprobs:
+            pass
+        else:
+            try:
+                _load_errorprobs(vspath)
+            except IOError:
+                pass
 
 
     def topic(self):

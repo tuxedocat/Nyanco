@@ -164,7 +164,7 @@ class SupervisedDetector(DetectorBase):
                         self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
                         self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
                         self.testcases[testkey]["type"] = "RV"
-                        self.testcases[testkey]["features"] = mk_features(tags=test_tags[cpid], v=incorr)
+                        self.testcases[testkey]["features"] = mk_features(tags=test_tags[cpid], v=incorr, conll_type="full")
                         self.case_keys.append(testkey)
                 else:
                     checkpoints = self.__addcheckpoints(doc)
@@ -185,7 +185,7 @@ class SupervisedDetector(DetectorBase):
                                     self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
                                     self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
                                     self.testcases[testkey]["type"] = ""
-                                    self.testcases[testkey]["features"] = mk_features(tags=test_tags[s_id], v=incorr)
+                                    self.testcases[testkey]["features"] = mk_features(tags=test_tags[s_id], v=incorr, conll_type="reduced")
                                     self.case_keys.append(testkey)
             except Exception, e:
                 logging.debug(pformat(("error catched in _mk_cases, docname", docname, e)))
@@ -239,25 +239,28 @@ class SupervisedDetector(DetectorBase):
                 case["gold_classid"] = classid
                 case["is_gold_in_Vset"] = False
             if model and fmap:
-                _X = fmap.transform(strfeature)
-                _Y = np.array([classid])
-                if self.toolkit == "bolt":
-                    with open(self.datapath+"temp", "wb") as f:
-                        svmlight_format.dump_svmlight_file(_X, _Y, f, comment=None)
-                    with open(self.datapath+"temp", "rb") as f:
-                        cleaned = f.readlines()[2:]
-                    with open(self.datapath, "wb") as f:
-                        f.writelines(cleaned)
-                        os.remove(self.datapath+"temp")
-                    output = self._bolt_pred(model)
-                elif self.toolkit == "sklearn":
-                    output = self._sklearn_pred(model, _X, _Y)
-                    output_classprob = self._sklearn_pred_prob(model, _X, _Y)
-                case["classifier_output"] = output
-                case["classifier_classprob"] = output_classprob
-            else:
-                case["classifier_output"] = -1
-                case["classifier_classprob"] = [-1.0]
+                try:
+                    _X = fmap.transform(strfeature)
+                    _Y = np.array([classid])
+                    if self.toolkit == "bolt":
+                        with open(self.datapath+"temp", "wb") as f:
+                            svmlight_format.dump_svmlight_file(_X, _Y, f, comment=None)
+                        with open(self.datapath+"temp", "rb") as f:
+                            cleaned = f.readlines()[2:]
+                        with open(self.datapath, "wb") as f:
+                            f.writelines(cleaned)
+                            os.remove(self.datapath+"temp")
+                        output = self._bolt_pred(model)
+                    elif self.toolkit == "sklearn":
+                        output = self._sklearn_pred(model, _X, _Y)
+                        output_classprob = self._sklearn_pred_prob(model, _X, _Y)
+                        case["classifier_output"] = output
+                        case["classifier_classprob"] = output_classprob
+                    else:
+                        case["classifier_output"] = -1
+                        case["classifier_classprob"] = [-1.0]
+                except Exception, e:
+                    print pformat(e)
 
 
     def _kbest_detector(self, probdist=None, k=5, orgidx=None):
@@ -384,9 +387,12 @@ class SupervisedDetector(DetectorBase):
             rf.write(fa); rf.write("\n")
 
 
-def mk_features(tags=[], v=""):
-    fe = SimpleFeatureExtractor(tags=tags, verb=v)
+def mk_features(tags=[], v="", conll_type="reduced"):
+    fe = FeatureExtractor(tags=tags, verb=v, conll_type=conll_type)
     fe.ngrams(n=5)
+    fe.dependency()
+    fe.ne()
+    fe.srl()
     # some more features are needed
     return fe.features
 
