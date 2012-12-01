@@ -26,8 +26,8 @@ class TestFext(object):
         # self.checkdata = defaultdict(list)
         # for key in self.verbset["verbs"][:10]:
         #     self.checkdata[key] = pickle.load(open(os.path.join(self.corpuspath, "%s.pkl2"%key), "rb"))
-        self.testpath = "../sandbox/pas/test_fe.txt"
-        self.testdata = open(self.testpath,"r").read().split("\n")
+        # self.testpath = "../sandbox/pas/test_fe.txt"
+        # self.testdata = open(self.testpath,"r").read().split("\n")
         # self.dat_single =  ['1\tChinese\t_\t_\tJJ\t_\t3\tamod\t_\t_\t_\t_\t_\t_',
         #                     '2\therbal\t_\t_\tJJ\t_\t3\tamod\t_\t_\t_\t_\t_\t_',
         #                     '3\tmedicines\t_\t_\tNNS\t_\t4\tnsubj\t_\t_\t_\t_\tARG0\t5',
@@ -37,17 +37,21 @@ class TestFext(object):
         #                     '7\tof\t_\t_\tIN\t_\t6\tcombo\t_\t_\t_\t_\t_\t_',
         #                     '8\tthe\t_\t_\tDT\t_\t9\tdet\t_\t_\t_\t_\t_\t_',
         #                     '9\tadulterants.\t_\t_\tNN\t_\t6\tpobj\t_\t_\t_\t_\t_\t_']
-        self.fe = FeatureExtractor(self.testdata, "went", 12)
+        self.testpath = "../sandbox/classify/test_out/report.pkl2"
+        self.testdata = pickle.load(open(self.testpath,'rb'))
 
     @attr("feature_simple")
     def test_single(self):
-        self.fe.ngrams(n=7)
-        self.fe.dependency()
-        self.fe.ne()
-        self.fe.srl()
-        logging.debug(pformat(self.fe.features))
-        vec = DictVectorizer(sparse=True)
-        array_f = vec.fit_transform(self.fe.features).toarray()
-        logging.debug(pformat(array_f))
+        for t in self.testdata:
+            print "nyaa"
+            fe = FeatureExtractor(t, "report")
+            fe.ngrams(n=7)
+            fe.dependency()
+            fe.ne()
+            fe.srl()
+            logging.debug(pformat(fe.features))
+            vec = DictVectorizer(sparse=True)
+            array_f = vec.fit_transform(fe.features).toarray()
+            # logging.debug(pformat(array_f))
 
         raise Exception
