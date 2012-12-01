@@ -37,20 +37,21 @@ class Experiment(object):
         self.toolkit = conf["toolkit"]
         self.vsname = os.path.basename(self.vs).split(".")[0]
         self.cls_opts = conf["classifier_args"]
-        if "full" or "extract_examples" in self.pl:
+        if "extract_examples" in self.pl:
             self.native_c = conf["dir_ukwac"]
             self.numts = conf["num_tsamples"]
             self.ext_dir = os.path.join(conf["dir_out"], self.vsname+"_%s"%(str(self.numts)))
-        if "full" or "make_features" in self.pl:
+        if "make_features" in self.pl:
             self.features = conf["features"]
-            try:
-                self.vcdir = self.ext_dir
-            except:
-                self.vcdir = os.path.join(conf["dir_out"], self.vsname+"_%s"%(str(self.numts)))
+            self.vcdir = conf["verbcorpus_dir"]
+            # try:
+            #     self.vcdir = self.ext_dir
+            # except:
+            #     self.vcdir = os.path.join(conf["dir_out"], self.vsname+"_%s"%(str(self.numts)))
             self.dsdir = os.path.join(conf["dir_train"], self.name) #+ "_" + "_".join(self.features))
-        if "full" or "tain" in self.pl:
+        if "tain" in self.pl:
             self.model = conf["classifier"]
-        if "full" or "detect" in self.pl:
+        if "detect" in self.pl:
             self.dir_log = os.path.join(conf["dir_log"], self.name)
             self.dtype = conf["detector"]
             self.dopt = conf["detector_options"]
