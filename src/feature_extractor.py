@@ -81,7 +81,7 @@ class FeatureExtractorBase(object):
                 FeatureExtractorBase.set_col_f()
             elif _t == 7:
                 FeatureExtractorBase.set_col_r()
-        except AttributeError:
+        except AttributeError, IndexError:
             # for extracting features from tags' list
             self.tags = tags
             _t = len(self.tags[0])
