@@ -61,7 +61,7 @@ class TestCLSDetector:
         pass
     @attr("kbest_detector")
     def test_classifier(self):
-        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2.pkl2"
+        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2"
         self.model_root = "../sandbox/classify/tiny_maxentsgd/"
         self.verbsetpath = "../sandbox/classify/vs_tiny.pkl2"
         self.output = "../log/classifier_test"
@@ -69,7 +69,7 @@ class TestCLSDetector:
         raise Exception
     @attr("1best_detector")
     def test_classifier2(self):
-        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2.pkl2"
+        self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2.pkl2"
         self.model_root = "../sandbox/classify/tiny_maxentsgd/"
         self.verbsetpath = "../sandbox/classify/vs_tiny.pkl2"
         self.output = "../log/classifier_test"

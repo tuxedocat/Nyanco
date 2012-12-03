@@ -14,12 +14,13 @@ import logging
 logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG, filename='../log/'+logfilename)
 import os
+import sys
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
 from numpy import array
 from pattern.text import en
-
+import traceback
 try:
     from lsa_test.irstlm import *
 except:
@@ -63,31 +64,26 @@ class FeatureExtractorBase(object):
         cls.col_srlrel = 6
         cls.col_srl = 7
 
-    def __init__(self, tags=[], verb="", v_idx=None, conll_type="full"):
-        # try:
-        #     assert conll_type == self.__class__.conll_type
-        # except AssertionError:
-        #     if conll_type == "reduced":
-        #         FeatureExtractorBase.set_col_r()
-        #     elif conll_type == "full":
-        #         FeatureExtractorBase.set_col_f()
+    def __init__(self, tags=[], verb="", v_idx=None):
         self.features = defaultdict(float)
         self.v = verb
         try:
             # for extracting features from parsed data (tab separated dataset in CoNLL like format)
             self.tags = [t.split("\t") for t in tags if not t is ""]
             _t = len(self.tags[0])
+            # print "FeatureExtractor: Num of column of tags is %d"%_t
             if _t == 14:
                 FeatureExtractorBase.set_col_f()
-            elif _t == 7:
+            elif _t == 8:
                 FeatureExtractorBase.set_col_r()
         except AttributeError, IndexError:
             # for extracting features from tags' list
             self.tags = tags
             _t = len(self.tags[0])
+            # print "FeatureExtractor: Num of column of tags is %d"%_t
             if _t == 14:
                 FeatureExtractorBase.set_col_f()
-            elif _t == 7:
+            elif _t == 8:
                 FeatureExtractorBase.set_col_r()
         try:
             self.SUF = [t[FeatureExtractorBase.col_suf] for t in self.tags]
@@ -100,7 +96,9 @@ class FeatureExtractorBase(object):
                 pass
                 # print "verb is ", tags[self.v_idx]
         except Exception, e:
-            # print pformat(e)
+            # print pformat(["FeatureExtractor: ", e])
+            traceback.print_exc(file=sys.stdout)
+            # print tags[0]
             # print pformat(tags)
             # logging.debug(pformat(tags))
             self.features.update(FeatureExtractorBase.nullfeature)
@@ -116,7 +114,6 @@ class FeatureExtractorBase(object):
             if verbpos:
                 return verbpos[0]
             else:
-                # verbpos = int(len(self.SUF)/2)
                 return None
 
     @classmethod
