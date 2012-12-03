@@ -115,16 +115,16 @@ class SupervisedDetector(DetectorBase):
             self.tempdir = os.path.join(path_dataset_root, os.pardir)
         if not os.path.exists(self.tempdir):
             os.makedirs(self.tempdir)
-        # for setname, modelroot in self.verb2modelpath.iteritems():
-            # try:
-                # with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
-                    # self.models[setname] = pickle.load(mf)
-            # except:
-                # self.models[setname] = None
-            # with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
-                # self.fmaps[setname] = pickle.load(mf)
-            # with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
-                # self.label2id[setname] = pickle.load(mf)
+        for setname, modelroot in self.verb2modelpath.iteritems():
+            try:
+                with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
+                    self.models[setname] = pickle.load(mf)
+            except:
+                self.models[setname] = None
+            with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
+                self.fmaps[setname] = pickle.load(mf)
+            with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
+                self.label2id[setname] = pickle.load(mf)
         if self.toolkit == "sklearn":
             self.datapath = [os.path.join(self.tempdir, "X.npz"), os.path.join(self.tempdir, "Y.npy")]
         elif self.toolkit == "bolt":
@@ -240,11 +240,11 @@ class SupervisedDetector(DetectorBase):
             setname = case["incorrect_label"]
             y = case["gold_label"]
             try:
-                model, fmap, lmap = self._load_model(setname)
-                assert model is not None
-                # model = self.models[setname] 
-                # fmap = self.fmaps[setname]
-                # lmap = self.label2id[setname]
+                # model, fmap, lmap = self._load_model(setname)
+                # assert model is not None
+                model = self.models[setname] 
+                fmap = self.fmaps[setname]
+                lmap = self.label2id[setname]
                 # logging.debug("SupervisedDetector: model for %s is found :)"%setname)
                 case["incorr_classid"] = lmap[setname]
                 case["is_cp_in_set"] = True
@@ -439,12 +439,13 @@ class WordNotInCsetError(Exception):
     pass
 
 
-def mk_features(tags=[], v="", conll_type="reduced"):
-    fe = FeatureExtractor(tags=tags, verb=v, conll_type=conll_type)
+def mk_features(tags=[], v=""):
+    fe = FeatureExtractor(tags=tags, verb=v)
     fe.ngrams(n=5)
     fe.dependency()
     fe.ne()
     fe.srl()
+    print pformat(fe.features)
     # some more features are needed
     return fe.features
 
