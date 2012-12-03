@@ -98,7 +98,8 @@ class SupervisedDetector(DetectorBase):
     TODO:
         Better, smart implementation for shared codes such as _mk_cases
     """
-    def readmodels(self, path_dataset_root="", modeltype="sgd", toolkit="sklearn", d_algo="kbest", ranker_k=5):
+    def readmodels(self, path_dataset_root="", modeltype="sgd", toolkit="sklearn", 
+                   d_algo="kbest", ranker_k=5, features=[]):
         dirlist = glob.glob(os.path.join(path_dataset_root, "*"))
         namelist = [os.path.basename(p) for p in dirlist]
         self.verb2modelpath = {vn : p for (vn, p) in zip(namelist, dirlist)}
@@ -108,6 +109,7 @@ class SupervisedDetector(DetectorBase):
         self.tempdir = os.path.dirname(path_dataset_root)
         self.toolkit = toolkit
         self.d_algo = d_algo
+        self.features = features
         if self.d_algo == "kbest":
             print "SupervisedDetector: using k-best algorithm"
         self.k = ranker_k
@@ -164,7 +166,7 @@ class SupervisedDetector(DetectorBase):
                         self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
                         self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
                         self.testcases[testkey]["type"] = "RV"
-                        self.testcases[testkey]["features"] = mk_features(tags=test_tags[cpid], v=incorr)
+                        self.testcases[testkey]["features"] = self.mk_features(tags=test_tags[cpid], v=incorr)
                         self.case_keys.append(testkey)
                 else:
                     checkpoints = self.__addcheckpoints(doc)
@@ -185,12 +187,27 @@ class SupervisedDetector(DetectorBase):
                                     self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
                                     self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
                                     self.testcases[testkey]["type"] = ""
-                                    self.testcases[testkey]["features"] = mk_features(tags=test_tags[s_id], v=incorr)
+                                    self.testcases[testkey]["features"] = self.mk_features(tags=test_tags[s_id], v=incorr)
                                     self.case_keys.append(testkey)
             except Exception, e:
                 logging.debug(pformat(("error catched in _mk_cases, docname", docname, e)))
                 print pformat(e)
                 raise
+
+    def mk_features(self, tags=[], v=""):
+        fe = FeatureExtractor(tags=tags, verb=v)
+        if "ngram" in self.features:
+            fe.ngrams(n=5)
+        if "dependency" in self.features:
+            fe.dependency()
+        if "ne" in self.features:
+            fe.ne()
+        if "srl" in self.features:
+            fe.srl()
+        print pformat(fe.features)
+        # some more features are needed
+        return fe.features
+
 
     def _bolt_pred(self, model=None):
         if model:
@@ -450,13 +467,15 @@ def mk_features(tags=[], v=""):
     return fe.features
 
 
-def detectmain_c(corpuspath="", model_root="", type="sgd", reportout="", verbsetpath="", d_algo="kbest",ranker_k=5):
+def detectmain_c(corpuspath="", model_root="", type="sgd", 
+                 reportout="", verbsetpath="", d_algo="kbest",ranker_k=5, features=[]):
     try:
         detector = SupervisedDetector(corpusdictpath=corpuspath,
                                       verbsetpath=verbsetpath,
                                       reportpath=reportout)
+        detector.readmodels(path_dataset_root=model_root, modeltype=type, d_algo=d_algo, 
+                            ranker_k=ranker_k, features=features)
         detector.make_cases()
-        detector.readmodels(path_dataset_root=model_root, modeltype=type, d_algo=d_algo, ranker_k=ranker_k)
         detector.get_classification()
         detector.detect()
         detector.mk_report()

@@ -53,7 +53,8 @@ class TestDetector:
     def test_detect_proper(self):
         # self.paslm_path = "../sandbox/pas/test_tsvout_huge_PAS.pickle"
         self.corpuspath = "../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2"
-        detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, paslmpath=self.paslm_path, reportout=self.reportpath)
+        detectmain(corpuspath=self.corpuspath, lmpath=self.testlm_path, 
+                   paslmpath=self.paslm_path, reportout=self.reportpath, features=["ngram"])
         raise Exception
 
 class TestCLSDetector:
@@ -65,7 +66,8 @@ class TestCLSDetector:
         self.model_root = "../sandbox/classify/tiny_maxentsgd/"
         self.verbsetpath = "../sandbox/classify/vs_tiny.pkl2"
         self.output = "../log/classifier_test"
-        detectmain_c(corpuspath=self.corpuspath, model_root=self.model_root, type="sgd", reportout=self.output, verbsetpath=self.verbsetpath, d_algo="kbest")
+        detectmain_c(corpuspath=self.corpuspath, model_root=self.model_root, type="sgd", 
+                     reportout=self.output, verbsetpath=self.verbsetpath, d_algo="kbest", features=["ngram"])
         raise Exception
     @attr("1best_detector")
     def test_classifier2(self):
@@ -73,7 +75,9 @@ class TestCLSDetector:
         self.model_root = "../sandbox/classify/tiny_maxentsgd/"
         self.verbsetpath = "../sandbox/classify/vs_tiny.pkl2"
         self.output = "../log/classifier_test"
-        detectmain_c(corpuspath=self.corpuspath, model_root=self.model_root, type="sgd", reportout=self.output, verbsetpath=self.verbsetpath, d_algo="nya")
+        detectmain_c(corpuspath=self.corpuspath, model_root=self.model_root, 
+                    type="sgd", reportout=self.output, verbsetpath=self.verbsetpath, 
+                    d_algo="nya", features=["ngram"])
         raise Exception
 # ------------------------------------------------------------------
 # For detector version 1 (will be removed)
