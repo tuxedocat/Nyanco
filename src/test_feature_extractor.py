@@ -43,7 +43,6 @@ class TestFext(object):
     @attr("feature_simple")
     def test_single(self):
         for t in self.testdata:
-            print "nyaa"
             fe = FeatureExtractor(t, "report")
             fe.ngrams(n=7)
             fe.dependency()
