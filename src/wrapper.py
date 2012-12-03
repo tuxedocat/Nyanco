@@ -48,9 +48,13 @@ class Experiment(object):
             except:
                 self.vcdir = conf["verbcorpus_dir"]
             self.dsdir = os.path.join(conf["dir_train"], self.name) 
-        if "tain" in self.pl:
+        if "train" in self.pl:
+            self.dsdir = os.path.join(conf["dir_train"], self.name) 
             self.model = conf["classifier"]
+            self.cls_opts = conf["classifier_args"]
         if "detect" in self.pl:
+            self.model = conf["classifier"]
+            self.dsdir = os.path.join(conf["dir_train"], self.name) 
             self.dir_log = os.path.join(conf["dir_log"], self.name)
             self.dtype = conf["detector"]
             self.dopt = conf["detector_options"]
@@ -69,7 +73,7 @@ class Experiment(object):
                                      verbset_path=self.vs,
                                      dataset_dir=self.dsdir,
                                      f_types=self.features)
-        if "tain" in self.pl:
+        if "train" in self.pl:
             if self.toolkit == "bolt":
                 classifier.train_boltclassifier_batch(dataset_dir=self.dsdir, 
                                                  modeltype=self.model, 
