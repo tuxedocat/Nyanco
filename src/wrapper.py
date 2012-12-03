@@ -55,6 +55,7 @@ class Experiment(object):
         if "detect" in self.pl:
             self.model = conf["classifier"]
             self.dsdir = os.path.join(conf["dir_train"], self.name) 
+            self.features = conf["features"]
             self.dir_log = os.path.join(conf["dir_log"], self.name)
             self.dtype = conf["detector"]
             self.dopt = conf["detector_options"]
@@ -96,7 +97,8 @@ class Experiment(object):
                                       reportout=self.dir_log, 
                                       verbsetpath=self.vs,
                                       d_algo=d_algo,
-                                      ranker_k=k)
+                                      ranker_k=k,
+                                      features=self.features)
             elif self.dtype == "lm":
                 lmpath = self.dopt["LM_path"] if "LM_path" in self.dopt else ""
                 paslmpath = self.dopt["PASLM_path"] if "PASLM_path" in self.dopt else ""
