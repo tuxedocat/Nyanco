@@ -115,16 +115,16 @@ class SupervisedDetector(DetectorBase):
             self.tempdir = os.path.join(path_dataset_root, os.pardir)
         if not os.path.exists(self.tempdir):
             os.makedirs(self.tempdir)
-        for setname, modelroot in self.verb2modelpath.iteritems():
-            try:
-                with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
-                    self.models[setname] = pickle.load(mf)
-            except:
-                self.models[setname] = None
-            with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
-                self.fmaps[setname] = pickle.load(mf)
-            with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
-                self.label2id[setname] = pickle.load(mf)
+        # for setname, modelroot in self.verb2modelpath.iteritems():
+            # try:
+                # with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
+                    # self.models[setname] = pickle.load(mf)
+            # except:
+                # self.models[setname] = None
+            # with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
+                # self.fmaps[setname] = pickle.load(mf)
+            # with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
+                # self.label2id[setname] = pickle.load(mf)
         if self.toolkit == "sklearn":
             self.datapath = [os.path.join(self.tempdir, "X.npz"), os.path.join(self.tempdir, "Y.npy")]
         elif self.toolkit == "bolt":
@@ -207,6 +207,28 @@ class SupervisedDetector(DetectorBase):
     def _sklearn_pred_prob(self, model=None, X=None, Y=None):
         if model:
             return model.predict_prob(X)[0]
+    
+    def _load_model(self, setname):
+        try:
+            assert self.models[setname] and self.models[setname] is not None
+        except AssertionError:
+            try:
+                modelroot = self.verb2modelpath[setname]
+                with open(os.path.join(modelroot,"model_"+self.modeltype+".pkl2"), "rb") as mf:
+                    self.models[setname] = pickle.load(mf)
+                with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
+                    self.fmaps[setname] = pickle.load(mf)
+                with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
+                    self.label2id[setname] = pickle.load(mf)
+            except:
+                print pformat("Setname %s : model is not found")
+                self.models[setname] = None
+                self.fmaps[setname] = None
+                self.label2id[setname] = None
+
+        finally:
+            return (self.models[setname], self.fmaps[setname], self.label2id[setname])
+
 
     def get_classification(self):
         """
@@ -218,13 +240,15 @@ class SupervisedDetector(DetectorBase):
             setname = case["incorrect_label"]
             y = case["gold_label"]
             try:
-                model = self.models[setname]
-                fmap = self.fmaps[setname]
-                lmap = self.label2id[setname]
+                model, fmap, lmap = self._load_model(setname)
+                assert model is not None
+                # model = self.models[setname] 
+                # fmap = self.fmaps[setname]
+                # lmap = self.label2id[setname]
                 # logging.debug("SupervisedDetector: model for %s is found :)"%setname)
                 case["incorr_classid"] = lmap[setname]
                 case["is_cp_in_set"] = True
-            except KeyError:
+            except KeyError, AssertionError:
                 # logging.debug("SupervisedDetector: model for %s is not found :("%setname)
                 model = None
                 fmap = None
@@ -236,8 +260,7 @@ class SupervisedDetector(DetectorBase):
                 case["gold_classid"] = classid
                 case["is_gold_in_Vset"] = True
             except (KeyError, TypeError):
-                classid = -100
-                case["gold_classid"] = classid
+                case["gold_classid"] = None
                 case["is_gold_in_Vset"] = False
             if model and fmap:
                 try:
@@ -258,13 +281,17 @@ class SupervisedDetector(DetectorBase):
                         case["classifier_output"] = output
                         case["classifier_classprob"] = output_classprob
                     else:
-                        case["classifier_output"] = -1
-                        case["classifier_classprob"] = np.array([-1.0])
+                        case["classifier_output"] = None
+                        case["classifier_classprob"] = None
+                except WordNotInCsetError:
+                    logging.debug(pformat("Word is not in Cset...?"))
+                    case["classifier_output"] = None 
+                    case["classifier_classprob"] = None 
                 except Exception, e:
                     print pformat(e)
             else:
-                case["classifier_output"] = -1
-                case["classifier_classprob"] = np.array([-1.0])
+                case["classifier_output"] = None
+                case["classifier_classprob"] = None
 
 
     def _kbest_detector(self, probdist=None, k=5, orgidx=None):
@@ -291,13 +318,13 @@ class SupervisedDetector(DetectorBase):
             # logging.debug(pformat(("kbest_detector: probdist without orgidx = ", str(probs))))
             kbscore = sum([p[1] for p in probs[:k]])
             # logging.debug(pformat(("kbest_detector: original word's score = ", orgidx)))
-            # logging.debug(pformat(("kbest_detector: kbest words score sum = ", kbscore)))
-            if orgscore > kbscore:
-                return 0
-            else:
-                return 1
-        except:
-            raise
+            # logging.debug(pformat(("kbest_detector: original word's score = ", orgidx)))
+            print pformat(("kbest_detector: org words score sum = ", orgscore))
+            print pformat(("kbest_detector: kbest words score sum = ", kbscore))
+            print
+            return 1 if kbscore > orgscore else 0
+        except IndexError:
+            raise WordNotInCsetError
 
 
     def _basedetector(self, org=None, cls_out=None):
@@ -316,12 +343,16 @@ class SupervisedDetector(DetectorBase):
         self.listRV_sys = []
         for id, case in self.testcases.iteritems():
             try:
+                assert case["is_cp_in_set"] == True
+                assert case["classifier_output"] is not None
+                assert case["classifier_classprob"] is not None
+                assert case["gold_classid"] is not None
+                assert case["incorr_classid"] is not None
                 gold = case["gold_classid"]
                 org = case["incorr_classid"]
                 cls_out = case["classifier_output"]
                 probdist = case["classifier_classprob"]
                 tmp_l = []
-                assert case["is_cp_in_set"] == True
                 if self.d_algo == "kbest":
                     sysout = self._kbest_detector(probdist=probdist, k=self.k, orgidx=org)
                 else:
@@ -337,17 +368,30 @@ class SupervisedDetector(DetectorBase):
                     self.gold_in_Cset.append(1)
             except AssertionError:
                 if case["type"] == "RV":
-                    self.syslabels.append(0)
-                    self.truelabels.append(1)
-                    self.listRV.append(1)
-                    self.listRV_sys.append(0)
+                    pass
+                    # self.syslabels.append(0)
+                    # self.truelabels.append(1)
+                    # self.listRV.append(1)
+                    # self.listRV_sys.append(0)
                 else:
-                    self.syslabels.append(0)
-                    self.truelabels.append(0)
+                    pass
+                    # self.syslabels.append(0)
+                    # self.truelabels.append(0)
+            except WordNotInCsetError:
+                if case["type"] == "RV":
+                    pass
+                    # self.syslabels.append(0)
+                    # self.truelabels.append(1)
+                    # self.listRV.append(1)
+                    # self.listRV_sys.append(0)
+                else:
+                    pass
+                    # self.syslabels.append(0)
+                    # self.truelabels.append(0)
 
             except Exception, e:
                 logging.debug(pformat(e))
-                raise
+                print pformat(e)
 
 
     def mk_report(self):
@@ -389,6 +433,10 @@ class SupervisedDetector(DetectorBase):
             rf.write(dp); rf.write("\n")
             rf.write(dr); rf.write("\n")
             rf.write(fa); rf.write("\n")
+
+
+class WordNotInCsetError(Exception):
+    pass
 
 
 def mk_features(tags=[], v="", conll_type="reduced"):
