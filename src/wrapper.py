@@ -19,6 +19,8 @@ from collections import defaultdict
 import cPickle as pickle
 import yaml
 from copy import deepcopy
+import cProfile as profile
+import pstats
 
 import examples_extractor
 import classifier
@@ -31,6 +33,7 @@ class Experiment(object):
         if not "name":
             raise Exception
         self.name = name
+        conf.update({"confname": name})
         self.c = conf
         self.pl = conf["pipeline"]
         self.vs = conf["verbset"]
@@ -53,6 +56,7 @@ class Experiment(object):
             self.model = conf["classifier"]
             self.cls_opts = conf["classifier_args"]
         if "detect" in self.pl:
+            self.cls_opts = conf["classifier_args"]
             self.model = conf["classifier"]
             self.dsdir = os.path.join(conf["dir_train"], self.name) 
             self.features = conf["features"]
@@ -63,6 +67,7 @@ class Experiment(object):
 
 
     def execute(self):
+        # pstats_fn = self.dir_log + datetime.now().strftime("/pstats_%Y%m%d_%H%M.stats")
         if "extract_examples" in self.pl:
             examples_extractor.extract_sentence_for_verbs(ukwac_prefix=self.native_c,
                                                          output_dir=self.ext_dir,
@@ -91,6 +96,10 @@ class Experiment(object):
             if "classifier" in self.dtype:
                 k = self.dopt["ranker_k"] if "ranker_k" in self.dopt else 5
                 d_algo = "kbest" if "kbest" in self.dtype else "suddendeath"
+                log_conf = {"__exp_name__": self.name, "features": str(self.features), 
+                            "model": str(self.model) + "::" + str(self.cls_opts),
+                            "datapath_fce": self.fcepath, "datapath_models": self.dsdir,
+                            "confusionset": self.vs, "detector_info": self.dtype + " (k=%d)"%k}
                 detector.detectmain_c(corpuspath=self.fcepath, 
                                       model_root=self.dsdir, 
                                       type=self.model, 
@@ -98,7 +107,8 @@ class Experiment(object):
                                       verbsetpath=self.vs,
                                       d_algo=d_algo,
                                       ranker_k=k,
-                                      features=self.features)
+                                      features=self.features,
+                                      expconf=log_conf)
             elif self.dtype == "lm":
                 lmpath = self.dopt["LM_path"] if "LM_path" in self.dopt else ""
                 paslmpath = self.dopt["PASLM_path"] if "PASLM_path" in self.dopt else ""
@@ -108,7 +118,6 @@ class Experiment(object):
                                   paslmpath=args.pas_lm_path, 
                                   verbsetpath=args.verbset)
 
-        print "done!"
 
 
 class Config(object):

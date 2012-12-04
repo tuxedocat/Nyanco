@@ -11,8 +11,6 @@ __status__ = "Prototyping"
 
 from datetime import datetime
 import logging
-logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG, filename='../log/'+logfilename)
 import os
 import glob
 from pprint import pformat
@@ -30,6 +28,14 @@ from classifier import *
 
 class DetectorBase(object):
     def __init__(self, corpusdictpath="", reportpath="", verbsetpath=""):
+        logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
+        logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
+                            level=logging.DEBUG, filename='../log/'+logfilename)
+        self.reportpath = os.path.join(os.path.dirname(reportpath), 
+                                datetime.now().strftime("detector_report_%Y%m%d_%H%M.log"))
+        reportdir = os.path.dirname(self.reportpath)
+        if not os.path.exists(reportdir):
+            os.makedirs(reportdir)
         if os.path.exists(corpusdictpath):
             with open(corpusdictpath, "rb") as f:
                 corpusdict = pickle.load(f)
@@ -37,11 +43,6 @@ class DetectorBase(object):
             self.experimentset = defaultdict(dict)
         else:
             raise IOError
-        self.reportpath = os.path.join(os.path.dirname(reportpath), 
-                                        datetime.now().strftime("detector_report_%Y%m%d_%H%M.log"))
-        reportdir = os.path.dirname(self.reportpath)
-        if not os.path.exists(reportdir):
-            os.makedirs(reportdir)
         self.ngram_len = 5
         self.verbsetpath = verbsetpath
         self.altreader = altgen.AlternativeReader(self.verbsetpath)
@@ -204,7 +205,7 @@ class SupervisedDetector(DetectorBase):
             fe.ne()
         if "srl" in self.features:
             fe.srl()
-        print pformat(fe.features)
+        # print pformat(fe.features)
         # some more features are needed
         return fe.features
 
@@ -385,33 +386,44 @@ class SupervisedDetector(DetectorBase):
                     self.gold_in_Cset.append(1)
             except AssertionError:
                 if case["type"] == "RV":
-                    pass
-                    # self.syslabels.append(0)
-                    # self.truelabels.append(1)
-                    # self.listRV.append(1)
-                    # self.listRV_sys.append(0)
+                    # pass
+                    self.syslabels.append(0)
+                    self.truelabels.append(1)
+                    self.listRV.append(1)
+                    self.listRV_sys.append(0)
                 else:
                     pass
-                    # self.syslabels.append(0)
-                    # self.truelabels.append(0)
+                    self.syslabels.append(0)
+                    self.truelabels.append(0)
             except WordNotInCsetError:
                 if case["type"] == "RV":
-                    pass
-                    # self.syslabels.append(0)
-                    # self.truelabels.append(1)
-                    # self.listRV.append(1)
-                    # self.listRV_sys.append(0)
+                    # pass
+                    self.syslabels.append(0)
+                    self.truelabels.append(1)
+                    self.listRV.append(1)
+                    self.listRV_sys.append(0)
                 else:
                     pass
-                    # self.syslabels.append(0)
-                    # self.truelabels.append(0)
+                    self.syslabels.append(0)
+                    self.truelabels.append(0)
 
             except Exception, e:
                 logging.debug(pformat(e))
                 print pformat(e)
 
+    def _cm(self, CM=None):
+        if CM is not None:
+            TP = str(CM[1][1])
+            FP = str(CM[0][1])
+            TN = str(CM[1][0])
+            FN = str(CM[0][0])
+            return {"TP": TP, "FP":FP, "TN":TN, "FN":FN}
+        else:
+            return None
 
-    def mk_report(self):
+
+
+    def mk_report(self, expconf={}):
         """
         Classes:
             0: Not a verb error
@@ -421,9 +433,14 @@ class SupervisedDetector(DetectorBase):
         labels = [0, 1]
         names = ["not_verb-error", "verb-error"]
         with open(self.reportpath, "w") as rf:
-            detect_precision = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t])/float(len(self.truelabels))
-            detect_recall = len([1 for (g, t) in zip(self.listRV, self.listRV_sys) if g == t])/float(len(self.listRV))
-            false_alarm = 1 - detect_precision
+            try:
+                system_accuracy = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t])/float(len(self.truelabels))
+                detect_precision = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t == 1])/float(len([1 for i in self.syslabels if i == 1]))
+                detect_recall = len([1 for (g, t) in zip(self.listRV, self.listRV_sys) if g == t])/float(len(self.listRV))
+                false_alarm = 1 - system_accuracy
+            except ZeroDivisionError, ze:
+                print "The result seems invalid (ZeroDivisionError is raised)"
+                logging.debug(pformat(ze))
             # skf = cross_validation.StratifiedKFold(ytrue, k=5)
             # for tridx, teidx in skf:
             #     _ytrue = ytrue[teidx]
@@ -436,39 +453,35 @@ class SupervisedDetector(DetectorBase):
             #     rf.write("\n\n")
             ytrue = np.array(self.truelabels)
             ysys = np.array(self.syslabels)
-            clsrepo_lm = metrics.classification_report(ytrue, ysys, target_names=names)
-            cm_lm = metrics.confusion_matrix(ytrue, ysys, labels=np.array(labels))
-            print clsrepo_lm
-            print pformat(cm_lm)
-            print "num. of [words in FCE-gold which are covered by Cset] case", len(self.gold_in_Cset)
+            clsrepo = metrics.classification_report(ytrue, ysys, target_names=names)
+            CM = metrics.confusion_matrix(ytrue, ysys, labels=np.array(labels))
+            print pformat(self._cm(CM))
+            if expconf:
+                print pformat(expconf)
+                rf.write(pformat(expconf)); rf.write("\n\n"+"-"*80+"\n\n")
+            print clsrepo
+            print pformat(CM)
+            print "num. of [words in FCE-gold which are covered by Cset]", len(self.gold_in_Cset)
             print 
-            dp = "DetectPrecision = %3.4f \n"%detect_precision
-            dr = "DetectRecall = %3.4f \n"%detect_recall
-            fa = "FalseAlarm = %3.4f \n"%false_alarm
-            print dp, dr, fa
-            rf.write(clsrepo_lm); rf.write("\n\n")
+            sa = "SystemAccuracy = %3.6f \n"%system_accuracy
+            fa = "FalseAlarm = %3.6f \n"%false_alarm
+            dp = "DetectPrecision = %3.6f \n"%detect_precision
+            dr = "DetectRecall = %3.6f \n"%detect_recall
+            print sa, fa, dp, dr
+            rf.write(clsrepo); rf.write("\n\n")
+            rf.write(pformat(self._cm(CM))); rf.write("\n\n")
+            rf.write(sa); rf.write("\n")
+            rf.write(fa); rf.write("\n")
             rf.write(dp); rf.write("\n")
             rf.write(dr); rf.write("\n")
-            rf.write(fa); rf.write("\n")
 
 
 class WordNotInCsetError(Exception):
     pass
 
 
-def mk_features(tags=[], v=""):
-    fe = FeatureExtractor(tags=tags, verb=v)
-    fe.ngrams(n=5)
-    fe.dependency()
-    fe.ne()
-    fe.srl()
-    print pformat(fe.features)
-    # some more features are needed
-    return fe.features
-
-
-def detectmain_c(corpuspath="", model_root="", type="sgd", 
-                 reportout="", verbsetpath="", d_algo="kbest",ranker_k=5, features=[]):
+def detectmain_c(corpuspath="", model_root="", type="sgd", reportout="", 
+                 verbsetpath="", d_algo="kbest",ranker_k=5, features=[], expconf={}):
     try:
         detector = SupervisedDetector(corpusdictpath=corpuspath,
                                       verbsetpath=verbsetpath,
@@ -478,7 +491,7 @@ def detectmain_c(corpuspath="", model_root="", type="sgd",
         detector.make_cases()
         detector.get_classification()
         detector.detect()
-        detector.mk_report()
+        detector.mk_report(expconf)
     except Exception, e:
         print pformat(e)
         raise
