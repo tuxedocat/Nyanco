@@ -19,7 +19,7 @@ from pprint import pformat
 from time import time
 import glob
 from copy import deepcopy
-
+from multiprocessing import Pool
 # Currently, assuming bolt online classifier toolkit as sgd/pegasos classifier
 # and scikit-learn as utilities and for svm models
 try: 
@@ -257,7 +257,7 @@ class BaseClassifier(object):
         if "alpha" in self.opts:
             self.alpha = self.opts["alpha"]
         if "multicpu" in self.opts:
-            self.multicpu = -1
+            self.multicpu = self.opts["multicpu"]
         if "shuffle" in self.opts:
             self.shuffle = True
 
@@ -355,21 +355,50 @@ def _selftest_sk(modelpath="", dspath=""):
     print classification_report(Y, pred)
 
 
+# def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False, 
+#                                    cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
+#     vs_file = pickle.load(open(verbset_path, "rb"))
+#     verbs = vs_file.keys()
+#     verbsets = deepcopy(vs_file)
+#     set_names = [os.path.join(dataset_dir, v) for v in verbs]
+#     for idd, dir in enumerate(set_names):
+#         dspath = os.path.join(dir)
+#         print "Batch trainer (sklearn %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
+#         train_sklearn_classifier(dataset_dir=dspath, output_path=dir, modeltype=modeltype, cls_option=cls_option)
+#         print "Batch trainer (sklearn %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
+#         if selftest:
+#             print "Batch trainer selftest..."
+#             _selftest_sk(modelfilename, dspath)
+#             print "Batch trainer selftest... done!"
+
+
 def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False, 
-                                cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
+                                   cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
     vs_file = pickle.load(open(verbset_path, "rb"))
     verbs = vs_file.keys()
     verbsets = deepcopy(vs_file)
     set_names = [os.path.join(dataset_dir, v) for v in verbs]
+    po = Pool()
+    args = []
     for idd, dir in enumerate(set_names):
         dspath = os.path.join(dir)
-        print "Batch trainer (sklearn %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
-        train_sklearn_classifier(dataset_dir=dspath, output_path=dir, modeltype=modeltype, cls_option=cls_option)
-        print "Batch trainer (sklearn %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
-        if selftest:
-            print "Batch trainer selftest..."
-            _selftest_sk(modelfilename, dspath)
-            print "Batch trainer selftest... done!"
+        arg = {"dataset_dir":dspath, "output_path":dir, "modeltype":modeltype, "options":cls_option}
+        args.append(arg)
+    po.map(train_sklearn_classifier_p, args)
+
+def train_sklearn_classifier_p(args={}):
+    modeltype = args["modeltype"]
+    cls_option = args["options"]
+    dataset_dir = args["dataset_dir"]
+    output_path = args["output_path"]
+    classifier = SklearnClassifier(mtype=modeltype, opts=cls_option)
+    classifier.setopts()
+    classifier.load_dataset(dataset_dir)
+    if modeltype == "sgd":
+        classifier.trainSGD()
+    modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
+    classifier.save_model(modelfilename)
+
 
 
 

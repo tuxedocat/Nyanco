@@ -164,3 +164,11 @@ class TestSklearnClassifier(object):
         opts = {"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}
         train_sklearn_classifier(dataset_dir=dspath, output_path=outpath, modeltype=type, cls_option=opts)
         modelpath = os.path.join(dspath, "model_sgd.pkl2")
+    @attr("sklearn_p")
+    def test_actualSGD_p(self):
+        dspath = "../sandbox/classify/tiny_sgd/have"
+        outpath = dspath
+        type = "sgd"
+        opts = {"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}
+        train_sklearn_classifier(dataset_dir=dspath, output_path=outpath, modeltype=type, cls_option=opts)
+        modelpath = os.path.join(dspath, "model_sgd.pkl2")
