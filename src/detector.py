@@ -118,9 +118,10 @@ class SupervisedDetector(DetectorBase):
             self.tempdir = os.path.join(path_dataset_root, os.pardir)
         if not os.path.exists(self.tempdir):
             os.makedirs(self.tempdir)
-        for setname, modelroot in self.verb2modelpath.iteritems():
+        for i, (setname, modelroot) in enumerate(self.verb2modelpath.iteritems()):
             try:
                 with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
+                    print "SupervisedDetector reading models... %d / %d"%(i+1, len(self.verb2modelpath))
                     self.models[setname] = pickle.load(mf)
             except:
                 self.models[setname] = None
