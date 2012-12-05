@@ -29,6 +29,7 @@ except:
 
 class FeatureExtractorBase(object):
     nullfeature = {"NULL":1}
+    VE_count = 0
     # conll_type = "full"
     # col_suf = 1
     # col_pos = 4
@@ -91,13 +92,14 @@ class FeatureExtractorBase(object):
             self.WL = zip(self.SUF, self.POS)
             self.v_idx = self._find_verb_idx() if not v_idx else v_idx
             if self.v_idx is None:
+                FeatureExtractorBase.VE_count += 1
                 raise ValueError
             else:
                 pass
                 # print "verb is ", tags[self.v_idx]
         except Exception, e:
             # print pformat(["FeatureExtractor: ", e])
-            traceback.print_exc(file=sys.stdout)
+            # traceback.print_exc(file=sys.stdout)
             # print tags[0]
             # print pformat(tags)
             # logging.debug(pformat(tags))

@@ -296,9 +296,9 @@ class SklearnClassifier(BaseClassifier):
     def trainSGD(self):
         sgd = SGDClassifier(loss=self.loss, penalty=self.reg, alpha=self.alpha, n_iter=self.epochs,
                             shuffle=True, n_jobs=self.multicpu)
-        print "Classifier (sklearn SGD): training the model \t(%s)"%self.dataset_path
+        print "Classifier (sklearn SGD): training the model \t(%s)"%self.dspath
         self.glm = OneVsRestClassifier(sgd).fit(self.X, self.Y)
-        print "Classifier (sklearn SGD): Done. \t(%s)"%self.dataset_path
+        print "Classifier (sklearn SGD): Done. \t(%s)"%self.dspath
 
     def predict(self, testset_path=None, X=None, Y=None):
         fn_x = os.path.join(testset_path, "X.npz")
@@ -379,7 +379,7 @@ def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path
     verbs = vs_file.keys()
     verbsets = deepcopy(vs_file)
     set_names = [os.path.join(dataset_dir, v) for v in verbs]
-    po = Pool()
+    po = Pool(processes=25)
     args = []
     for idd, dir in enumerate(set_names):
         dspath = os.path.join(dir)

@@ -13,6 +13,8 @@ from datetime import datetime
 import logging
 import os
 import glob
+import traceback
+import progressbar
 from pprint import pformat
 from collections import defaultdict
 import cPickle as pickle
@@ -111,6 +113,7 @@ class SupervisedDetector(DetectorBase):
         self.toolkit = toolkit
         self.d_algo = d_algo
         self.features = features
+        self.FE_errorC = 0
         if self.d_algo == "kbest":
             print "SupervisedDetector: using k-best algorithm"
         self.k = ranker_k
@@ -118,10 +121,13 @@ class SupervisedDetector(DetectorBase):
             self.tempdir = os.path.join(path_dataset_root, os.pardir)
         if not os.path.exists(self.tempdir):
             os.makedirs(self.tempdir)
+    
+        widgets = ['SupervisedDetector: loading models...  ', 'loaded ', progressbar.Counter(), ' model(s), (', progressbar.Timer(), ')']
+        pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(self.verb2modelpath)).start()
         for i, (setname, modelroot) in enumerate(self.verb2modelpath.iteritems()):
             try:
                 with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
-                    print "SupervisedDetector reading models... %d / %d"%(i+1, len(self.verb2modelpath))
+                    # print "SupervisedDetector reading models... %d / %d"%(i+1, len(self.verb2modelpath))
                     self.models[setname] = pickle.load(mf)
             except:
                 self.models[setname] = None
@@ -129,6 +135,7 @@ class SupervisedDetector(DetectorBase):
                 self.fmaps[setname] = pickle.load(mf)
             with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
                 self.label2id[setname] = pickle.load(mf)
+            pbar.update(i+1)
         if self.toolkit == "sklearn":
             self.datapath = [os.path.join(self.tempdir, "X.npz"), os.path.join(self.tempdir, "Y.npy")]
         elif self.toolkit == "bolt":
@@ -208,6 +215,7 @@ class SupervisedDetector(DetectorBase):
             fe.srl()
         # print pformat(fe.features)
         # some more features are needed
+        self.FE_errorC = fe.VE_count
         return fe.features
 
 
@@ -253,7 +261,10 @@ class SupervisedDetector(DetectorBase):
         """
         get classification results
         """
-        for testid in self.case_keys:
+        print "\nFeatureExtraction:: num. of value errors is %d \n\n"%FeatureExtractor.VE_count
+        widgets = ['SupervisedDetector: getting prediction from the model... ', progressbar.Counter(), ' instance(s) processed, (', progressbar.Timer(), ')']
+        pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(self.case_keys)).start()
+        for n, testid in enumerate(self.case_keys):
             case = self.testcases[testid]
             strfeature = case["features"]
             setname = case["incorrect_label"]
@@ -311,6 +322,7 @@ class SupervisedDetector(DetectorBase):
             else:
                 case["classifier_output"] = None
                 case["classifier_classprob"] = None
+            pbar.update(n+1)
 
 
     def _kbest_detector(self, probdist=None, k=5, orgidx=None):
@@ -338,9 +350,9 @@ class SupervisedDetector(DetectorBase):
             kbscore = sum([p[1] for p in probs[:k]])
             # logging.debug(pformat(("kbest_detector: original word's score = ", orgidx)))
             # logging.debug(pformat(("kbest_detector: original word's score = ", orgidx)))
-            print pformat(("kbest_detector: org words score sum = ", orgscore))
-            print pformat(("kbest_detector: kbest words score sum = ", kbscore))
-            print
+            # print pformat(("kbest_detector: org words score sum = ", orgscore))
+            # print pformat(("kbest_detector: kbest words score sum = ", kbscore))
+            # print
             return 1 if kbscore > orgscore else 0
         except IndexError:
             raise WordNotInCsetError
@@ -362,9 +374,9 @@ class SupervisedDetector(DetectorBase):
         self.listRV_sys = []
         for id, case in self.testcases.iteritems():
             try:
+                setname = case["incorrect_label"]
                 assert case["is_cp_in_set"] == True
-                assert case["classifier_output"] is not None
-                assert case["classifier_classprob"] is not None
+                assert (case["classifier_output"] is not None) or (case["classifier_classprob"] is not None)
                 assert case["gold_classid"] is not None
                 assert case["incorr_classid"] is not None
                 gold = case["gold_classid"]
@@ -372,6 +384,7 @@ class SupervisedDetector(DetectorBase):
                 cls_out = case["classifier_output"]
                 probdist = case["classifier_classprob"]
                 tmp_l = []
+                l2id = self.label2id[setname]
                 if self.d_algo == "kbest":
                     sysout = self._kbest_detector(probdist=probdist, k=self.k, orgidx=org)
                 else:
@@ -381,13 +394,20 @@ class SupervisedDetector(DetectorBase):
                     self.truelabels.append(1)
                     self.listRV.append(1)
                     self.listRV_sys.append(sysout)
+                    id2l = {v:k for k,v in l2id.iteritems()}
+                    np.set_printoptions(precision=4)
+                    print "detector:: RV case %s: correction = '%s'\nshowing probdist."%(setname, id2l[int(gold)])
+                    # print id2l
+                    # print probdist 
+                    print
                 else:
                     self.truelabels.append(0)
                 if case["is_gold_in_Vset"] == True:
                     self.gold_in_Cset.append(1)
             except AssertionError:
                 if case["type"] == "RV":
-                    # pass
+                    print "detector:: Error in RV case (perhaps AssertionError): %s"%setname
+                    traceback.print_exc(file=sys.stdout)
                     self.syslabels.append(0)
                     self.truelabels.append(1)
                     self.listRV.append(1)
@@ -398,6 +418,7 @@ class SupervisedDetector(DetectorBase):
                     self.truelabels.append(0)
             except WordNotInCsetError:
                 if case["type"] == "RV":
+                    print "detector:: Error in RV case (perhaps WordNotInCsetError): %s"%setname
                     # pass
                     self.syslabels.append(0)
                     self.truelabels.append(1)
@@ -436,10 +457,11 @@ class SupervisedDetector(DetectorBase):
         with open(self.reportpath, "w") as rf:
             try:
                 system_accuracy = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t])/float(len(self.truelabels))
+                false_alarm = 1 - system_accuracy
                 detect_precision = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t == 1])/float(len([1 for i in self.syslabels if i == 1]))
                 detect_recall = len([1 for (g, t) in zip(self.listRV, self.listRV_sys) if g == t])/float(len(self.listRV))
-                false_alarm = 1 - system_accuracy
             except ZeroDivisionError, ze:
+                detect_precision = -100
                 print "The result seems invalid (ZeroDivisionError is raised)"
                 logging.debug(pformat(ze))
             # skf = cross_validation.StratifiedKFold(ytrue, k=5)
