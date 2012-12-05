@@ -21,7 +21,6 @@ import yaml
 from copy import deepcopy
 import cProfile as profile
 import pstats
-
 import examples_extractor
 import classifier
 import detector
