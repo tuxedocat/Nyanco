@@ -213,7 +213,6 @@ class ParallelCaseMaker(CaseMaker):
         if not os.path.exists(os.path.abspath(dsdir)):
             os.makedirs(os.path.abspath(dsdir))
         self.dataset_dir = dsdir
-#        self.verbset_path = verbset_path
         self.verbsets = vs 
         self.verbs = self.verbsets.keys()
         vcorpus_filenames = glob.glob(os.path.join(self.corpusdir, "*.pkl2"))
@@ -224,18 +223,18 @@ class ParallelCaseMaker(CaseMaker):
 
 
 def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_types=None):
-	args = []
-	argd = {}
-	with open(verbset_path, "rb") as f:
-		vs_full = pickle.load(f)
-	sep_keys = [wl for wl in chunk_gen(vs_full.keys(), len(vs_full)/48)]
-	vs_chunks = []
-	for wl in sep_keys:
-		vs_chunks.append({w:vs_full[w] for w in wl})
-	for vs in vs_chunks:
-		args.append({"vcdir":verbcorpus_dir, "dsdir":dataset_dir, "f_types":f_types, "vs":vs})
-	mp = Pool(16)
-	mp.map(_make_fvectors_p, args)
+    args = []
+    argd = {}
+    with open(verbset_path, "rb") as f:
+        vs_full = pickle.load(f)
+    sep_keys = [wl for wl in chunk_gen(vs_full.keys(), (len(vs_full)/48)+1)]
+    vs_chunks = []
+    for wl in sep_keys:
+        vs_chunks.append({w:vs_full[w] for w in wl})
+    for vs in vs_chunks:
+        args.append({"vcdir":verbcorpus_dir, "dsdir":dataset_dir, "f_types":f_types, "vs":vs})
+    mp = Pool(16)
+    mp.map(_make_fvectors_p, args)
 
 
 

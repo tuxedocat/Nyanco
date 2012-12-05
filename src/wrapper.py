@@ -49,24 +49,24 @@ class Experiment(object):
                 self.vcdir = self.ext_dir
             except:
                 self.vcdir = conf["verbcorpus_dir"]
-            self.dsdir = os.path.join(conf["dir_train"], self.name) 
+            self.dsdir = os.path.join(conf["dir_train"]) 
         if "train" in self.pl:
-            self.dsdir = os.path.join(conf["dir_train"], self.name) 
+            self.dsdir = os.path.join(conf["dir_train"]) 
             self.model = conf["classifier"]
             self.cls_opts = conf["classifier_args"]
         if "detect" in self.pl:
             self.cls_opts = conf["classifier_args"]
             self.model = conf["classifier"]
-            self.dsdir = os.path.join(conf["dir_train"], self.name) 
+            self.dsdir = os.path.join(conf["dir_train"]) 
             self.features = conf["features"]
-            self.dir_log = os.path.join(conf["dir_log"], self.name)
+            self.dir_log = os.path.join(conf["dir_log"])
             self.dtype = conf["detector"]
             self.dopt = conf["detector_options"]
             self.fcepath = conf["fce_path"]
 
 
     def execute(self):
-        # pstats_fn = self.dir_log + datetime.now().strftime("/pstats_%Y%m%d_%H%M.stats")
+        # pstats_fn = self.dir_log + datetime.now().strftime("./pstats_%Y%m%d_%H%M.stats")
         if "extract_examples" in self.pl:
             examples_extractor.extract_sentence_for_verbs(ukwac_prefix=self.native_c,
                                                          output_dir=self.ext_dir,

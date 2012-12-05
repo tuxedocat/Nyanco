@@ -32,7 +32,7 @@ class DetectorBase(object):
     def __init__(self, corpusdictpath="", reportpath="", verbsetpath=""):
         logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
-                            level=logging.DEBUG, filename='../log/'+logfilename)
+                            level=logging.DEBUG, filename=os.path.join(os.path.dirname(reportpath),logfilename))
         self.reportpath = os.path.join(os.path.dirname(reportpath), 
                                 datetime.now().strftime("detector_report_%Y%m%d_%H%M.log"))
         reportdir = os.path.dirname(self.reportpath)
