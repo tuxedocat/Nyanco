@@ -202,7 +202,7 @@ class CaseMaker(object):
             print "CaseMaker make_fvectors: Saving examples as SVMlight format..."
 
 
-class ParallelCaseMaker(object):
+class ParallelCaseMaker(CaseMaker):
     def __init__(self, vcdir=None, vs={}, dsdir=None, f_types=None):
         if not vcdir and vs and dsdir and f_types:
             print "ParallelCaseMaker: Invalid data path(s)... aborted."
