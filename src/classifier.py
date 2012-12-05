@@ -20,8 +20,9 @@ from time import time
 import glob
 from copy import deepcopy
 from multiprocessing import Pool
-# Currently, assuming bolt online classifier toolkit as sgd/pegasos classifier
-# and scikit-learn as utilities and for svm models
+
+# Currently, scikit-learn 0.13 git is primal toolkit for classifiers
+# Alternatively Bolt online-learning toolkit is used
 try: 
     import bolt
     from sklearn.feature_extraction import DictVectorizer
@@ -37,11 +38,11 @@ except:
     raise ImportError
 from feature_extractor import FeatureExtractor
 from tool.sparse_matrices import *
-
+from tool.seq_chunker import chunk_gen
 
 class CaseMaker(object):
     def __init__(self, verbcorpus_dir=None, verbset_path=None, dataset_dir=None, restart_from=None, f_types=None):
-        if not verbcorpus_dir and verbset_path and model_dir and dataset_dir:
+        if not verbcorpus_dir and verbset_path and f_types and dataset_dir:
             print "CaseMaker: Invalid data path(s)... aborted."
             raise TypeError
         else:
@@ -113,6 +114,8 @@ class CaseMaker(object):
                     if "ne" in self.featuretypes:
                         fe.ne()
                     if "errorprob" in self.featuretypes:
+                        pass
+                    if "topic" in self.featuretypes:
                         pass
                     _flist.append(fe.features)
                     _labellist_int.append(_labelid)
@@ -190,14 +193,6 @@ class CaseMaker(object):
             print "CaseMaker make_fvectors: successfully done for verb %s"%setname
         else:
             print "CaseMaker make_fvectors: NULL VERBSET !!"
-            pass
-            # with open(self.verbset_path+"_reduced","wb") as f:
-            #     verbs2 = [v for v in self.verbs if v != setname]
-            #     vs2 = {sn : vs for (sn, vs) in self.verbsets.iteritems() if sn != setname}
-            #     reduced = {"verbs": verbs2, "verbset": vs2}
-            #     pickle.dump(reduced, f)
-            # dir_n = os.path.join(self.dataset_dir, setname)
-            # print "CaseMaker make_fvectors NOTIFICATION: Verbset is modified since there is null verbset"
 
 
     def save_svmlight_file(self, dir_n=None, X=None, Y=None):
@@ -207,36 +202,55 @@ class CaseMaker(object):
             print "CaseMaker make_fvectors: Saving examples as SVMlight format..."
 
 
-    # def save_svmlight_file(self, dir_n=None):
-    #     fn = os.path.join(dir_n, "dataset.svmlight")
-    #     fn_cdic = os.path.join(dir_n, "casedict.pkl2")
-    #     fn_fmap = os.path.join(dir_n, "featuremap.pkl2")
-    #     fn_label2id = os.path.join(dir_n, "label2id.pkl2")
-    #     with open(fn+"temp", "wb") as f:
-    #         print "CaseMaker make_fvectors: Saving examples as SVMlight format..."
-    #         dump_svmlight_file(X, Y, f, comment=None)
-    #     with open(fn+"temp", "rb") as f:
-    #         cleaned = f.readlines()[2:]
-    #     with open(fn, "wb") as f:
-    #         f.writelines(cleaned)
-    #         os.remove(fn+"temp")
-    #     with open(fn_fmap, "wb") as f:
-    #         pickle.dump(vectorizer, f, -1)
-    #     with open(fn_label2id, "wb") as f:
-    #         pickle.dump(_casedict["label2id"], f, -1)
-    #     with open(fn_cdic, "wb") as pf:
-    #         cdic = {"setname":setname}
-    #         cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
-    #         cdic["label2id"] = _casedict["label2id"]
-    #         cdic["featuremap"] = vectorizer
-    #         pickle.dump(cdic, pf, -1)
+class ParallelCaseMaker(object):
+    def __init__(self, vcdir=None, vs={}, dsdir=None, f_types=None):
+        if not vcdir and vs and dsdir and f_types:
+            print "ParallelCaseMaker: Invalid data path(s)... aborted."
+            raise TypeError
+        else:
+            pass
+        self.corpusdir = vcdir
+        if not os.path.exists(os.path.abspath(dsdir)):
+            os.makedirs(os.path.abspath(dsdir))
+        self.dataset_dir = dsdir
+#        self.verbset_path = verbset_path
+        self.verbsets = vs 
+        self.verbs = self.verbsets.keys()
+        vcorpus_filenames = glob.glob(os.path.join(self.corpusdir, "*.pkl2"))
+        v_names = [os.path.basename(path).split(".")[0] for path in vcorpus_filenames]
+        self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names, vcorpus_filenames)}
+        self.nullfeature = {"NULL":1}
+        self.featuretypes = f_types # list like object is expected
 
 
-def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, restart_from=None, f_types=None):
-    CM = CaseMaker(verbcorpus_dir=verbcorpus_dir, verbset_path=verbset_path, dataset_dir=dataset_dir, restart_from=restart_from, f_types=f_types)
-    CM.make_fvectors()
+def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_types=None):
+	args = []
+	argd = {}
+	with open(verbset_path, "rb") as f:
+		vs_full = pickle.load(f)
+	sep_keys = [wl for wl in chunk_gen(vs_full.keys(), len(vs_full)/48)]
+	vs_chunks = []
+	for wl in sep_keys:
+		vs_chunks.append({w:vs_full[w] for w in wl})
+	for vs in vs_chunks:
+		args.append({"vcdir":verbcorpus_dir, "dsdir":dataset_dir, "f_types":f_types, "vs":vs})
+	mp = Pool(16)
+	mp.map(_make_fvectors_p, args)
 
 
+
+def _make_fvectors_p(argd={}):
+    vcdir = argd["vcdir"]
+    vs = argd["vs"]
+    dsdir = argd["dsdir"]
+    f_types = argd["f_types"]
+    CMP = ParallelCaseMaker(vcdir=vcdir, vs=vs, dsdir=dsdir, f_types=f_types)
+    CMP.make_fvectors()
+
+
+#def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, restart_from=None, f_types=None):
+#    CM = CaseMaker(verbcorpus_dir=verbcorpus_dir, verbset_path=verbset_path, dataset_dir=dataset_dir, restart_from=restart_from, f_types=f_types)
+#    CM.make_fvectors()
 #----------------------------------------------------------------------------------------------------
 class BaseClassifier(object):
     def __init__(self, mtype=None, opts=None):

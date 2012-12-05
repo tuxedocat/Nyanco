@@ -30,14 +30,6 @@ except:
 class FeatureExtractorBase(object):
     nullfeature = {"NULL":1}
     VE_count = 0
-    # conll_type = "full"
-    # col_suf = 1
-    # col_pos = 4
-    # col_headid = 6
-    # col_deprel = 7
-    # col_netag = 10
-    # col_srlrel = 12
-    # col_srl = 13
 
     @classmethod
     def gen_fn(cls, l=None):
