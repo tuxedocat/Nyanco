@@ -250,6 +250,11 @@ def _make_fvectors_p(argd={}):
 #def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, restart_from=None, f_types=None):
 #    CM = CaseMaker(verbcorpus_dir=verbcorpus_dir, verbset_path=verbset_path, dataset_dir=dataset_dir, restart_from=restart_from, f_types=f_types)
 #    CM.make_fvectors()
+
+
+
+#----------------------------------------------------------------------------------------------------
+# Classifier wrappers for bolt and scikit-learn linear model
 #----------------------------------------------------------------------------------------------------
 class BaseClassifier(object):
     def __init__(self, mtype=None, opts=None):
@@ -348,17 +353,6 @@ class SklearnClassifier(BaseClassifier):
             raise NotImplementedError
 
 
-def train_sklearn_classifier(dataset_dir="", output_path="", modeltype="sgd", 
-                            cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
-    classifier = SklearnClassifier(mtype=modeltype, opts=cls_option)
-    classifier.setopts()
-    classifier.load_dataset(dataset_dir)
-    if modeltype == "sgd":
-        classifier.trainSGD()
-    modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
-    classifier.save_model(modelfilename)
-    # _selftest_sk(modelfilename, dataset_dir)
-
 
 def _selftest_sk(modelpath="", dspath=""):
     X = load_sparse_matrix(os.path.join(dspath, "X.npz"))
@@ -368,6 +362,47 @@ def _selftest_sk(modelpath="", dspath=""):
     from sklearn.metrics import classification_report
     print classification_report(Y, pred)
 
+
+
+def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False, 
+                                   cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
+    vs_file = pickle.load(open(verbset_path, "rb"))
+    verbs = vs_file.keys()
+    verbsets = deepcopy(vs_file)
+    set_names = [os.path.join(dataset_dir, v) for v in verbs]
+    po = Pool(processes=20)
+    args = []
+    for idd, dir in enumerate(set_names):
+        dspath = os.path.join(dir)
+        arg = {"dataset_dir":dspath, "output_path":dir, "modeltype":modeltype, "options":cls_option}
+        args.append(arg)
+    po.map(train_sklearn_classifier_p, args)
+
+
+def train_sklearn_classifier_p(args={}):
+    modeltype = args["modeltype"]
+    cls_option = args["options"]
+    dataset_dir = args["dataset_dir"]
+    output_path = args["output_path"]
+    classifier = SklearnClassifier(mtype=modeltype, opts=cls_option)
+    classifier.setopts()
+    classifier.load_dataset(dataset_dir)
+    if modeltype == "sgd":
+        classifier.trainSGD()
+    modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
+    classifier.save_model(modelfilename)
+
+
+# def train_sklearn_classifier(dataset_dir="", output_path="", modeltype="sgd", 
+#                             cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
+#     classifier = SklearnClassifier(mtype=modeltype, opts=cls_option)
+#     classifier.setopts()
+#     classifier.load_dataset(dataset_dir)
+#     if modeltype == "sgd":
+#         classifier.trainSGD()
+#     modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
+#     classifier.save_model(modelfilename)
+#     # _selftest_sk(modelfilename, dataset_dir)
 
 # def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False, 
 #                                    cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
@@ -384,35 +419,6 @@ def _selftest_sk(modelpath="", dspath=""):
 #             print "Batch trainer selftest..."
 #             _selftest_sk(modelfilename, dspath)
 #             print "Batch trainer selftest... done!"
-
-
-def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False, 
-                                   cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
-    vs_file = pickle.load(open(verbset_path, "rb"))
-    verbs = vs_file.keys()
-    verbsets = deepcopy(vs_file)
-    set_names = [os.path.join(dataset_dir, v) for v in verbs]
-    po = Pool(processes=25)
-    args = []
-    for idd, dir in enumerate(set_names):
-        dspath = os.path.join(dir)
-        arg = {"dataset_dir":dspath, "output_path":dir, "modeltype":modeltype, "options":cls_option}
-        args.append(arg)
-    po.map(train_sklearn_classifier_p, args)
-
-def train_sklearn_classifier_p(args={}):
-    modeltype = args["modeltype"]
-    cls_option = args["options"]
-    dataset_dir = args["dataset_dir"]
-    output_path = args["output_path"]
-    classifier = SklearnClassifier(mtype=modeltype, opts=cls_option)
-    classifier.setopts()
-    classifier.load_dataset(dataset_dir)
-    if modeltype == "sgd":
-        classifier.trainSGD()
-    modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
-    classifier.save_model(modelfilename)
-
 
 
 
