@@ -105,8 +105,12 @@ class CaseMaker(object):
             for sid, s in enumerate(v_corpus):
                 try:
                     fe = FeatureExtractor(s, verb=v)
-                    if "ngram" in self.featuretypes:
+                    if "3gram" in self.featuretypes:
+                        fe.ngrams(n=3)
+                    if "5gram" in self.featuretypes:
                         fe.ngrams(n=5)
+                    if "7gram" in self.featuretypes:
+                        fe.ngrams(n=7)
                     if "dep" in self.featuretypes:
                         fe.dependency()
                     if "srl" in self.featuretypes:
@@ -184,12 +188,12 @@ class CaseMaker(object):
                     pickle.dump(vectorizer, f, -1)
                 with open(fn_label2id, "wb") as f:
                     pickle.dump(_casedict["label2id"], f, -1)
-                with open(fn_cdic, "wb") as pf:
-                    cdic = {"setname":setname}
-                    cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
-                    cdic["label2id"] = _casedict["label2id"]
-                    cdic["featuremap"] = vectorizer
-                    pickle.dump(cdic, pf, -1)
+                # with open(fn_cdic, "wb") as pf:
+                    # cdic = {"setname":setname}
+                    # cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
+                    # cdic["label2id"] = _casedict["label2id"]
+                    # cdic["featuremap"] = vectorizer
+                    # pickle.dump(cdic, pf, -1)
             print "CaseMaker make_fvectors: successfully done for verb %s"%setname
         else:
             print "CaseMaker make_fvectors: NULL VERBSET !!"
