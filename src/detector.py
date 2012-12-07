@@ -292,6 +292,8 @@ class SupervisedDetector(DetectorBase):
                 lmap = None
                 case["incorr_classid"] = None
                 case["is_cp_in_set"] = False
+                if case["type"] == "RV":
+                    case["oov_cp"] = True
             try:
                 classid = lmap[y]
                 case["gold_classid"] = classid
@@ -379,6 +381,7 @@ class SupervisedDetector(DetectorBase):
         self.gold_in_Cset = []
         self.listRV = []
         self.listRV_sys = []
+        self.list_oov_cp = []
         for id, case in self.testcases.iteritems():
             try:
                 setname = case["incorrect_label"]
@@ -407,6 +410,10 @@ class SupervisedDetector(DetectorBase):
                     # print id2l
                     # print probdist 
                     print
+                    try:
+                        self.list_oov_cp.append(case["oov_cp"])
+                    except:
+                        pass
                 else:
                     self.truelabels.append(0)
                 if case["is_gold_in_Vset"] == True:
@@ -485,13 +492,16 @@ class SupervisedDetector(DetectorBase):
             ysys = np.array(self.syslabels)
             clsrepo = metrics.classification_report(ytrue, ysys, target_names=names)
             CM = metrics.confusion_matrix(ytrue, ysys, labels=np.array(labels))
-            print pformat(self._cm(CM))
             if expconf:
                 print pformat(expconf)
                 rf.write(pformat(expconf)); rf.write("\n\n"+"-"*80+"\n\n")
             print clsrepo
             print pformat(CM)
-            print "num. of [words in FCE-gold which are covered by Cset]", len(self.gold_in_Cset)
+            print pformat(self._cm(CM))
+            oovcp =  "num. of [OOV-RV Checkpoints] is %d"%len(self.list_oov_cp)
+            coveredgolds =  "num. of [words in FCE-gold which are covered by Cset] is %d"%len(self.gold_in_Cset)
+            print oovcp 
+            print coveredgolds
             print 
             sa = "SystemAccuracy = %3.6f \n"%system_accuracy
             fa = "FalseAlarm = %3.6f \n"%false_alarm
@@ -500,6 +510,8 @@ class SupervisedDetector(DetectorBase):
             print sa, fa, dp, dr
             rf.write(clsrepo); rf.write("\n\n")
             rf.write(pformat(self._cm(CM))); rf.write("\n\n")
+            rf.write(pformat(oovcp)); rf.write("\n")
+            rf.write(pformat(coveredgolds)); rf.write("\n")
             rf.write(sa); rf.write("\n")
             rf.write(fa); rf.write("\n")
             rf.write(dp); rf.write("\n")
