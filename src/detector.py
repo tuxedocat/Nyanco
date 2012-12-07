@@ -30,14 +30,17 @@ from classifier import *
 
 class DetectorBase(object):
     def __init__(self, corpusdictpath="", reportpath="", verbsetpath=""):
+        # Log files settings
         logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
-                            level=logging.DEBUG, filename=os.path.join(os.path.dirname(reportpath),logfilename))
-        self.reportpath = os.path.join(os.path.dirname(reportpath), 
-                                datetime.now().strftime("detector_report_%Y%m%d_%H%M.log"))
+                            level=logging.DEBUG, filename=os.path.join(reportpath, logfilename))
+        reportfilename = datetime.now().strftime("detector_report_%Y%m%d_%H%M.log")
+        self.reportpath = os.path.join(reportpath, reportfilename)
         reportdir = os.path.dirname(self.reportpath)
         if not os.path.exists(reportdir):
             os.makedirs(reportdir)
+
+        # Load FCE corpus
         if os.path.exists(corpusdictpath):
             with open(corpusdictpath, "rb") as f:
                 corpusdict = pickle.load(f)
@@ -45,6 +48,8 @@ class DetectorBase(object):
             self.experimentset = defaultdict(dict)
         else:
             raise IOError
+
+        # Other settings
         self.ngram_len = 5
         self.verbsetpath = verbsetpath
         self.altreader = altgen.AlternativeReader(self.verbsetpath)
@@ -53,7 +58,6 @@ class DetectorBase(object):
 
     def make_cases(self):
         """
-        An alternative version of make_cases.
         This takes a pickled corpus of {"checkpoints_RV":<corpus as dict>, "checkpoints_VB":<corpus as dict>}
         Then put two test-cases together, with additional key "has_checkpoints":<True or False>
         """
@@ -213,8 +217,11 @@ class SupervisedDetector(DetectorBase):
             fe.ne()
         if "srl" in self.features:
             fe.srl()
+        if "topic" in self.features:
+            fe.topic()
+        if "errorprob" in self.features:
+            fe.ep()
         # print pformat(fe.features)
-        # some more features are needed
         self.FE_errorC = fe.VE_count
         return fe.features
 
