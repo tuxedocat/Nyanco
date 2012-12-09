@@ -31,9 +31,9 @@ from classifier import *
 class DetectorBase(object):
     def __init__(self, corpusdictpath="", reportpath="", verbsetpath=""):
         # Log files settings
-        logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
+        logfilename = os.path.join(reportpath, datetime.now().strftime("detector_log_%Y%m%d_%H%M.log"))
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
-                            level=logging.DEBUG, filename=os.path.join(reportpath, logfilename))
+                            level=logging.DEBUG, filename=logfilename)
         reportfilename = datetime.now().strftime("detector_report_%Y%m%d_%H%M.log")
         self.reportpath = os.path.join(reportpath, reportfilename)
         reportdir = os.path.dirname(self.reportpath)
@@ -421,7 +421,10 @@ class SupervisedDetector(DetectorBase):
             except AssertionError:
                 if case["type"] == "RV":
                     print "detector:: Error in RV case (perhaps AssertionError): %s"%setname
-                    traceback.print_exc(file=sys.stdout)
+                    print case["gold_text"]
+                    print case["test_text"]
+                    print "\n"
+                    # traceback.print_exc(file=sys.stdout)
                     self.syslabels.append(0)
                     self.truelabels.append(1)
                     self.listRV.append(1)
@@ -493,8 +496,9 @@ class SupervisedDetector(DetectorBase):
             clsrepo = metrics.classification_report(ytrue, ysys, target_names=names)
             CM = metrics.confusion_matrix(ytrue, ysys, labels=np.array(labels))
             if expconf:
+                rf.write("="*80+"\n")
                 print pformat(expconf)
-                rf.write(pformat(expconf)); rf.write("\n\n"+"-"*80+"\n\n")
+                rf.write(pformat(expconf)); rf.write("\n"+"-"*80+"\n\n")
             print clsrepo
             print pformat(CM)
             print pformat(self._cm(CM))
@@ -512,10 +516,11 @@ class SupervisedDetector(DetectorBase):
             rf.write(pformat(self._cm(CM))); rf.write("\n\n")
             rf.write(pformat(oovcp)); rf.write("\n")
             rf.write(pformat(coveredgolds)); rf.write("\n")
-            rf.write(sa); rf.write("\n")
-            rf.write(fa); rf.write("\n")
-            rf.write(dp); rf.write("\n")
-            rf.write(dr); rf.write("\n")
+            rf.write(sa);
+            rf.write(fa);
+            rf.write(dp);
+            rf.write(dr);
+            rf.write("\n"*2+"="*80+"\n"*5)
 
 
 class WordNotInCsetError(Exception):
