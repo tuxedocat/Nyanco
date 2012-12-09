@@ -543,6 +543,25 @@ def detectmain_c(corpuspath="", model_root="", type="sgd", reportout="",
         print pformat(e)
         raise
 
+def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="", 
+                 verbsetpath="", d_algo="kbest",ls_ranker_k=[1, 5, 10], features=[], expconf={}):
+    try:
+        detector = SupervisedDetector(corpusdictpath=corpuspath,
+                                      verbsetpath=verbsetpath,
+                                      reportpath=reportout)
+        detector.readmodels(path_dataset_root=model_root, modeltype=type, d_algo=d_algo, 
+                            ranker_k=5, features=features)
+        detector.make_cases()
+        detector.get_classification()
+        for k in ls_ranker_k:
+            detector.ranker_k = k
+            detector.detect()
+            expconf["detector_info"] = "Classifier k-best (k=%d)"%k
+            detector.mk_report(expconf)
+    except Exception, e:
+        print pformat(e)
+        raise
+
 
 #-------------------------------------------------------------------------------
 # LM models

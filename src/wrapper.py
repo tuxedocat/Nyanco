@@ -94,20 +94,32 @@ class Experiment(object):
         if "detect" in self.pl:
             if "classifier" in self.dtype:
                 k = self.dopt["ranker_k"] if "ranker_k" in self.dopt else 5
+                gs_k = self.dopt["grid_k"] if "grid_k" in self.dopt else []  # grid search for ranker_k ex.[1, 5, 10, 20]
                 d_algo = "kbest" if "kbest" in self.dtype else "suddendeath"
                 log_conf = {"__exp_name__": self.name, "features": str(self.features), 
                             "model": str(self.model) + "::" + str(self.cls_opts),
                             "datapath_fce": self.fcepath, "datapath_models": self.dsdir,
                             "confusionset": self.vs, "detector_info": self.dtype + " (k=%d)"%k}
-                detector.detectmain_c(corpuspath=self.fcepath, 
-                                      model_root=self.dsdir, 
-                                      type=self.model, 
-                                      reportout=self.dir_log, 
-                                      verbsetpath=self.vs,
-                                      d_algo=d_algo,
-                                      ranker_k=k,
-                                      features=self.features,
-                                      expconf=log_conf)
+                if gs_k:
+                    detector.detectmain_c_gs(corpuspath=self.fcepath, 
+                                          model_root=self.dsdir, 
+                                          type=self.model, 
+                                          reportout=self.dir_log, 
+                                          verbsetpath=self.vs,
+                                          d_algo=d_algo,
+                                          ls_ranker_k=gs_k,
+                                          features=self.features,
+                                          expconf=log_conf)
+                else:
+                    detector.detectmain_c(corpuspath=self.fcepath, 
+                                          model_root=self.dsdir, 
+                                          type=self.model, 
+                                          reportout=self.dir_log, 
+                                          verbsetpath=self.vs,
+                                          d_algo=d_algo,
+                                          ranker_k=k,
+                                          features=self.features,
+                                          expconf=log_conf)
             elif self.dtype == "lm":
                 lmpath = self.dopt["LM_path"] if "LM_path" in self.dopt else ""
                 paslmpath = self.dopt["PASLM_path"] if "PASLM_path" in self.dopt else ""
@@ -116,7 +128,6 @@ class Experiment(object):
                                   lmpath=self.lmpath, 
                                   paslmpath=args.pas_lm_path, 
                                   verbsetpath=args.verbset)
-
 
 
 class Config(object):
