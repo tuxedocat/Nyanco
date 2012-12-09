@@ -135,15 +135,15 @@ class TestBoltClassifier1(object):
 class TestSklearnClassifier(object):
     def setUp(self):
         self.vec = DictVectorizer()
-        X = self.vec.fit_transform([{"cat":1, "dog":0.4, "katze":0}, {"cat":0.1, "dog":0.5, "katze":1}])
-        save_sparse_matrix("../sandbox/npy/X", X)
-        self.X = load_sparse_matrix("../sandbox/npy/X.npz")
-        self.Y = np.array([0, 1])
-        Xm = self.vec.fit_transform([{"cat":1, "dog":0.4, "katze":0}, {"cat":0.1, "dog":0.5, "katze":1},
-                                    {"cat":0.1, "dog":0.5, "katze":0.1}, {"cat":0.1, "dog":0, "katze":1}])
-        self.Ym = np.array([0, 1, 2, 3])
-        save_sparse_matrix("../sandbox/npy/Xm", Xm)
-        self.Xm = load_sparse_matrix("../sandbox/npy/Xm.npz")
+        # X = self.vec.fit_transform([{"cat":1, "dog":0.4, "katze":0}, {"cat":0.1, "dog":0.5, "katze":1}])
+        # save_sparse_matrix("../sandbox/npy/X", X)
+        # self.X = load_sparse_matrix("../sandbox/npy/X.npz")
+        # self.Y = np.array([0, 1])
+        # Xm = self.vec.fit_transform([{"cat":1, "dog":0.4, "katze":0}, {"cat":0.1, "dog":0.5, "katze":1},
+                                    # {"cat":0.1, "dog":0.5, "katze":0.1}, {"cat":0.1, "dog":0, "katze":1}])
+        # self.Ym = np.array([0, 1, 2, 3])
+        # save_sparse_matrix("../sandbox/npy/Xm", Xm)
+        # self.Xm = load_sparse_matrix("../sandbox/npy/Xm.npz")
 
     def test_sklearnSGD(self):
         clf = SGDClassifier(loss = "hinge", penalty="l1")
@@ -170,5 +170,14 @@ class TestSklearnClassifier(object):
         outpath = dspath
         type = "sgd"
         opts = {"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}
-        train_sklearn_classifier(dataset_dir=dspath, output_path=outpath, modeltype=type, cls_option=opts)
+        train_sklearn_classifier_p(dataset_dir=dspath, output_path=outpath, modeltype=type, cls_option=opts)
+        modelpath = os.path.join(dspath, "model_sgd.pkl2")
+
+    @attr("sklearn_svm")
+    def test_actualSVM_p(self):
+        dspath = "../sandbox/classify/tiny_sgd/have"
+        outpath = "../sandbox/svmtest/" 
+        type = "svm"
+        opts = {"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}
+        train_sklearn_classifier_p(dataset_dir=dspath, output_path=outpath, modeltype=type, cls_option=opts)
         modelpath = os.path.join(dspath, "model_sgd.pkl2")

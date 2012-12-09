@@ -29,6 +29,7 @@ try:
     from sklearn.multiclass import OneVsRestClassifier
     from sklearn.multiclass import OutputCodeClassifier
     from sklearn.linear_model import SGDClassifier, Perceptron
+    from sklearn.svm import NuSVC, SVC
     from sklearn import preprocessing
     # from sklearn.datasets.svmlight_format import *
     from svmlight_loader import *
@@ -322,6 +323,14 @@ class SklearnClassifier(BaseClassifier):
         self.glm = OneVsRestClassifier(sgd).fit(self.X, self.Y)
         print "Classifier (sklearn SGD): Done. \t(%s)"%self.dspath
 
+    def trainSVM(self):
+        # svm = NuSVC(nu=0.5, kernel='rbf', degree=3, gamma=0.0, coef0=0.0, shrinking=True, probability=True, tol=0.001, cache_size=500, verbose=False, max_iter=-1)
+        svm = SVC(C=1.0, kernel='rbf', degree=3, gamma=0.0, coef0=0.0, shrinking=True, probability=True, tol=0.001, cache_size=200, class_weight=None, verbose=False, max_iter=-1)
+        print "Classifier (sklearn NuSVC): training the model \t(%s)"%self.dspath
+        self.glm = OneVsRestClassifier(svm).fit(self.X, self.Y)
+        print "Classifier (sklearn NuSVC): Done. \t(%s)"%self.dspath
+
+
     def predict(self, testset_path=None, X=None, Y=None):
         fn_x = os.path.join(testset_path, "X.npz")
         fn_y = os.path.join(testset_path, "Y.npy")
@@ -393,6 +402,8 @@ def train_sklearn_classifier_p(args={}):
     classifier.load_dataset(dataset_dir)
     if modeltype == "sgd":
         classifier.trainSGD()
+    elif modeltype == "svm":
+        classifier.trainSVM()
     modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
     classifier.save_model(modelfilename)
 
