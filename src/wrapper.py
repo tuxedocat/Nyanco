@@ -39,6 +39,8 @@ class Experiment(object):
         self.toolkit = conf["toolkit"]
         self.vsname = os.path.basename(self.vs).split(".")[0]
         self.cls_opts = conf["classifier_args"]
+        self.parallel_num = conf["parallel_num"] if "parallel_num" in conf else 4 
+        print "Num. of Parallel Processes is ", self.parallel_num
         if "extract_examples" in self.pl:
             self.native_c = conf["dir_ukwac"]
             self.numts = conf["num_tsamples"]
@@ -77,7 +79,8 @@ class Experiment(object):
             classifier.make_fvectors(verbcorpus_dir=self.vcdir,
                                      verbset_path=self.vs,
                                      dataset_dir=self.dsdir,
-                                     f_types=self.features)
+                                     f_types=self.features,
+                                     pool_num=self.parallel_num)
         if "train" in self.pl:
             if self.toolkit == "bolt":
                 classifier.train_boltclassifier_batch(dataset_dir=self.dsdir, 
@@ -90,7 +93,8 @@ class Experiment(object):
                                                  modeltype=self.model, 
                                                  verbset_path=self.vs, 
                                                  selftest=False, 
-                                                 cls_option=self.cls_opts)
+                                                 cls_option=self.cls_opts,
+                                                 pool_num=self.parallel_num)
         if "detect" in self.pl:
             if "classifier" in self.dtype:
                 k = self.dopt["ranker_k"] if "ranker_k" in self.dopt else 5

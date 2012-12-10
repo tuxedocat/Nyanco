@@ -31,7 +31,8 @@ from classifier import *
 class DetectorBase(object):
     def __init__(self, corpusdictpath="", reportpath="", verbsetpath=""):
         # Log files settings
-        logfilename = os.path.join(reportpath, datetime.now().strftime("detector_log_%Y%m%d_%H%M.log"))
+        logname = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
+        logfilename = os.path.join(reportpath, logname)
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
                             level=logging.DEBUG, filename=logfilename)
         reportfilename = datetime.now().strftime("detector_report_%Y%m%d_%H%M.log")
@@ -471,7 +472,7 @@ class SupervisedDetector(DetectorBase):
         from sklearn import metrics
         labels = [0, 1]
         names = ["not_verb-error", "verb-error"]
-        with open(self.reportpath, "w") as rf:
+        with open(self.reportpath, "a") as rf:
             try:
                 system_accuracy = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t])/float(len(self.truelabels))
                 false_alarm = 1 - system_accuracy
