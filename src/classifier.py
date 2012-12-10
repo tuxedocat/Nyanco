@@ -29,6 +29,7 @@ try:
     from sklearn.multiclass import OneVsRestClassifier
     from sklearn.multiclass import OutputCodeClassifier
     from sklearn.linear_model import SGDClassifier, Perceptron
+    from sklearn.kernel_approximation import RBFSampler
     from sklearn.svm import NuSVC, SVC
     from sklearn import preprocessing
     # from sklearn.datasets.svmlight_format import *
@@ -227,7 +228,7 @@ class ParallelCaseMaker(CaseMaker):
         self.featuretypes = f_types # list like object is expected
 
 
-def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_types=None):
+def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_types=None, pool_num=2):
     args = []
     argd = {}
     with open(verbset_path, "rb") as f:
@@ -238,7 +239,7 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_ty
         vs_chunks.append({w:vs_full[w] for w in wl})
     for vs in vs_chunks:
         args.append({"vcdir":verbcorpus_dir, "dsdir":dataset_dir, "f_types":f_types, "vs":vs})
-    mp = Pool(16)
+    mp = Pool(pool_num)
     mp.map(_make_fvectors_p, args)
 
 
@@ -283,6 +284,10 @@ class BaseClassifier(object):
             self.multicpu = self.opts["multicpu"]
         if "shuffle" in self.opts:
             self.shuffle = True
+        if "kernel_approximation" in self.opts:
+            self.kernel_approx = True
+        else:
+            self.kernel_approx = False
 
     def save_model(self, output_path=None):
         try:
@@ -320,12 +325,17 @@ class SklearnClassifier(BaseClassifier):
         sgd = SGDClassifier(loss=self.loss, penalty=self.reg, alpha=self.alpha, n_iter=self.epochs,
                             shuffle=True, n_jobs=self.multicpu)
         print "Classifier (sklearn SGD): training the model \t(%s)"%self.dspath
-        self.glm = OneVsRestClassifier(sgd).fit(self.X, self.Y)
+        if self.kernel_approx is True:
+            rbf_feature = RBFSampler(gamma=1, n_components=100.0, random_state=1)
+            Xk = rbf_feature.fit_transform(self.X)
+            self.glm = OneVsRestClassifier(sgd).fit(Xk, self.Y)
+        else:
+            self.glm = OneVsRestClassifier(sgd).fit(self.X, self.Y)
         print "Classifier (sklearn SGD): Done. \t(%s)"%self.dspath
 
     def trainSVM(self):
         # svm = NuSVC(nu=0.5, kernel='rbf', degree=3, gamma=0.0, coef0=0.0, shrinking=True, probability=True, tol=0.001, cache_size=500, verbose=False, max_iter=-1)
-        svm = SVC(C=1.0, kernel='rbf', degree=3, gamma=0.0, coef0=0.0, shrinking=True, probability=True, tol=0.001, cache_size=200, class_weight=None, verbose=False, max_iter=-1)
+        svm = SVC(C=1.0, kernel='rbf', degree=3, gamma=0.0, coef0=0.0, shrinking=True, probability=True, tol=0.001, cache_size=200, class_weight=None, verbose=True, max_iter=-1)
         print "Classifier (sklearn NuSVC): training the model \t(%s)"%self.dspath
         self.glm = OneVsRestClassifier(svm).fit(self.X, self.Y)
         print "Classifier (sklearn NuSVC): Done. \t(%s)"%self.dspath
@@ -378,12 +388,13 @@ def _selftest_sk(modelpath="", dspath=""):
 
 
 def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False, 
-                                   cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"}):
+                                   cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"},
+                                   pool_num=2):
     vs_file = pickle.load(open(verbset_path, "rb"))
     verbs = vs_file.keys()
     verbsets = deepcopy(vs_file)
     set_names = [os.path.join(dataset_dir, v) for v in verbs]
-    po = Pool(processes=20)
+    po = Pool(pool_num)
     args = []
     for idd, dir in enumerate(set_names):
         dspath = os.path.join(dir)
