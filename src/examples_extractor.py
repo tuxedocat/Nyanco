@@ -209,7 +209,7 @@ def extract_sentence_p(ukwac_prefix = "", output_dir="",
                     if len(output_dic[v]) > sample_max_num:
                         output_dic[v] = output_dic[v][:sample_max_num]
                         verbs.remove(v)
-                    if fc >= 24:
+                    if fc >= 30:
                         raise CorpusFileCountOverlimit
                     print "Extraction: verb = '%s' (%d remaining)"%(v, len(verbs)), "\t\tworking on file %s"%file
                     output_dic[v] += _extract_sents(corpus, v, sample_max_num, conjlist)
@@ -257,7 +257,7 @@ if __name__=='__main__':
 
     if args.parallel:
         extract_sentence_p(ukwac_prefix=args.ukwacparsed_path, output_dir=args.output_dir,
-                                    verbset_path=args.verbset, sample_max_num=args.maximum_num, shuffle=args.shuffle)
+                                    verbset_path=args.verbset, sample_max_num=args.maximum_num, shuffle=True)
     elif (args.ukwacparsed_path):
         extract_sentence_for_verbs(ukwac_prefix=args.ukwacparsed_path, output_dir=args.output_dir,
                                     verbset_path=args.verbset, sample_max_num=args.maximum_num, shuffle=args.shuffle)
