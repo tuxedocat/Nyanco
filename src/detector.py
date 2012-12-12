@@ -337,11 +337,10 @@ class SupervisedDetector(DetectorBase):
 
     def _kbest_detector(self, probdist=None, k=5, orgidx=None):
         """
-        k-best detection algorithm
+        k-best sum. detection algorithm
 
         Parameters
         ------------
-        is_RV_tagged: bool, True if the checkpoint is RV tagged one in FCE dataset else False
         probdist: np.array like object, row vector, contains assignment probabilities of each class
         k: threshold to determine the sum of k-best scores
 
@@ -364,6 +363,17 @@ class SupervisedDetector(DetectorBase):
             # print pformat(("kbest_detector: kbest words score sum = ", kbscore))
             # print
             return 1 if kbscore > orgscore else 0
+        except IndexError:
+            raise WordNotInCsetError
+
+
+    def _kbest_detector_loose(self, probdist=None, k=5, orgidx=None):
+        try:
+            probdist = probdist.tolist()
+            probs = [(i, p) for i, p in enumerate(probdist)]#
+            probs.sort(key=lambda x: x[1], reverse=True)
+            rank_org = [i for i, t in enumerate(probs) if t[0] == orgidx][0]
+            return 1 if rank_org > k else 0
         except IndexError:
             raise WordNotInCsetError
 
@@ -398,6 +408,8 @@ class SupervisedDetector(DetectorBase):
                 l2id = self.label2id[setname]
                 if self.d_algo == "kbest":
                     sysout = self._kbest_detector(probdist=probdist, k=self.k, orgidx=org)
+                elif self.d_algo == "kloose":
+                    sysout = self._kbest_detector_loose(probdist=probdist, k=self.k, orgidx=org)
                 else:
                     sysout = self._basedetector(org=org, cls_out=cls_out)
                 self.syslabels.append(sysout)
@@ -555,9 +567,9 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
         detector.make_cases()
         detector.get_classification()
         for k in ls_ranker_k:
-            detector.ranker_k = k
+            detector.k = k
             detector.detect()
-            expconf["detector_info"] = "Classifier k-best (k=%d)"%k
+            expconf["detector_info"] = "Classifier %s (k=%d)"%(d_algo, k)
             detector.mk_report(expconf)
     except Exception, e:
         print pformat(e)

@@ -99,7 +99,12 @@ class Experiment(object):
             if "classifier" in self.dtype:
                 k = self.dopt["ranker_k"] if "ranker_k" in self.dopt else 5
                 gs_k = self.dopt["grid_k"] if "grid_k" in self.dopt else []  # grid search for ranker_k ex.[1, 5, 10, 20]
-                d_algo = "kbest" if "kbest" in self.dtype else "suddendeath"
+                if "kbest" in self.dtype:
+                    d_algo = "kbest"
+                elif "kloose" in self.dtype:
+                    d_algo = "kloose"
+                else:
+                    d_algo = "suddendeath"
                 log_conf = {"__exp_name__": self.name, "features": str(self.features), 
                             "model": str(self.model) + "::" + str(self.cls_opts),
                             "datapath_fce": self.fcepath, "datapath_models": self.dsdir,
