@@ -196,9 +196,9 @@ class CaseMaker(object):
                     # cdic["label2id"] = _casedict["label2id"]
                     # cdic["featuremap"] = vectorizer
                     # pickle.dump(cdic, pf, -1)
-            print "CaseMaker make_fvectors: successfully done for verb %s"%setname
+            print "CaseMaker make_fvectors: successfully done for verb '%s'"%setname
         else:
-            print "CaseMaker make_fvectors: NULL VERBSET !!"
+            print "CaseMaker make_fvectors: NULL VERBSET is found (setname = %s)"%setname
 
 
     def save_svmlight_file(self, dir_n=None, X=None, Y=None):
@@ -241,6 +241,8 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_ty
         args.append({"vcdir":verbcorpus_dir, "dsdir":dataset_dir, "f_types":f_types, "vs":vs})
     mp = Pool(pool_num)
     mp.map(_make_fvectors_p, args)
+    mp.close()
+    mp.join()
 
 
 
@@ -250,7 +252,12 @@ def _make_fvectors_p(argd={}):
     dsdir = argd["dsdir"]
     f_types = argd["f_types"]
     CMP = ParallelCaseMaker(vcdir=vcdir, vs=vs, dsdir=dsdir, f_types=f_types)
-    CMP.make_fvectors()
+    try:
+        CMP.make_fvectors()
+    except Exception, e:
+        print pformat(e)
+    finally:
+        del(CMP)
 
 
 #def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, restart_from=None, f_types=None):
@@ -401,6 +408,8 @@ def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path
         arg = {"dataset_dir":dspath, "output_path":dir, "modeltype":modeltype, "options":cls_option}
         args.append(arg)
     po.map(train_sklearn_classifier_p, args)
+    po.close()
+    po.join()
 
 
 def train_sklearn_classifier_p(args={}):
