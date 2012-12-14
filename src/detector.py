@@ -492,6 +492,7 @@ class SupervisedDetector(DetectorBase):
                 detect_recall = len([1 for (g, t) in zip(self.listRV, self.listRV_sys) if g == t])/float(len(self.listRV))
             except ZeroDivisionError, ze:
                 detect_precision = -100
+                detect_recall = -100
                 print "The result seems invalid (ZeroDivisionError is raised)"
                 logging.debug(pformat(ze))
             # skf = cross_validation.StratifiedKFold(ytrue, k=5)
@@ -516,7 +517,7 @@ class SupervisedDetector(DetectorBase):
             print pformat(CM)
             print pformat(self._cm(CM))
             oovcp =  "num. of [OOV-RV Checkpoints] is %d"%len(self.list_oov_cp)
-            coveredgolds =  "num. of [words in FCE-gold which are covered by Cset] is %d"%len(self.gold_in_Cset)
+            coveredgolds =  "num. of [words in FCE-gold which are covered by Cset] is %d / %d (%3.4f)"%(len(self.gold_in_Cset), len(self.syslabels), len(self.gold_in_Cset)/float(len(self.syslabels)))
             print oovcp 
             print coveredgolds
             print 
@@ -534,6 +535,9 @@ class SupervisedDetector(DetectorBase):
             rf.write(dp);
             rf.write(dr);
             rf.write("\n"*2+"="*80+"\n"*5)
+        result = {"CM": self._cm(CM), "Acc": system_accuracy, 
+                  "FA": false_alarm, "Prec": detect_precision, "Rec": detect_recall}
+        return result
 
 
 class WordNotInCsetError(Exception):
@@ -558,6 +562,8 @@ def detectmain_c(corpuspath="", model_root="", type="sgd", reportout="",
 
 def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="", 
                  verbsetpath="", d_algo="kbest",ls_ranker_k=[1, 5, 10], features=[], expconf={}):
+    results = defaultdict(list)
+    results["conf"] = expconf
     try:
         detector = SupervisedDetector(corpusdictpath=corpuspath,
                                       verbsetpath=verbsetpath,
@@ -570,10 +576,19 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
             detector.k = k
             detector.detect()
             expconf["detector_info"] = "Classifier %s (k=%d)"%(d_algo, k)
-            detector.mk_report(expconf)
+            _r = detector.mk_report(expconf)
+            results["Acc"].append((k, _r["Acc"]))
+            results["FA"].append((k, _r["FA"]))
+            results["Prec"].append((k, _r["Prec"]))
+            results["Rec"].append((k, _r["Rec"]))
+            results["CM"].append((k, _r["CM"]))
     except Exception, e:
         print pformat(e)
-        raise
+        # raise
+    finally:
+        _n = datetime.now().strftime("result_%Y%m%d_%H%M.pkl2")
+        with open(os.path.join(reportout, _n), "wb") as rf:
+            pickle.dump(results, rf)
 
 
 #-------------------------------------------------------------------------------

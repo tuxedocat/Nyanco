@@ -10,9 +10,6 @@ __version__ = "0"
 __status__ = "Prototyping"
 
 from datetime import datetime
-# import logging
-# logfilename = datetime.now().strftime("config_log_%Y%m%d_%H%M.log")
-# logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG, filename='../../log/'+logfilename)
 import os, glob
 from pprint import pformat
 from collections import defaultdict
@@ -51,17 +48,17 @@ class Experiment(object):
                 self.vcdir = self.ext_dir
             except:
                 self.vcdir = conf["verbcorpus_dir"]
-            self.dsdir = os.path.join(conf["dir_train"]) 
+            self.dsdir = conf["dir_train"] 
         if "train" in self.pl:
-            self.dsdir = os.path.join(conf["dir_train"]) 
+            self.dsdir = conf["dir_train"] 
             self.model = conf["classifier"]
             self.cls_opts = conf["classifier_args"]
         if "detect" in self.pl:
             self.cls_opts = conf["classifier_args"]
             self.model = conf["classifier"]
-            self.dsdir = os.path.join(conf["dir_train"]) 
+            self.dsdir = conf["dir_train"]
             self.features = conf["features"]
-            self.dir_log = os.path.join(conf["dir_log"])
+            self.dir_log = conf["dir_log"]
             self.dtype = conf["detector"]
             self.dopt = conf["detector_options"]
             self.fcepath = conf["fce_path"]
@@ -154,7 +151,7 @@ class Config(object):
 def do_experiments(path_to_yaml=""):
     if path_to_yaml:
         conf = Config(path_to_yaml).conf
-        names = conf.keys()
+        names = sorted(conf.keys())
         for ex in names:
             cf = conf[ex]
             exp = Experiment(name=ex, conf=cf)
