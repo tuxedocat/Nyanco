@@ -20,7 +20,10 @@ from time import time
 import glob
 from copy import deepcopy
 from multiprocessing import Pool
-
+from progressbar import AnimatedMarker, Bar, BouncingBar, Counter, ETA, \
+                        FileTransferSpeed, FormatLabel, Percentage, \
+                        ProgressBar, ReverseBar, RotatingMarker, \
+                        SimpleProgress, Timer
 # Currently, scikit-learn 0.13 git is primal toolkit for classifiers
 # Alternatively Bolt online-learning toolkit is used
 try: 
@@ -89,10 +92,10 @@ class CaseMaker(object):
     def _read_verbcorpus(self, vset=None):
         _corpusdict = defaultdict(list)
         for v in [t[0] for t in vset]:
-            print "CaseMaker make_fvectors: working on verb '%s'"%v
+            # print "CaseMaker make_fvectors: working on verb '%s'"%v
             try:
                 with open(self.vcorpus_filedic[v], "rb") as vcf:
-                    _corpusdict[v] = pickle.load(vcf)
+                    _corpusdict[v] = pickle.load(vcf)[:30000] # TODO: use given limit constant
             except:
                 _corpusdict[v] = [[]]
         return _corpusdict
@@ -140,9 +143,10 @@ class CaseMaker(object):
         """
         Create feature vectors for given datasets, save dataset as numpy npz files
         """
-        for setname, vset in self.verbsets.iteritems(): # setname is str, vset is list of tuples e.g. ("get", 25)
+        pbar = ProgressBar(widgets=[Percentage(), '(', SimpleProgress(), ')  ', Bar()], maxval=len(self.verbsets)).start()
+        for _i, (setname, vset) in enumerate(self.verbsets.iteritems()): # setname is str, vset is list of tuples e.g. ("get", 25)
             if vset:
-                print "CaseMaker make_fvectors: working on set '%s'"%setname
+                # print "CaseMaker make_fvectors: working on set '%s'"%setname
                 vectorizer = DictVectorizer(sparse=True)
                 _classname2id = {vt[0]: id for id, vt in enumerate(vset)}
                 _casedict = defaultdict(list)
@@ -155,18 +159,18 @@ class CaseMaker(object):
                     _casedict["X_str"] += _flist
                     _casedict["Y_str"] += _labellist_str
                     _casedict["Y"] += _labellist_int
-                fvectors_str = _casedict["X_str"]
+                del(_corpusdict)
 
                 try:
-                    print "CaseMaker make_fvectors: Transforming string ID feature vectors into sparse matrix"
-                    X = vectorizer.fit_transform(fvectors_str)
+                    # print "CaseMaker make_fvectors: Transforming string ID feature vectors into sparse matrix"
+                    X = vectorizer.fit_transform(_casedict["X_str"])
                     Y = np.array(_casedict["Y"])
                     if not self._is_validXY(X, Y):
                         raise UnboundLocalError
                 except UnboundLocalError, e:
                     print "CaseMaker make_fvectors: seems feature vector for the set %s is empty..."%setname
                     print pformat(e)
-                    print fvectors_str
+                    # print _casedict["X_str"]
                     # X = np.array([])
                     X = vectorizer.fit_transform(self.nullfeature)
                     Y = np.array([0.])
@@ -178,7 +182,7 @@ class CaseMaker(object):
                 try:
                     save_sparse_matrix(fn_x, X)
                     np.save(fn_y, Y)
-                    print "CaseMaker make_fvectors: saved Scipy matrices:: X %s and Y %s"%(fn_x, fn_y)
+                    # print "CaseMaker make_fvectors: saved Scipy matrices:: X %s and Y %s"%(fn_x, fn_y)
                 except:
                     print "CaseMaker make_fvectors: Error occurred while saving npy, npz models"
                     raise
@@ -190,16 +194,19 @@ class CaseMaker(object):
                     pickle.dump(vectorizer, f, -1)
                 with open(fn_label2id, "wb") as f:
                     pickle.dump(_casedict["label2id"], f, -1)
+                del(_casedict)
                 # with open(fn_cdic, "wb") as pf:
                     # cdic = {"setname":setname}
                     # cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
                     # cdic["label2id"] = _casedict["label2id"]
                     # cdic["featuremap"] = vectorizer
                     # pickle.dump(cdic, pf, -1)
-            print "CaseMaker make_fvectors: successfully done for verb '%s'"%setname
-        else:
-            print "CaseMaker make_fvectors: NULL VERBSET is found (setname = %s)"%setname
-
+                print "CaseMaker make_fvectors: successfully done for a confusion set '%s'"%setname
+                pbar.update(_i+1)
+            else:
+                print "CaseMaker make_fvectors: NULL VERBSET is found (setname = %s)"%setname
+                pbar.update(_i+1)
+        pbar.finish()
 
     def save_svmlight_file(self, dir_n=None, X=None, Y=None):
         fn = os.path.join(dir_n, "dataset.svmlight")
@@ -233,13 +240,13 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_ty
     argd = {}
     with open(verbset_path, "rb") as f:
         vs_full = pickle.load(f)
-    sep_keys = [wl for wl in chunk_gen(vs_full.keys(), (len(vs_full)/48)+1)]
+    sep_keys = [wl for wl in chunk_gen(vs_full.keys(), (len(vs_full)/(pool_num*8)+1))]
     vs_chunks = []
     for wl in sep_keys:
         vs_chunks.append({w:vs_full[w] for w in wl})
     for vs in vs_chunks:
         args.append({"vcdir":verbcorpus_dir, "dsdir":dataset_dir, "f_types":f_types, "vs":vs})
-    mp = Pool(pool_num)
+    mp = Pool(processes=pool_num, maxtasksperchild=1)
     mp.map(_make_fvectors_p, args)
     mp.close()
     mp.join()
@@ -401,7 +408,7 @@ def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path
     verbs = vs_file.keys()
     verbsets = deepcopy(vs_file)
     set_names = [os.path.join(dataset_dir, v) for v in verbs]
-    po = Pool(pool_num)
+    po = Pool(processes=pool_num, maxtasksperchild=8)
     args = []
     for idd, dir in enumerate(set_names):
         dspath = os.path.join(dir)
