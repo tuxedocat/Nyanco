@@ -29,7 +29,7 @@ from classifier import *
 
 
 class DetectorBase(object):
-    def __init__(self, corpusdictpath="", reportpath="", verbsetpath=""):
+    def __init__(self, corpusdictpath="", reportpath="", verbsetpath="", ngram=5):
         # Log files settings
         logname = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
         logfilename = os.path.join(reportpath, logname)
@@ -210,8 +210,12 @@ class SupervisedDetector(DetectorBase):
 
     def mk_features(self, tags=[], v=""):
         fe = FeatureExtractor(tags=tags, verb=v)
-        if "ngram" in self.features:
+        if "3gram" in self.features:
+            fe.ngrams(n=3)
+        if "5gram" in self.features:
             fe.ngrams(n=5)
+        if "7gram" in self.features:
+            fe.ngrams(n=7)
         if "dependency" in self.features:
             fe.dependency()
         if "ne" in self.features:
@@ -594,6 +598,10 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
 #-------------------------------------------------------------------------------
 # LM models
 #-------------------------------------------------------------------------------
+class LM_Detector2(SupervisedDetector):
+    pass
+
+
 class LM_Detector(DetectorBase):
     def read_LM_and_PASLM(self, path_IRSTLM="", path_PASLM=""):
         try:
