@@ -22,7 +22,7 @@ from nose.plugins.attrib import attr
 from nltk.corpus import wordnet as wn
 from nltk.corpus import verbnet as vn
 from pattern.text import en
-
+import collections
 
 class AlternativeGenerator(object):
     """
@@ -47,7 +47,10 @@ class AlternativeGenerator(object):
         elif self.include_uncertain:
             self.synsetnames = wn.synsets(self.surface, pos=self._posmap())
         for synset in self.synsetnames:
-            tmp = [w[0] for w in self._traverse_synsets(synset=synset, score=self.score)]
+            if self.score:
+                tmp = [(w[0], w[2]) for w in self._traverse_synsets(synset=synset)]
+            else:
+                tmp = [(w[0], 0) for w in self._traverse_synsets(synset=synset)]
             for alt in tmp:
                 if len(self.alternatives) >= self.maxnum_cand:
                     break
@@ -55,10 +58,10 @@ class AlternativeGenerator(object):
                     pass
                 else:
                     self.alternatives.append(alt)
-        return self.alternatives
+        return list(set(self.alternatives))
 
 
-    def _traverse_synsets(self, synset=None, depth=1, score=True):
+    def _traverse_synsets(self, synset=None, depth=1):
         """
         starting from given synset, traverse synsets.
         firstly, take hypernym of given synset, then try to find hyponyms 
@@ -66,10 +69,10 @@ class AlternativeGenerator(object):
         try:
             hyp = synset.hypernyms()[0]
             hyponyms = hyp.hyponyms()
-            syns = [(s.name.split(".")[0], s, synset.lch_similarity(s) ) for s in hyponyms]
+            syns = [(unicode(s.name.split(".")[0]), s, synset.lch_similarity(s) ) for s in hyponyms]
             syns = sorted(syns, key=lambda x: x[2], reverse=True)
         except IndexError, e:
-            logging.debug(pformat(e))
+            # logging.debug(pformat(e))
             hyp = []
             syns = [] 
         return syns
@@ -135,3 +138,15 @@ class TestAltGen(object):
         pass
 
 
+def gen_WNCS(CS):
+    CS_WN = collections.OrderedDict()
+    voc = CS.keys()
+    for v in voc:
+        _ag = AlternativeGenerator(v, maxnum=100, score=False, include_hyponyms=True, include_uncertain=True, pos="VB")
+        ls = _ag.generate_from_wordnet()
+        ls = [_v for _v in ls if _v[0] in voc]
+        if ls:
+            CS_WN[v] = ls
+        else:
+            pass
+    return CS_WN
