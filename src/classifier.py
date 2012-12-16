@@ -30,9 +30,8 @@ try:
     import bolt
     from sklearn.feature_extraction import DictVectorizer
     from sklearn.multiclass import OneVsRestClassifier
-    from sklearn.multiclass import OutputCodeClassifier
     from sklearn.linear_model import SGDClassifier, Perceptron
-    from sklearn.kernel_approximation import RBFSampler
+    from sklearn.kernel_approximation import AdditiveChi2Sampler
     from sklearn.svm import NuSVC, SVC
     from sklearn import preprocessing
     # from sklearn.datasets.svmlight_format import *
@@ -327,7 +326,6 @@ class BaseClassifier(object):
 
 
 class SklearnClassifier(BaseClassifier):
-
     def load_dataset(self, dataset_path=None):
         self.dspath = dataset_path if dataset_path is not None else "invalid path!"
         try:
@@ -341,10 +339,11 @@ class SklearnClassifier(BaseClassifier):
                             shuffle=True, n_jobs=self.multicpu)
         # print "Classifier (sklearn SGD): training the model \t(%s)"%self.dspath
         if self.kernel_approx is True:
-            rbf_feature = RBFSampler(gamma=1, n_components=100.0, random_state=1)
-            Xk = rbf_feature.fit_transform(self.X)
+            self.chi2f = AdditiveChi2Sampler(sample_steps=2, sample_interval=None)
+            Xk = self.chi2f.fit_transform(self.X)
             self.glm = OneVsRestClassifier(sgd).fit(Xk, self.Y)
         else:
+            self.chi2f = None
             self.glm = OneVsRestClassifier(sgd).fit(self.X, self.Y)
 
         print "Classifier (sklearn SGD): Done. \t(%s)"%self.dspath
