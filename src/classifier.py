@@ -327,6 +327,7 @@ class BaseClassifier(object):
 
 
 class SklearnClassifier(BaseClassifier):
+
     def load_dataset(self, dataset_path=None):
         self.dspath = dataset_path if dataset_path is not None else "invalid path!"
         try:
@@ -338,13 +339,14 @@ class SklearnClassifier(BaseClassifier):
     def trainSGD(self):
         sgd = SGDClassifier(loss=self.loss, penalty=self.reg, alpha=self.alpha, n_iter=self.epochs,
                             shuffle=True, n_jobs=self.multicpu)
-        print "Classifier (sklearn SGD): training the model \t(%s)"%self.dspath
+        # print "Classifier (sklearn SGD): training the model \t(%s)"%self.dspath
         if self.kernel_approx is True:
             rbf_feature = RBFSampler(gamma=1, n_components=100.0, random_state=1)
             Xk = rbf_feature.fit_transform(self.X)
             self.glm = OneVsRestClassifier(sgd).fit(Xk, self.Y)
         else:
             self.glm = OneVsRestClassifier(sgd).fit(self.X, self.Y)
+
         print "Classifier (sklearn SGD): Done. \t(%s)"%self.dspath
 
     def trainSVM(self):
@@ -408,8 +410,9 @@ def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path
     verbs = vs_file.keys()
     verbsets = deepcopy(vs_file)
     set_names = [os.path.join(dataset_dir, v) for v in verbs]
-    po = Pool(processes=pool_num, maxtasksperchild=8)
+    po = Pool(processes=pool_num, maxtasksperchild=16)
     args = []
+    # _startpbar(len(verbs))
     for idd, dir in enumerate(set_names):
         dspath = os.path.join(dir)
         arg = {"dataset_dir":dspath, "output_path":dir, "modeltype":modeltype, "options":cls_option}
@@ -418,6 +421,11 @@ def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path
     po.close()
     po.join()
 
+
+
+# def _startpbar(num=0):
+#     global tr_pbar
+#     tr_pbar = ProgressBar(widgets=["SKlearn_training...", Percentage(), '(', SimpleProgress(), ')  ', Bar()], maxval=num).start()
 
 def train_sklearn_classifier_p(args={}):
     modeltype = args["modeltype"]
@@ -431,6 +439,10 @@ def train_sklearn_classifier_p(args={}):
         classifier.trainSGD()
     elif modeltype == "svm":
         classifier.trainSVM()
+    # try:
+    #     tr_pbar.update(tr_pbar.currval + 1)
+    # except:
+    #     pass
     modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
     classifier.save_model(modelfilename)
 
