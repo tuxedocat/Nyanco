@@ -78,6 +78,10 @@ class FeatureExtractorBase(object):
                 FeatureExtractorBase.set_col_f()
             elif _t == 8:
                 FeatureExtractorBase.set_col_r()
+        except:
+            print verb
+            print pformat(tags)
+            raise
         try:
             self.SUF = [t[FeatureExtractorBase.col_suf] for t in self.tags]
             self.POS = [t[FeatureExtractorBase.col_pos] for t in self.tags]

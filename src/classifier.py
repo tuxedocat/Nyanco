@@ -10,6 +10,7 @@ __status__ = "Prototyping"
 
 import os
 import sys
+import traceback
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 import cPickle as pickle
@@ -131,7 +132,9 @@ class CaseMaker(object):
                     _labellist_str.append(v)
                 except ValueError:
                     logging.debug(pformat("CaseMaker feature extraction: couldn't find the verb"))
-                    pass
+                except:
+                    print v
+                    raise
         else:
             _flist.append(self.nullfeature)
             _labellist_int.append(_labelid)
@@ -155,7 +158,11 @@ class CaseMaker(object):
 
                 # Get feature vector for each sentence 
                 for v, v_corpus in _corpusdict.iteritems():
-                    _flist, _labellist_str, _labellist_int = self._get_features(v, v_corpus, _classname2id)
+                    try:
+                        _flist, _labellist_str, _labellist_int = self._get_features(v, v_corpus, _classname2id)
+                    except:
+                        print v
+                        raise
                     _casedict["X_str"] += _flist
                     _casedict["Y_str"] += _labellist_str
                     _casedict["Y"] += _labellist_int
@@ -240,7 +247,7 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_ty
     argd = {}
     with open(verbset_path, "rb") as f:
         vs_full = pickle.load(f)
-    sep_keys = [wl for wl in chunk_gen(vs_full.keys(), (len(vs_full)/(pool_num*8)+1))]
+    sep_keys = [wl for wl in chunk_gen(vs_full.keys(), (len(vs_full)/ pool_num)+1)]
     vs_chunks = []
     for wl in sep_keys:
         vs_chunks.append({w:vs_full[w] for w in wl})
@@ -263,6 +270,8 @@ def _make_fvectors_p(argd={}):
         CMP.make_fvectors()
     except Exception, e:
         print pformat(e)
+        traceback.print_exc(file=sys.stdout)
+        raise
     finally:
         del(CMP)
 
