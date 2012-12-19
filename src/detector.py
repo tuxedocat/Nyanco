@@ -107,7 +107,7 @@ class SupervisedDetector(DetectorBase):
         Better, smart implementation for shared codes such as _mk_cases
     """
     def readmodels(self, path_dataset_root="", modeltype="sgd", toolkit="sklearn", 
-                   d_algo="kbest", ranker_k=5, features=[]):
+                   d_algo="ranker", ranker_k=5, features=[]):
         dirlist = glob.glob(os.path.join(path_dataset_root, "*"))
         namelist = [os.path.basename(p) for p in dirlist]
         self.verb2modelpath = {vn : p for (vn, p) in zip(namelist, dirlist)}
@@ -119,8 +119,6 @@ class SupervisedDetector(DetectorBase):
         self.d_algo = d_algo
         self.features = features
         self.FE_errorC = 0
-        if self.d_algo == "kbest":
-            print "SupervisedDetector: using k-best algorithm"
         self.k = ranker_k
         if os.path.basename(self.tempdir) == "dataset":
             self.tempdir = os.path.join(path_dataset_root, os.pardir)
@@ -371,19 +369,23 @@ class SupervisedDetector(DetectorBase):
             raise WordNotInCsetError
 
 
-    def _kbest_detector_loose(self, probdist=None, k=5, orgidx=None):
+    def _kbest_detector_loose(self, probdist=None, k=5, orgidx=None, goldidx=None):
         try:
             probdist = probdist.tolist()
-            probs = [(i, p) for i, p in enumerate(probdist)]#
+            probs = [(i, p) for i, p in enumerate(probdist)]
             probs.sort(key=lambda x: x[1], reverse=True)
             rank_org = [i for i, t in enumerate(probs) if t[0] == orgidx][0]
-            return 1 if rank_org > k else 0
+            try:
+                rank_gold = [i for i, t in enumerate(probs) if t[0] == goldidx][0]
+                RR = float(1.0/rank_gold) if rank_gold < k else 0.0
+            except:
+                RR = 0.0
+            return (1, RR) if rank_org > k else (0, RR)
         except IndexError:
             raise WordNotInCsetError
 
 
     def _basedetector(self, org=None, cls_out=None):
-        # logging.debug(pformat("basedetector: org %i vs. cls %i"%(org, cls_out)))
         if org == cls_out:
             return 0
         else:
@@ -397,6 +399,8 @@ class SupervisedDetector(DetectorBase):
         self.listRV = []
         self.listRV_sys = []
         self.list_oov_cp = []
+        self.MRR_RV = []
+        self.MRR_All = []
         for id, case in self.testcases.iteritems():
             try:
                 setname = case["incorrect_label"]
@@ -412,8 +416,8 @@ class SupervisedDetector(DetectorBase):
                 l2id = self.label2id[setname]
                 if self.d_algo == "kbest":
                     sysout = self._kbest_detector(probdist=probdist, k=self.k, orgidx=org)
-                elif self.d_algo == "kloose":
-                    sysout = self._kbest_detector_loose(probdist=probdist, k=self.k, orgidx=org)
+                elif self.d_algo == "ranker":
+                    sysout, RR = self._kbest_detector_loose(probdist=probdist, k=self.k, orgidx=org, goldidx=gold)
                 else:
                     sysout = self._basedetector(org=org, cls_out=cls_out)
                 self.syslabels.append(sysout)
@@ -421,26 +425,28 @@ class SupervisedDetector(DetectorBase):
                     self.truelabels.append(1)
                     self.listRV.append(1)
                     self.listRV_sys.append(sysout)
-                    id2l = {v:k for k,v in l2id.iteritems()}
-                    np.set_printoptions(precision=4)
-                    print "detector:: RV case %s: correction = '%s'\nshowing probdist."%(setname, id2l[int(gold)])
-                    # print id2l
-                    # print probdist 
-                    print
+                    # id2l = {v:k for k,v in l2id.iteritems()}
+                    # print "detector:: RV case %s: correction = '%s'\nshowing probdist."%(setname, id2l[int(gold)])
                     try:
+                        self.MRR_RV.append(RR)
+                        self.MRR_All.append(RR)
                         self.list_oov_cp.append(case["oov_cp"])
                     except:
                         pass
                 else:
                     self.truelabels.append(0)
+                    try:
+                        self.MRR_All.append(RR)
+                    except:
+                        pass
                 if case["is_gold_in_Vset"] == True:
                     self.gold_in_Cset.append(1)
             except AssertionError:
                 if case["type"] == "RV":
-                    print "detector:: Error in RV case (perhaps AssertionError): %s"%setname
-                    print case["gold_text"]
-                    print case["test_text"]
-                    print "\n"
+                    # print "detector:: Error in RV case (perhaps AssertionError): %s"%setname
+                    # print case["gold_text"]
+                    # print case["test_text"]
+                    # print "\n"
                     # traceback.print_exc(file=sys.stdout)
                     self.syslabels.append(0)
                     self.truelabels.append(1)
@@ -452,7 +458,7 @@ class SupervisedDetector(DetectorBase):
                     self.truelabels.append(0)
             except WordNotInCsetError:
                 if case["type"] == "RV":
-                    print "detector:: Error in RV case (perhaps WordNotInCsetError): %s"%setname
+                    # print "detector:: Error in RV case (perhaps WordNotInCsetError): %s"%setname
                     # pass
                     self.syslabels.append(0)
                     self.truelabels.append(1)
@@ -489,26 +495,20 @@ class SupervisedDetector(DetectorBase):
         labels = [0, 1]
         names = ["not_verb-error", "verb-error"]
         with open(self.reportpath, "a") as rf:
+            MRR_RV = -100
+            MRR_All = -100
             try:
                 system_accuracy = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t])/float(len(self.truelabels))
                 false_alarm = 1 - system_accuracy
                 detect_precision = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t == 1])/float(len([1 for i in self.syslabels if i == 1]))
                 detect_recall = len([1 for (g, t) in zip(self.listRV, self.listRV_sys) if g == t])/float(len(self.listRV))
+                MRR_RV = float(sum(self.MRR_RV))/float(len(self.MRR_RV))
+                MRR_All = float(sum(self.MRR_All))/float(len(self.MRR_All))
             except ZeroDivisionError, ze:
                 detect_precision = -100
                 detect_recall = -100
-                print "The result seems invalid (ZeroDivisionError is raised)"
+                # print "The result seems invalid (ZeroDivisionError is raised)"
                 logging.debug(pformat(ze))
-            # skf = cross_validation.StratifiedKFold(ytrue, k=5)
-            # for tridx, teidx in skf:
-            #     _ytrue = ytrue[teidx]
-            #     _ysys = ysys[teidx]
-            #     clsrepo_lm = metrics.classification_report(_ytrue, _ysys, target_names=names)
-            #     cm_lm = metrics.confusion_matrix(_ytrue, _ysys, labels=np.array([0,1]))
-            #     print clsrepo_lm
-            #     print pformat(cm_lm)
-            #     rf.write(clsrepo_lm)
-            #     rf.write("\n\n")
             ytrue = np.array(self.truelabels)
             ysys = np.array(self.syslabels)
             clsrepo = metrics.classification_report(ytrue, ysys, target_names=names)
@@ -538,9 +538,17 @@ class SupervisedDetector(DetectorBase):
             rf.write(fa);
             rf.write(dp);
             rf.write(dr);
+            mrr_rv = "MRR(RV) = %3.6f \n"%MRR_RV
+            mrr_all = "MRR(All) = %3.6f \n"%MRR_All
+            print mrr_rv
+            print mrr_all
+            rf.write(mrr_rv);
+            rf.write(mrr_all);
             rf.write("\n"*2+"="*80+"\n"*5)
-        result = {"CM": self._cm(CM), "Acc": system_accuracy, 
-                  "FA": false_alarm, "Prec": detect_precision, "Rec": detect_recall}
+        _CM = self._cm(CM)
+        result = {"CM": _CM, "TP": _CM["TP"], "TN": _CM["TN"], "FP": _CM["FP"], "FN":_CM["FN"], 
+                  "MRR_All": MRR_All, "MRR_RV": MRR_RV,
+                  "Acc": system_accuracy, "FA": false_alarm, "Prec": detect_precision, "Rec": detect_recall}
         return result
 
 
@@ -549,7 +557,7 @@ class WordNotInCsetError(Exception):
 
 
 def detectmain_c(corpuspath="", model_root="", type="sgd", reportout="", 
-                 verbsetpath="", d_algo="kbest",ranker_k=5, features=[], expconf={}):
+                 verbsetpath="", d_algo="ranker",ranker_k=5, features=[], expconf={}):
     try:
         detector = SupervisedDetector(corpusdictpath=corpuspath,
                                       verbsetpath=verbsetpath,
@@ -565,7 +573,7 @@ def detectmain_c(corpuspath="", model_root="", type="sgd", reportout="",
         raise
 
 def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="", 
-                 verbsetpath="", d_algo="kbest",ls_ranker_k=[1, 5, 10], features=[], expconf={}):
+                 verbsetpath="", d_algo="ranker",ls_ranker_k=[1, 10], features=[], expconf={}):
     results = defaultdict(list)
     results["conf"] = expconf
     try:
@@ -576,7 +584,7 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
                             ranker_k=5, features=features)
         detector.make_cases()
         detector.get_classification()
-        for k in ls_ranker_k:
+        for k in range(ls_ranker_k[0], ls_ranker_k[1]+1):
             detector.k = k
             detector.detect()
             expconf["detector_info"] = "Classifier %s (k=%d)"%(d_algo, k)
@@ -586,6 +594,12 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
             results["Prec"].append((k, _r["Prec"]))
             results["Rec"].append((k, _r["Rec"]))
             results["CM"].append((k, _r["CM"]))
+            results["TP"].append((k, _r["TP"]))
+            results["FP"].append((k, _r["FP"]))
+            results["TN"].append((k, _r["TN"]))
+            results["FN"].append((k, _r["FN"]))
+            results["MRR_RV"].append((k, _r["MRR_RV"]))
+            results["MRR_All"].append((k, _r["MRR_All"]))
     except Exception, e:
         print pformat(e)
         # raise

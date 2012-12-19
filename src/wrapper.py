@@ -98,8 +98,8 @@ class Experiment(object):
                 gs_k = self.dopt["grid_k"] if "grid_k" in self.dopt else []  # grid search for ranker_k ex.[1, 5, 10, 20]
                 if "kbest" in self.dtype:
                     d_algo = "kbest"
-                elif "kloose" in self.dtype:
-                    d_algo = "kloose"
+                elif "rank" in self.dtype:
+                    d_algo = "ranker"
                 else:
                     d_algo = "suddendeath"
                 log_conf = {"__exp_name__": self.name, "features": str(self.features), 
