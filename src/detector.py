@@ -31,7 +31,7 @@ from classifier import *
 class DetectorBase(object):
     def __init__(self, corpusdictpath="", reportpath="", verbsetpath="", ngram=5):
         # Log files settings
-        logname = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
+        logname = datetime.now().strftime("/detector_log_%Y%m%d_%H%M.log")
         logfilename = os.path.join(reportpath, logname)
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
                             level=logging.DEBUG, filename=logfilename)
@@ -106,7 +106,7 @@ class SupervisedDetector(DetectorBase):
     TODO:
         Better, smart implementation for shared codes such as _mk_cases
     """
-    def readmodels(self, path_dataset_root="", modeltype="sgd", toolkit="sklearn", 
+    def readmodels(self, path_dataset_root="", modeltype="sgd_maxent_l2", toolkit="sklearn", 
                    d_algo="ranker", ranker_k=5, features=[]):
         dirlist = glob.glob(os.path.join(path_dataset_root, "*"))
         namelist = [os.path.basename(p) for p in dirlist]
@@ -421,6 +421,13 @@ class SupervisedDetector(DetectorBase):
                 else:
                     sysout = self._basedetector(org=org, cls_out=cls_out)
                 self.syslabels.append(sysout)
+                try:
+                    if sysout == 1:
+                        self.MRR_All.append(RR)
+                    else:
+                        pass
+                except:
+                    pass
                 if case["type"] == "RV":
                     self.truelabels.append(1)
                     self.listRV.append(1)
@@ -428,17 +435,14 @@ class SupervisedDetector(DetectorBase):
                     # id2l = {v:k for k,v in l2id.iteritems()}
                     # print "detector:: RV case %s: correction = '%s'\nshowing probdist."%(setname, id2l[int(gold)])
                     try:
-                        self.MRR_RV.append(RR)
-                        self.MRR_All.append(RR)
+                        if sysout == 1:
+                            self.MRR_RV.append(RR)
                         self.list_oov_cp.append(case["oov_cp"])
                     except:
                         pass
                 else:
                     self.truelabels.append(0)
-                    try:
-                        self.MRR_All.append(RR)
-                    except:
-                        pass
+
                 if case["is_gold_in_Vset"] == True:
                     self.gold_in_Cset.append(1)
             except AssertionError:
