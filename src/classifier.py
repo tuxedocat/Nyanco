@@ -78,6 +78,7 @@ class CaseMaker(object):
                 print pformat(self.verbsets)
             except Exception, e:
                 print e
+        self.numts = 30000
 
 
     def _is_validXY(self, X=[], Y=[]):
@@ -96,7 +97,7 @@ class CaseMaker(object):
             # print "CaseMaker make_fvectors: working on verb '%s'"%v
             try:
                 with open(self.vcorpus_filedic[v], "rb") as vcf:
-                    _corpusdict[v] = pickle.load(vcf)[:30000] # TODO: use given limit constant
+                    _corpusdict[v] = pickle.load(vcf)[:self.numts]
             except:
                 _corpusdict[v] = [[]]
         return _corpusdict
@@ -169,7 +170,6 @@ class CaseMaker(object):
                 del(_corpusdict)
 
                 try:
-                    # print "CaseMaker make_fvectors: Transforming string ID feature vectors into sparse matrix"
                     X = vectorizer.fit_transform(_casedict["X_str"])
                     Y = np.array(_casedict["Y"])
                     if not self._is_validXY(X, Y):
@@ -177,37 +177,19 @@ class CaseMaker(object):
                 except UnboundLocalError, e:
                     print "CaseMaker make_fvectors: seems feature vector for the set %s is empty..."%setname
                     print pformat(e)
-                    # print _casedict["X_str"]
-                    # X = np.array([])
                     X = vectorizer.fit_transform(self.nullfeature)
                     Y = np.array([0.])
                 dir_n = os.path.join(self.dataset_dir, setname)
-                if not os.path.exists(dir_n):
-                    os.makedirs(dir_n)
-                fn_x = os.path.join(dir_n, "X")
-                fn_y = os.path.join(dir_n, "Y")
-                try:
-                    save_sparse_matrix(fn_x, X)
-                    np.save(fn_y, Y)
-                    # print "CaseMaker make_fvectors: saved Scipy matrices:: X %s and Y %s"%(fn_x, fn_y)
-                except:
-                    print "CaseMaker make_fvectors: Error occurred while saving npy, npz models"
-                    raise
+                self.save_npz_file(dir_n, X, Y)
+                # self.save_svmlight_file(dir_n, X, Y)
                 fn_cdic = os.path.join(dir_n, "casedict.pkl2")
                 fn_fmap = os.path.join(dir_n, "featuremap.pkl2")
                 fn_label2id = os.path.join(dir_n, "label2id.pkl2")
-                # self.save_svmlight_file(dir_n, X, Y)
                 with open(fn_fmap, "wb") as f:
                     pickle.dump(vectorizer, f, -1)
                 with open(fn_label2id, "wb") as f:
                     pickle.dump(_casedict["label2id"], f, -1)
                 del(_casedict)
-                # with open(fn_cdic, "wb") as pf:
-                    # cdic = {"setname":setname}
-                    # cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
-                    # cdic["label2id"] = _casedict["label2id"]
-                    # cdic["featuremap"] = vectorizer
-                    # pickle.dump(cdic, pf, -1)
                 print "CaseMaker make_fvectors: successfully done for a confusion set '%s'"%setname
                 pbar.update(_i+1)
             else:
@@ -215,15 +197,48 @@ class CaseMaker(object):
                 pbar.update(_i+1)
         pbar.finish()
 
+    def save_npz_file(self, dir_n=None, X=None, Y=None):
+        if not os.path.exists(dir_n):
+            os.makedirs(dir_n)
+        fn_x = os.path.join(dir_n, "X")
+        fn_y = os.path.join(dir_n, "Y")
+        try:
+            save_sparse_matrix(fn_x, X)
+            np.save(fn_y, Y)
+        except:
+            print "CaseMaker make_fvectors: Error occurred while saving npy, npz models"
+            raise
+
     def save_svmlight_file(self, dir_n=None, X=None, Y=None):
         fn = os.path.join(dir_n, "dataset.svmlight")
         with open(fn, "wb") as f:
             dump_svmlight_file(X.tocsr(), Y, f)
             print "CaseMaker make_fvectors: Saving examples as SVMlight format..."
 
+    # def save_subfiles(self, dir_n=None, vec=None, cdic=None, fmap=None, label2id=None):
+        # fn_cdic = os.path.join(dir_n, "casedict.pkl2")
+        # fn_fmap = os.path.join(dir_n, "featuremap.pkl2")
+        # fn_label2id = os.path.join(dir_n, "label2id.pkl2")
+        # with open(fn_fmap, "wb") as f:
+            # pickle.dump(vec, f, -1)
+        # with open(fn_label2id, "wb") as f:
+            # pickle.dump(label2id, f, -1)
+        # # with open(fn_cdic, "wb") as pf:
+            # # cdic = {"setname":setname}
+            # # cdic["X_str"] = _casedict["X_str"]; cdic["Y_str"] = _casedict["Y_str"]
+            # # cdic["label2id"] = _casedict["label2id"]
+            # # cdic["featuremap"] = vectorizer
+            # # pickle.dump(cdic, pf, -1)
+        # print "CaseMaker make_fvectors: successfully done for a confusion set '%s'"%setname
+        # pbar.update(_i+1)
+    # else:
+        # print "CaseMaker make_fvectors: NULL VERBSET is found (setname = %s)"%setname
+        # pbar.update(_i+1)
+
+
 
 class ParallelCaseMaker(CaseMaker):
-    def __init__(self, vcdir=None, vs={}, dsdir=None, f_types=None):
+    def __init__(self, vcdir=None, vs={}, dsdir=None, f_types=None, instance_num=30000):
         if not vcdir and vs and dsdir and f_types:
             print "ParallelCaseMaker: Invalid data path(s)... aborted."
             raise TypeError
@@ -240,9 +255,10 @@ class ParallelCaseMaker(CaseMaker):
         self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names, vcorpus_filenames)}
         self.nullfeature = {"NULL":1}
         self.featuretypes = f_types # list like object is expected
+        self.numts = instance_num
 
 
-def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_types=None, pool_num=2):
+def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_types=None, pool_num=2, instance_num=30000):
     args = []
     argd = {}
     with open(verbset_path, "rb") as f:
@@ -252,7 +268,7 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_ty
     for wl in sep_keys:
         vs_chunks.append({w:vs_full[w] for w in wl})
     for vs in vs_chunks:
-        args.append({"vcdir":verbcorpus_dir, "dsdir":dataset_dir, "f_types":f_types, "vs":vs})
+        args.append({"vcdir":verbcorpus_dir, "dsdir":dataset_dir, "f_types":f_types, "vs":vs, "numts":instance_num})
     mp = Pool(processes=pool_num, maxtasksperchild=1)
     mp.map(_make_fvectors_p, args)
     mp.close()
@@ -265,7 +281,8 @@ def _make_fvectors_p(argd={}):
     vs = argd["vs"]
     dsdir = argd["dsdir"]
     f_types = argd["f_types"]
-    CMP = ParallelCaseMaker(vcdir=vcdir, vs=vs, dsdir=dsdir, f_types=f_types)
+    numts = argd["numts"]
+    CMP = ParallelCaseMaker(vcdir=vcdir, vs=vs, dsdir=dsdir, f_types=f_types, instance_num=numts)
     try:
         CMP.make_fvectors()
     except Exception, e:
@@ -336,7 +353,6 @@ class BaseClassifier(object):
 
 
 class SklearnClassifier(BaseClassifier):
-
     def load_dataset(self, dataset_path=None):
         self.dspath = dataset_path if dataset_path is not None else "invalid path!"
         try:
@@ -355,7 +371,6 @@ class SklearnClassifier(BaseClassifier):
             self.glm = OneVsRestClassifier(sgd).fit(Xk, self.Y)
         else:
             self.glm = OneVsRestClassifier(sgd).fit(self.X, self.Y)
-
         print "Classifier (sklearn SGD): Done. \t(%s)"%self.dspath
 
     def trainSVM(self):
@@ -366,7 +381,7 @@ class SklearnClassifier(BaseClassifier):
         print "Classifier (sklearn NuSVC): Done. \t(%s)"%self.dspath
 
 
-    def predict(self, testset_path=None, X=None, Y=None):
+    def predict_f(self, testset_path=None, X=None, Y=None):
         fn_x = os.path.join(testset_path, "X.npz")
         fn_y = os.path.join(testset_path, "Y.npy")
         Xtest = load_sparse_matrix(fn_x)
@@ -374,7 +389,7 @@ class SklearnClassifier(BaseClassifier):
         pred = self.glm.predict(Xtest)
         return pred
 
-    def predict_prob(self, testset_path=None, X=None, Y=None):
+    def predict_f_prob(self, testset_path=None, X=None, Y=None):
         """
         Parameters
         ----------
@@ -412,8 +427,8 @@ def _selftest_sk(modelpath="", dspath=""):
 
 
 
-def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=False, 
-                                   cls_option={"loss":"hinge", "epochs":10, "alpha":0.0001, "reg":"L2"},
+def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd_maxent_l2", verbset_path="", selftest=False, 
+                                   cls_option={"loss":"log", "epochs":10, "alpha":0.0001, "reg":"L2"},
                                    pool_num=2):
     vs_file = pickle.load(open(verbset_path, "rb"))
     verbs = vs_file.keys()
@@ -421,7 +436,6 @@ def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path
     set_names = [os.path.join(dataset_dir, v) for v in verbs]
     po = Pool(processes=pool_num, maxtasksperchild=16)
     args = []
-    # _startpbar(len(verbs))
     for idd, dir in enumerate(set_names):
         dspath = os.path.join(dir)
         arg = {"dataset_dir":dspath, "output_path":dir, "modeltype":modeltype, "options":cls_option}
@@ -431,11 +445,6 @@ def train_sklearn_classifier_batch(dataset_dir="", modeltype="sgd", verbset_path
     po.join()
 
 
-
-# def _startpbar(num=0):
-#     global tr_pbar
-#     tr_pbar = ProgressBar(widgets=["SKlearn_training...", Percentage(), '(', SimpleProgress(), ')  ', Bar()], maxval=num).start()
-
 def train_sklearn_classifier_p(args={}):
     modeltype = args["modeltype"]
     cls_option = args["options"]
@@ -444,14 +453,10 @@ def train_sklearn_classifier_p(args={}):
     classifier = SklearnClassifier(mtype=modeltype, opts=cls_option)
     classifier.setopts()
     classifier.load_dataset(dataset_dir)
-    if modeltype == "sgd":
+    if "sgd" in modeltype:
         classifier.trainSGD()
-    elif modeltype == "svm":
+    elif "svm" in modeltype:
         classifier.trainSVM()
-    # try:
-    #     tr_pbar.update(tr_pbar.currval + 1)
-    # except:
-    #     pass
     modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
     classifier.save_model(modelfilename)
 
@@ -560,12 +565,7 @@ class BoltClassifier(BaseClassifier):
         pred = [p for p in self.glm.predict(testset.iterinstances())]
         return pred
 
-def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd", 
-                            cls_option={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
-    classifier = BoltClassifier()
-    classifier.read_traincases(dataset_path)
-    classifier.train(model=modeltype, opt=cls_option)
-    classifier.save_model(output_path)
+
 
 def _selftest(modelpath="", dspath=""):
     boltdataset = bolt.io.MemoryDataset.load(dspath)
@@ -578,22 +578,67 @@ def _selftest(modelpath="", dspath=""):
     from sklearn.metrics import classification_report
     print classification_report(correct, np.array(pred))
 
-def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=True, 
-                                cls_option={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
+
+def train_bolt_classifier_batch(dataset_dir="", output_dir="", modeltype="sgd_maxent_l2", verbset_path="", selftest=False, 
+                                   cls_option={"loss":"log", "epochs":10, "alpha":0.0001, "reg":"L2"},
+                                   pool_num=2):
     vs_file = pickle.load(open(verbset_path, "rb"))
     verbs = vs_file.keys()
     verbsets = deepcopy(vs_file)
     set_names = [os.path.join(dataset_dir, v) for v in verbs]
+    po = Pool(processes=pool_num, maxtasksperchild=16)
+    args = []
     for idd, dir in enumerate(set_names):
-        modelfilename = os.path.join(dir, "model_%s.pkl2"%modeltype)
-        dspath = os.path.join(dir, "dataset.svmlight")
-        print "Batch trainer (bolt %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
-        train_boltclassifier(dataset_path=dspath, output_path=modelfilename, modeltype=modeltype)
-        print "Batch trainer (bolt %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
-        if selftest:
-            print "Batch trainer selftest..."
-            _selftest(modelfilename, dspath)
-            print "Batch trainer selftest... done!"
+        dspath = os.path.join(dir)
+        outputpath = os.path.join(output_dir, dir)
+        if not os.path.exists(outputpath):
+            os.makedirs(outputpath)
+        arg = {"dataset_dir":dspath, "output_path":outputpath, "modeltype":modeltype, "options":cls_option}
+        args.append(arg)
+    po.map(train_bolt_classifier_p, args)
+    po.close()
+    po.join()
+
+
+def train_bolt_classifier_p(args={}):
+    modeltype = args["modeltype"]
+    cls_option = args["options"]
+    dataset_dir = args["dataset_dir"]
+    output_path = args["output_path"]
+    classifier = BoltClassifier(mtype=modeltype, opts=cls_option)
+    classifier.load_dataset(dataset_dir)
+    if "sgd" in modeltype:
+        classifier.trainSGD()
+    else:
+        raise NotImplementedError
+    modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
+    classifier.save_model(modelfilename)
+
+
+# def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=True, 
+#                                 cls_option={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
+#     vs_file = pickle.load(open(verbset_path, "rb"))
+#     verbs = vs_file.keys()
+#     verbsets = deepcopy(vs_file)
+#     set_names = [os.path.join(dataset_dir, v) for v in verbs]
+#     for idd, dir in enumerate(set_names):
+#         modelfilename = os.path.join(dir, "model_%s.pkl2"%modeltype)
+#         dspath = os.path.join(dir, "dataset.svmlight")
+#         print "Batch trainer (bolt %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
+#         train_boltclassifier(dataset_path=dspath, output_path=modelfilename, modeltype=modeltype)
+#         print "Batch trainer (bolt %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
+#         if selftest:
+#             print "Batch trainer selftest..."
+#             _selftest(modelfilename, dspath)
+#             print "Batch trainer selftest... done!"
+# 
+# def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd", 
+#                             cls_option={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
+#     classifier = BoltClassifier()
+#     classifier.read_traincases(dataset_path)
+#     classifier.train(model=modeltype, opt=cls_option)
+#     classifier.save_model(output_path)
+
 
 
 if __name__=='__main__':

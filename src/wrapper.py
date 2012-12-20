@@ -32,7 +32,7 @@ class Experiment(object):
         conf.update({"confname": name})
         self.c = conf
         self.pl = conf["pipeline"]
-        self.vs = conf["verbset"]
+        self.vs = conf["confusion_set"]
         self.toolkit = conf["toolkit"]
         self.vsname = os.path.basename(self.vs).split(".")[0]
         self.cls_opts = conf["classifier_args"]
@@ -48,15 +48,17 @@ class Experiment(object):
                 self.vcdir = self.ext_dir
             except:
                 self.vcdir = conf["verbcorpus_dir"]
-            self.dsdir = conf["dir_train"] 
+            self.dsdir = conf["dir_models"] 
+            self.numts = conf["num_tsamples"]
         if "train" in self.pl:
-            self.dsdir = conf["dir_train"] 
+            self.dsdir = conf["dir_models"] 
+            self.modeldir = conf["dir_models"]
             self.model = conf["classifier"]
             self.cls_opts = conf["classifier_args"]
         if "detect" in self.pl:
             self.cls_opts = conf["classifier_args"]
             self.model = conf["classifier"]
-            self.dsdir = conf["dir_train"]
+            self.dsdir = conf["dir_models"]
             self.features = conf["features"]
             self.dir_log = conf["dir_log"]
             self.dtype = conf["detector"]
@@ -77,7 +79,7 @@ class Experiment(object):
                                      verbset_path=self.vs,
                                      dataset_dir=self.dsdir,
                                      f_types=self.features,
-                                     pool_num=self.parallel_num)
+                                     pool_num=self.parallel_num, instance_num=self.numts)
         if "train" in self.pl:
             if self.toolkit == "bolt":
                 classifier.train_boltclassifier_batch(dataset_dir=self.dsdir, 
@@ -87,11 +89,11 @@ class Experiment(object):
                                                  cls_option=self.cls_opts)
             elif self.toolkit == "sklearn":
                 classifier.train_sklearn_classifier_batch(dataset_dir=self.dsdir, 
-                                                 modeltype=self.model, 
-                                                 verbset_path=self.vs, 
-                                                 selftest=False, 
-                                                 cls_option=self.cls_opts,
-                                                 pool_num=self.parallel_num)
+                                                modeltype=self.model, 
+                                                verbset_path=self.vs, 
+                                                selftest=False, 
+                                                cls_option=self.cls_opts,
+                                                pool_num=self.parallel_num)
         if "detect" in self.pl:
             if "classifier" in self.dtype:
                 k = self.dopt["ranker_k"] if "ranker_k" in self.dopt else 5
@@ -118,7 +120,7 @@ class Experiment(object):
                                           expconf=log_conf)
                 else:
                     detector.detectmain_c(corpuspath=self.fcepath, 
-                                          model_root=self.dsdir, 
+                                          model_root=self.dsdir,
                                           type=self.model, 
                                           reportout=self.dir_log, 
                                           verbsetpath=self.vs,
