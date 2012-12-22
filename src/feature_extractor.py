@@ -21,6 +21,7 @@ import cPickle as pickle
 from numpy import array
 from pattern.text import en
 import traceback
+from nltk import ngrams as ng
 try:
     from lsa_test.irstlm import *
 except:
@@ -83,7 +84,7 @@ class FeatureExtractorBase(object):
             print pformat(tags)
             raise
         try:
-            self.SUF = [t[FeatureExtractorBase.col_suf] for t in self.tags]
+            self.SUF = [t[FeatureExtractorBase.col_suf].lower() for t in self.tags]
             self.POS = [t[FeatureExtractorBase.col_pos] for t in self.tags]
             self.WL = zip(self.SUF, self.POS)
             self.v_idx = self._find_verb_idx() if not v_idx else v_idx
@@ -159,15 +160,50 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
             if not v_idx:
                 v_idx = 0
             core = self.WL[v_idx]
-            _left = [word for index, word in enumerate(self.WL) if index < v_idx and index != v_idx][-window:]
-            _right = [word for index, word in enumerate(self.WL) if index > v_idx and index != v_idx][:window]
-            concat = _left + ["__CORE__"] + _right
-            suf_ngram = {SimpleFeatureExtractor.gen_fn(["SUF", str(i-window), w[0]]):1 for i, w in enumerate(concat) if w != "__CORE__"}
-            pos_ngram = {SimpleFeatureExtractor.gen_fn(["POS", str(i-window), w[1]]):1 for i, w in enumerate(concat) if w != "__CORE__"}
-            self.features.update(suf_ngram)
-            self.features.update(pos_ngram)
+            _lefts = [word for index, word in enumerate(self.SUF) if index < v_idx and index != v_idx][-window:]
+            _leftp = [word for index, word in enumerate(self.POS) if index < v_idx and index != v_idx][-window:]
+            _rights = [word for index, word in enumerate(self.SUF) if index > v_idx and index != v_idx][:window]
+            _rightp = [word for index, word in enumerate(self.POS) if index > v_idx and index != v_idx][:window]
+            concats = _lefts + ["*V*"] + _rights
+            concatp = _leftp + ["*V*"] + _rightp
+            suf_unigram = {SimpleFeatureExtractor.gen_fn(["SUF1G", str(i-window), "".join(w)]):1 
+                        for i, w in enumerate(concats) if w != "*V*"}
+            pos_unigram = {SimpleFeatureExtractor.gen_fn(["POS1G", str(i-window), "".join(w)]):1 
+                        for i, w in enumerate(concatp) if w != "*V*"}
+            suf_bigram = {SimpleFeatureExtractor.gen_fn(["SUF2G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concats, 3)) if w[0] == "*V*" or w[2] == "*V*"} if n >= 5 else {}
+            pos_bigram = {SimpleFeatureExtractor.gen_fn(["POS2G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concatp, 3)) if w[0] == "*V*" or w[2] == "*V*"} if n >= 5 else {}
+            suf_trigram = {SimpleFeatureExtractor.gen_fn(["SUF3G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concats, 4)) if w[0] == "*V*" or w[3] == "*V*"} if n >= 7 else {}
+            pos_trigram = {SimpleFeatureExtractor.gen_fn(["POS3G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concatp, 4)) if w[0] == "*V*" or w[3] == "*V*"} if n >= 7 else {}
+            suf_c3gram = {SimpleFeatureExtractor.gen_fn(["SUF3G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concats, 3)) if w[1] == "*V*"} if n >= 3 else {}
+            suf_c5gram = {SimpleFeatureExtractor.gen_fn(["SUF5G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concats, 5)) if w[2] == "*V*"} if n >= 5 else {}
+            suf_c7gram = {SimpleFeatureExtractor.gen_fn(["SUF7G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concats, 7)) if w[3] == "*V*"} if n >= 7 else {}
+            pos_c3gram = {SimpleFeatureExtractor.gen_fn(["POS3G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concatp, 3)) if w[1] == "*V*"} if n >= 3 else {}
+            pos_c5gram = {SimpleFeatureExtractor.gen_fn(["POS5G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concatp, 5)) if w[2] == "*V*"} if n >= 5 else {}
+            pos_c7gram = {SimpleFeatureExtractor.gen_fn(["POS7G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concatp, 7)) if w[3] == "*V*"} if n >= 7 else {}
+            self.features.update(suf_unigram)
+            self.features.update(pos_unigram)
+            self.features.update(suf_bigram)
+            self.features.update(pos_bigram)
+            self.features.update(suf_trigram)
+            self.features.update(pos_trigram)
+            self.features.update(suf_c3gram)
+            self.features.update(suf_c5gram)
+            self.features.update(suf_c7gram)
+            self.features.update(pos_c3gram)
+            self.features.update(pos_c5gram)
+            self.features.update(pos_c7gram)
         except Exception, e:
-            print pformat(e)
+            pass
             # self.features.update(SimpleFeatureExtractor.nullfeature)
 
     def chunk(self):
@@ -180,10 +216,15 @@ class FeatureExtractor(SimpleFeatureExtractor):
         try:
             if not v_idx:
                 v_idx = self.v_idx
-            deps = [(t[FeatureExtractor.col_deprel], t[FeatureExtractor.col_suf]) for t in self.tags
-                    if int(t[FeatureExtractor.col_headid]) == v_idx+1]
-            depr = {FeatureExtractor.gen_fn(["DEP", d[0].upper(), d[1]]):1 for d in deps}
+            deps = [(t[FeatureExtractor.col_deprel], t[FeatureExtractor.col_suf], 
+                     t[FeatureExtractor.col_pos], t[FeatureExtractor.col_netag]) for t in self.tags
+                     if int(t[FeatureExtractor.col_headid]) == v_idx+1]
+            depr = {FeatureExtractor.gen_fn(["DEP", d[0].upper(), d[1].lower()+"/"+d[2]]):1 for d in deps}
+            depp = {FeatureExtractor.gen_fn(["DEP", d[0].upper(), d[1].lower()]):1 for d in deps}
+            depn = {FeatureExtractor.gen_fn(["DEP", d[0].upper(), d[3]]):1 for d in deps if not d[3]=="_" }
             self.features.update(depr)
+            self.features.update(depp)
+            self.features.update(depn)
         except Exception, e:
             logging.debug(pformat(e))
             # self.features.update(FeatureExtractor.nullfeature)
@@ -201,6 +242,7 @@ class FeatureExtractor(SimpleFeatureExtractor):
             self.features.update(ne_tag)
         except Exception, e:
             logging.debug(pformat(e))
+
 
     @classmethod
     def __format_srl(cls, srldic):
@@ -230,11 +272,16 @@ class FeatureExtractor(SimpleFeatureExtractor):
             self.tmp_ARG0 = []
             self.tmp_ARG1 = []
             self.tmp_PRED = defaultdict(dict)
-            ARGS = [(l[FeatureExtractor.col_srlrel], l[FeatureExtractor.col_suf]) for l in self.tags 
+            ARGS = [(l[FeatureExtractor.col_srlrel], l[FeatureExtractor.col_suf], 
+                     l[FeatureExtractor.col_pos], l[FeatureExtractor.col_netag]) for l in self.tags 
                     if l[FeatureExtractor.col_srl] != "_" and int(l[FeatureExtractor.col_srl]) - 1 == v_idx]
             if ARGS:
                 srlf = {FeatureExtractor.gen_fn(["SRL", t[0], en.lemma(t[1])]):1 for t in ARGS}
+                srlp = {FeatureExtractor.gen_fn(["SRL", t[0], en.lemma(t[1])+"/"+t[2]]):1 for t in ARGS}
+                srln = {FeatureExtractor.gen_fn(["SRL", t[0], t[3]]):1 for t in ARGS if not t[3]=="_"}
                 self.features.update(srlf)
+                self.features.update(srlp)
+                self.features.update(srln)
         except Exception, e:
             logging.debug(pformat(e))
             # self.features.update(FeatureExtractor.nullfeature)

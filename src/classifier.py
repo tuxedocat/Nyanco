@@ -9,6 +9,7 @@ __version__ = "0.1"
 __status__ = "Prototyping"
 
 import os
+import errno
 import sys
 import traceback
 import logging
@@ -46,6 +47,8 @@ from feature_extractor import FeatureExtractor
 from tool.sparse_matrices import *
 from tool.seq_chunker import chunk_gen
 
+
+
 class CaseMaker(object):
     def __init__(self, verbcorpus_dir=None, verbset_path=None, dataset_dir=None, restart_from=None, f_types=None):
         if not verbcorpus_dir and verbset_path and f_types and dataset_dir:
@@ -54,8 +57,11 @@ class CaseMaker(object):
         else:
             pass
         self.corpusdir = verbcorpus_dir
-        if not os.path.exists(os.path.abspath(dataset_dir)):
-            os.makedirs(os.path.abspath(dataset_dir))
+        try:
+            os.makedirs(os.path.abspath(dsdir))
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
         self.dataset_dir = dataset_dir
         self.verbset_path = verbset_path
         self.verbsets = pickle.load(open(verbset_path,"rb"))
@@ -230,8 +236,11 @@ class ParallelCaseMaker(CaseMaker):
         else:
             pass
         self.corpusdir = vcdir
-        if not os.path.exists(os.path.abspath(dsdir)):
+        try:
             os.makedirs(os.path.abspath(dsdir))
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
         self.dataset_dir = dsdir
         self.verbsets = vs 
         self.verbs = self.verbsets.keys()
