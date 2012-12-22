@@ -55,6 +55,7 @@ class DetectorBase(object):
         self.verbsetpath = verbsetpath
         self.altreader = altgen.AlternativeReader(self.verbsetpath)
         self.verbset = pickle.load(open(self.verbsetpath, "rb"))
+        self.NonTargetCP = ["be", "can", "will", "should", "ought", "may", "might", "do"]
 
 
     def make_cases(self):
@@ -102,9 +103,6 @@ class DetectorBase(object):
 class SupervisedDetector(DetectorBase):
     """
     Supervised (multiclass classification) based detector implementation
-    Currently, methods such as _mk_cases is just copied and did some modifications from the original
-    TODO:
-        Better, smart implementation for shared codes such as _mk_cases
     """
     def readmodels(self, path_dataset_root="", modeltype="sgd_maxent_l2", toolkit="sklearn", 
                    d_algo="ranker", ranker_k=5, features=[]):
@@ -401,9 +399,13 @@ class SupervisedDetector(DetectorBase):
         self.list_oov_cp = []
         self.MRR_RV = []
         self.MRR_All = []
+        self.setnames = []
         for id, case in self.testcases.iteritems():
             try:
                 setname = case["incorrect_label"]
+                self.setnames.append(setname)
+                if setname in self.NonTargetCP:
+                    raise NonTargetCP
                 assert case["is_cp_in_set"] == True
                 assert (case["classifier_output"] is not None) or (case["classifier_classprob"] is not None)
                 assert case["gold_classid"] is not None
@@ -463,7 +465,6 @@ class SupervisedDetector(DetectorBase):
             except WordNotInCsetError:
                 if case["type"] == "RV":
                     # print "detector:: Error in RV case (perhaps WordNotInCsetError): %s"%setname
-                    # pass
                     self.syslabels.append(0)
                     self.truelabels.append(1)
                     self.listRV.append(1)
@@ -472,6 +473,8 @@ class SupervisedDetector(DetectorBase):
                     pass
                     self.syslabels.append(0)
                     self.truelabels.append(0)
+            except NonTargetCP:
+                pass
 
             except Exception, e:
                 logging.debug(pformat(e))
@@ -499,31 +502,38 @@ class SupervisedDetector(DetectorBase):
         labels = [0, 1]
         names = ["not_verb-error", "verb-error"]
         with open(self.reportpath, "a") as rf:
-            MRR_RV = -100
-            MRR_All = -100
+            ytrue = np.array(self.truelabels)
+            ysys = np.array(self.syslabels)
+            CM = metrics.confusion_matrix(ytrue, ysys, labels=np.array(labels))
+            _CM = self._cm(CM)
+            tp = float(_CM["TP"]); tn = float(_CM["TN"]); fp = float(_CM["FP"]); fn = float(_CM["FN"]);
+            print pformat(CM)
+            print pformat(self._cm(CM))
+            MRR_RV = 0
+            MRR_All = 0
             try:
-                system_accuracy = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t])/float(len(self.truelabels))
-                false_alarm = 1 - system_accuracy
-                detect_precision = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t == 1])/float(len([1 for i in self.syslabels if i == 1]))
-                detect_recall = len([1 for (g, t) in zip(self.listRV, self.listRV_sys) if g == t])/float(len(self.listRV))
+                system_accuracy = float(tp+fn)/float(tp+fp+tn+fn)
+                false_alarm = float(fp)/float(tp+fp+tn+fn)
+                detect_precision = float(tp)/float(tp+fp)
+                detect_recall = float(tp)/float(tp+tn)
+                # system_accuracy = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t])/float(len(self.truelabels))
+                # false_alarm = 1 - system_accuracy
+                # detect_precision = len([1 for (g, t) in zip(self.truelabels, self.syslabels) if g == t == 1])/float(len([1 for i in self.syslabels if i == 1]))
+                # detect_recall = len([1 for (g, t) in zip(self.listRV, self.listRV_sys) if g == t])/float(len(self.listRV))
                 MRR_RV = float(sum(self.MRR_RV))/float(len(self.MRR_RV))
                 MRR_All = float(sum(self.MRR_All))/float(len(self.MRR_All))
             except ZeroDivisionError, ze:
-                detect_precision = -100
-                detect_recall = -100
+                detect_precision = 0
+                detect_recall = 0
                 # print "The result seems invalid (ZeroDivisionError is raised)"
                 logging.debug(pformat(ze))
-            ytrue = np.array(self.truelabels)
-            ysys = np.array(self.syslabels)
             clsrepo = metrics.classification_report(ytrue, ysys, target_names=names)
-            CM = metrics.confusion_matrix(ytrue, ysys, labels=np.array(labels))
             if expconf:
                 rf.write("="*80+"\n")
                 print pformat(expconf)
                 rf.write(pformat(expconf)); rf.write("\n"+"-"*80+"\n\n")
             print clsrepo
-            print pformat(CM)
-            print pformat(self._cm(CM))
+
             oovcp =  "num. of [OOV-RV Checkpoints] is %d"%len(self.list_oov_cp)
             coveredgolds =  "num. of [words in FCE-gold which are covered by Cset] is %d / %d (%3.4f)"%(len(self.gold_in_Cset), len(self.syslabels), len(self.gold_in_Cset)/float(len(self.syslabels)))
             print oovcp 
@@ -549,7 +559,6 @@ class SupervisedDetector(DetectorBase):
             rf.write(mrr_rv);
             rf.write(mrr_all);
             rf.write("\n"*2+"="*80+"\n"*5)
-        _CM = self._cm(CM)
         result = {"CM": _CM, "TP": _CM["TP"], "TN": _CM["TN"], "FP": _CM["FP"], "FN":_CM["FN"], 
                   "MRR_All": MRR_All, "MRR_RV": MRR_RV,
                   "Acc": system_accuracy, "FA": false_alarm, "Prec": detect_precision, "Rec": detect_recall}
@@ -559,6 +568,8 @@ class SupervisedDetector(DetectorBase):
 class WordNotInCsetError(Exception):
     pass
 
+class NonTargetCP(Exception):
+    pass
 
 def detectmain_c(corpuspath="", model_root="", type="sgd", reportout="", 
                  verbsetpath="", d_algo="ranker",ranker_k=5, features=[], expconf={}):
@@ -611,6 +622,8 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
         _n = datetime.now().strftime("result_%Y%m%d_%H%M.pkl2")
         with open(os.path.join(reportout, _n), "wb") as rf:
             pickle.dump(results, rf)
+        with open(os.path.join("CPnames.pkl2"), "wb") as rf:
+            pickle.dump(detector.setnames, rf)
 
 
 #-------------------------------------------------------------------------------
