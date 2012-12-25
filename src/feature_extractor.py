@@ -196,12 +196,12 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
             self.features.update(pos_bigram)
             self.features.update(suf_trigram)
             self.features.update(pos_trigram)
-            self.features.update(suf_c3gram)
-            self.features.update(suf_c5gram)
-            self.features.update(suf_c7gram)
-            self.features.update(pos_c3gram)
-            self.features.update(pos_c5gram)
-            self.features.update(pos_c7gram)
+            # self.features.update(suf_c3gram)
+            # self.features.update(suf_c5gram)
+            # self.features.update(suf_c7gram)
+            # self.features.update(pos_c3gram)
+            # self.features.update(pos_c5gram)
+            # self.features.update(pos_c7gram)
         except Exception, e:
             pass
             # self.features.update(SimpleFeatureExtractor.nullfeature)
@@ -235,10 +235,7 @@ class FeatureExtractor(SimpleFeatureExtractor):
             if not v_idx:
                 v_idx = self.v_idx
             ne = self.tags[v_idx][FeatureExtractor.col_netag]
-            if not ne == "_":
-                ne_tag = {"V-NE_" + ne: 1}
-            else:
-                ne_tag = {}
+            ne_tag = {"V-NE_" + ne: 1} if not ne == "_" else {}
             self.features.update(ne_tag)
         except Exception, e:
             logging.debug(pformat(e))
