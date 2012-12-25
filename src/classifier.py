@@ -272,7 +272,7 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_ty
     argd = {}
     with open(verbset_path, "rb") as f:
         vs_full = pickle.load(f)
-    sep_keys = [wl for wl in chunk_gen(vs_full.keys(), (len(vs_full)/ pool_num)+1)]
+    sep_keys = [wl for wl in chunk_gen(vs_full.keys(), (len(vs_full)/(pool_num*4))+1)]
     vs_chunks = []
     for wl in sep_keys:
         vs_chunks.append({w:vs_full[w] for w in wl})
