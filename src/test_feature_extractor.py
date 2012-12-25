@@ -48,7 +48,9 @@ class TestFext(object):
             fe.dependency()
             fe.ne()
             fe.srl()
+            logging.debug(pformat(fe.SUF))
             logging.debug(pformat(fe.features))
+
             vec = DictVectorizer(sparse=True)
             array_f = vec.fit_transform(fe.features).toarray()
             # logging.debug(pformat(array_f))
