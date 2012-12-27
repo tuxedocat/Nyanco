@@ -373,12 +373,13 @@ class SupervisedDetector(DetectorBase):
             probs = [(i, p) for i, p in enumerate(probdist)]
             probs.sort(key=lambda x: x[1], reverse=True)
             rank_org = [i for i, t in enumerate(probs) if t[0] == orgidx][0]
+            suggestion = probs[:k]
             try:
                 rank_gold = [i for i, t in enumerate(probs) if t[0] == goldidx][0]
                 RR = float(1.0/rank_gold) if rank_gold < k else 0.0
             except:
                 RR = 0.0
-            return (1, RR) if rank_org > k else (0, RR)
+            return (1, RR, suggestion) if rank_org > k else (0, RR, None)
         except IndexError:
             raise WordNotInCsetError
 
@@ -388,6 +389,15 @@ class SupervisedDetector(DetectorBase):
             return 0
         else:
             return 1
+
+    def _postprocess_suggestion(self, suggestions=None, label2id=None):
+        try:
+            id2l = {v:k for k,v in label2id.iteritems()}
+            named = [(id2l[i], p) for i, p in suggestions]
+        except:
+            named = None
+        finally:
+            return named
 
 
     def detect(self):
@@ -400,6 +410,7 @@ class SupervisedDetector(DetectorBase):
         self.MRR_RV = []
         self.MRR_All = []
         self.setnames = []
+        self.suggestion_results = defaultdict(dict)
         for id, case in self.testcases.iteritems():
             try:
                 setname = case["incorrect_label"]
@@ -419,7 +430,7 @@ class SupervisedDetector(DetectorBase):
                 if self.d_algo == "kbest":
                     sysout = self._kbest_detector(probdist=probdist, k=self.k, orgidx=org)
                 elif self.d_algo == "ranker":
-                    sysout, RR = self._kbest_detector_loose(probdist=probdist, k=self.k, orgidx=org, goldidx=gold)
+                    sysout, RR, suggestion = self._kbest_detector_loose(probdist=probdist, k=self.k, orgidx=org, goldidx=gold)
                 else:
                     sysout = self._basedetector(org=org, cls_out=cls_out)
                 self.syslabels.append(sysout)
@@ -434,8 +445,10 @@ class SupervisedDetector(DetectorBase):
                     self.truelabels.append(1)
                     self.listRV.append(1)
                     self.listRV_sys.append(sysout)
-                    # id2l = {v:k for k,v in l2id.iteritems()}
-                    # print "detector:: RV case %s: correction = '%s'\nshowing probdist."%(setname, id2l[int(gold)])
+                    _suggestion = self._postprocess_suggestion(suggestion, l2id)
+                    self.suggestion_results[id] = {"setname": setname, "suggestion": _suggestion, 
+                                                   "detected": sysout, "gold": case["gold_text"], 
+                                                   "incorr": case["test_text"]}
                     try:
                         if sysout == 1:
                             self.MRR_RV.append(RR)
@@ -602,6 +615,8 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
         for k in range(ls_ranker_k[0], ls_ranker_k[1]+1):
             detector.k = k
             detector.detect()
+            if k == 5:
+                results["suggestion_eval"] = detector.suggestion_results
             expconf["detector_info"] = "Classifier %s (k=%d)"%(d_algo, k)
             _r = detector.mk_report(expconf)
             results["Acc"].append((k, _r["Acc"]))
