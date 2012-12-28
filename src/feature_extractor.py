@@ -212,8 +212,8 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
                 v_idx = self.v_idx
             l_ctxid = [idx for idx, pt in enumerate(self.POS) if idx < v_idx and pt.startswith("NN")]
             r_ctxid = [idx for idx, pt in enumerate(self.POS) if idx > v_idx and pt.startswith("NN")]
-            l_nearestNN = {SimpleFeatureExtractor.gen_fn(["NN", "L", self.SUF[l_ctxid[-1]]]) : 1} if l_ctxid else None
-            r_nearestNN = {SimpleFeatureExtractor.gen_fn(["NN", "R", self.SUF[r_ctxid[0]]]) : 1} if r_ctxid else None
+            l_nearestNN = {SimpleFeatureExtractor.gen_fn(["NN", "L", self.SUF[l_ctxid[-1]]]) : 1} if l_ctxid else {}
+            r_nearestNN = {SimpleFeatureExtractor.gen_fn(["NN", "R", self.SUF[r_ctxid[0]]]) : 1} if r_ctxid else {}
             self.features.update(l_nearestNN)
             self.features.update(r_nearestNN)
         except:

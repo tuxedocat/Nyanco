@@ -206,6 +206,8 @@ class SupervisedDetector(DetectorBase):
 
     def mk_features(self, tags=[], v=""):
         fe = FeatureExtractor(tags=tags, verb=v)
+        if "chunk" in self.features:
+            fe.chunk()
         if "3gram" in self.features:
             fe.ngrams(n=3)
         if "5gram" in self.features:
