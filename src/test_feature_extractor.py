@@ -44,11 +44,12 @@ class TestFext(object):
     def test_single(self):
         for t in self.testdata:
             fe = FeatureExtractor(t, "report")
-            fe.ngrams(n=7)
+            fe.ngrams(n=5)
+            fe.chunk()
             fe.dependency()
             fe.ne()
             fe.srl()
-            logging.debug(pformat(fe.SUF))
+            logging.debug(pformat(zip(fe.SUF, fe.POS)))
             logging.debug(pformat(fe.features))
 
             vec = DictVectorizer(sparse=True)
