@@ -178,28 +178,28 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
                         for i, w in enumerate(ng(concats, 4)) if w[0] == "*V*" or w[3] == "*V*"} if n >= 7 else {}
             pos_trigram = {SimpleFeatureExtractor.gen_fn(["POS3G", "", "-".join(w)]):1 
                         for i, w in enumerate(ng(concatp, 4)) if w[0] == "*V*" or w[3] == "*V*"} if n >= 7 else {}
-            # suf_c3gram = {SimpleFeatureExtractor.gen_fn(["SUF3G", "", "-".join(w)]):1 
-                        # for i, w in enumerate(ng(concats, 3)) if w[1] == "*V*"} if n >= 3 else {}
-            # suf_c5gram = {SimpleFeatureExtractor.gen_fn(["SUF5G", "", "-".join(w)]):1 
-                        # for i, w in enumerate(ng(concats, 5)) if w[2] == "*V*"} if n >= 5 else {}
+            suf_c3gram = {SimpleFeatureExtractor.gen_fn(["SUF3G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concats, 3)) if w[1] == "*V*"} if n >= 3 else {}
+            suf_c5gram = {SimpleFeatureExtractor.gen_fn(["SUF5G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concats, 5)) if w[2] == "*V*"} if n >= 5 else {}
             # suf_c7gram = {SimpleFeatureExtractor.gen_fn(["SUF7G", "", "-".join(w)]):1 
                         # for i, w in enumerate(ng(concats, 7)) if w[3] == "*V*"} if n >= 7 else {}
-            # pos_c3gram = {SimpleFeatureExtractor.gen_fn(["POS3G", "", "-".join(w)]):1 
-                        # for i, w in enumerate(ng(concatp, 3)) if w[1] == "*V*"} if n >= 3 else {}
-            # pos_c5gram = {SimpleFeatureExtractor.gen_fn(["POS5G", "", "-".join(w)]):1 
-                        # for i, w in enumerate(ng(concatp, 5)) if w[2] == "*V*"} if n >= 5 else {}
+            pos_c3gram = {SimpleFeatureExtractor.gen_fn(["POS3G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concatp, 3)) if w[1] == "*V*"} if n >= 3 else {}
+            pos_c5gram = {SimpleFeatureExtractor.gen_fn(["POS5G", "", "-".join(w)]):1 
+                        for i, w in enumerate(ng(concatp, 5)) if w[2] == "*V*"} if n >= 5 else {}
             # pos_c7gram = {SimpleFeatureExtractor.gen_fn(["POS7G", "", "-".join(w)]):1 
                         # for i, w in enumerate(ng(concatp, 7)) if w[3] == "*V*"} if n >= 7 else {}
             self.features.update(suf_unigram)
             self.features.update(pos_unigram)
             self.features.update(suf_bigram)
             self.features.update(pos_bigram)
-            self.features.update(suf_trigram)
-            self.features.update(pos_trigram)
-            # self.features.update(suf_c3gram)
+            # self.features.update(suf_trigram)
+            # self.features.update(pos_trigram)
+            self.features.update(suf_c3gram)
             # self.features.update(suf_c5gram)
             # self.features.update(suf_c7gram)
-            # self.features.update(pos_c3gram)
+            self.features.update(pos_c3gram)
             # self.features.update(pos_c5gram)
             # self.features.update(pos_c7gram)
         except Exception, e:
