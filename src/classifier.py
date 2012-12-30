@@ -118,6 +118,8 @@ class CaseMaker(object):
             for sid, s in enumerate(v_corpus):
                 try:
                     fe = FeatureExtractor(s, verb=v)
+                    if "chunk" in self.featuretypes:
+                        fe.chunk()
                     if "3gram" in self.featuretypes:
                         fe.ngrams(n=3)
                     if "5gram" in self.featuretypes:
