@@ -31,12 +31,13 @@ except:
 class BCluster(object):
     bcdic = pickle.load(open("../sandbox/bc_256.pkl2", "rb"))
 
-    def getbits(self, w):
+    @classmethod
+    def getbits(cls, w):
         try:
-            _bits = BCluster.bcdic[w]
+            _bits = cls.bcdic[w]
         except KeyError:
             try:
-                _bits = BCluster.bcdic[w.lower()]
+                _bits = cls.bcdic[w.lower()]
             except KeyError:
                 _bits = None
         except:
@@ -223,8 +224,16 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
                 v_idx = self.v_idx
             l_ctxid = [idx for idx, pt in enumerate(self.POS) if idx < v_idx and pt.startswith("NN")]
             r_ctxid = [idx for idx, pt in enumerate(self.POS) if idx > v_idx and pt.startswith("NN")]
-            l_nearestNN = {SimpleFeatureExtractor.gen_fn(["NN", "L", self.SUF[l_ctxid[-1]]]) : 1} if l_ctxid else {}
-            r_nearestNN = {SimpleFeatureExtractor.gen_fn(["NN", "R", self.SUF[r_ctxid[0]]]) : 1} if r_ctxid else {}
+            lnn = self.SUF[l_ctxid[-1]] if l_ctxid else None
+            rnn = self.SUF[r_ctxid[0]] if r_ctxid else None
+            l_nearestNN = {"NNL_%s"%lnn: 1} if lnn else {}
+            r_nearestNN = {"NNR_%s"%rnn : 1} if rnn else {}
+            self.features.update(l_nearestNN)
+            self.features.update(r_nearestNN)
+            lnnbc = BCluster.getbits(lnn)
+            rnnbc = BCluster.getbits(rnn)
+            l_nearestNN = {"NNLBC%d_%s"%(d,lnnbc[:d]):1 for d in [7, 8, 9]} if lnnbc else {}
+            r_nearestNN = {"NNRBC%d_%s"%(d,rnnbc[:d]):1 for d in [7, 8, 9]} if rnnbc else {}
             self.features.update(l_nearestNN)
             self.features.update(r_nearestNN)
         except:
@@ -238,14 +247,12 @@ class FeatureExtractor(SimpleFeatureExtractor):
             if not v_idx:
                 v_idx = self.v_idx
             deps = [(t[FeatureExtractor.col_deprel], t[FeatureExtractor.col_suf], 
-                     t[FeatureExtractor.col_pos], t[FeatureExtractor.col_netag]) for t in self.tags
+                     BCluster.getbits(t[FeatureExtractor.col_suf])) for t in self.tags
                      if int(t[FeatureExtractor.col_headid]) == v_idx+1]
-            # depr = {FeatureExtractor.gen_fn(["DEP", d[0].upper(), d[1].lower()+"/"+d[2]]):1 for d in deps}
             depp = {FeatureExtractor.gen_fn(["DEP", d[0].upper(), d[1].lower()]):1 for d in deps}
-            depn = {FeatureExtractor.gen_fn(["DEP", d[0].upper(), d[3]]):1 for d in deps if not d[3]=="_" }
-            # self.features.update(depr)
             self.features.update(depp)
-            self.features.update(depn)
+            depbc = {FeatureExtractor.gen_fn(["DEPBC", d[0].upper(), d[2]]):1 for d in deps if d[2]}
+            self.features.update(depbc)
         except Exception, e:
             logging.debug(pformat(e))
             # self.features.update(FeatureExtractor.nullfeature)
@@ -261,6 +268,15 @@ class FeatureExtractor(SimpleFeatureExtractor):
         except Exception, e:
             logging.debug(pformat(e))
 
+    def bcv(self, v_idx=None):
+        try:
+            if not v_idx:
+                v_idx = self.v_idx
+            bcv = BCluster.getbits(self.SUF[v_idx])
+            bcf = {"VBC%d_%s"%(d,bcv[:d]):1 for d in [7, 8, 9]} if bcv else {}
+            self.features.update(bcf)
+        except Exception, e:
+            logging.debug(pformat(e))
 
     @classmethod
     def __format_srl(cls, srldic):

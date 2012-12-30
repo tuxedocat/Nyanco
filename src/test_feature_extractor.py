@@ -48,6 +48,7 @@ class TestFext(object):
             fe.chunk()
             fe.dependency()
             fe.ne()
+            fe.bcv()
             fe.srl()
             logging.debug(pformat(zip(fe.SUF, fe.POS)))
             logging.debug(pformat(fe.features))
