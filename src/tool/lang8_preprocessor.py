@@ -58,7 +58,7 @@ def _tdiff(_o, _a):
         for tt in tmp:
             o = tt[0]
             a = tt[1]
-            _res = [t for t in zip(o,a) if "VB" in t[0][1] and "VB" in t[1][1]]
+            _res = [t for t in zip(o,a) if "VB" in t[0][1] and "VB" in t[1][1] and t[0][1]==t[1][1]]
             if _res:
                 print _res
                 for r in _res:
