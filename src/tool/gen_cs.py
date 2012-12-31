@@ -10,3 +10,21 @@ def gen_WNCS(CS):
         else:
             pass
     return CS_WN
+
+def combineCS(big, small):
+    out = collections.OrderedDict()
+    for v, cs in big.iteritems():
+        _tb = collections.Counter({unicode(t[0]):t[1] for t in cs})
+        _ts = {unicode(t[0]):t[1] for t in small[v]} if v in small else {}
+        _tb.update(_ts)
+        out[unicode(v)] = sorted([(w,c) for w, c in _tb.iteritems()], key=lambda x:x[1], reverse=True)
+    return out
+
+
+def combineCS_replece(big, small):
+    out = collections.OrderedDict()
+    for v, cs in big.iteritems():
+        _tborg = collections.Counter({unicode(t[0]):t[1] for t in cs})
+        _tb = collections.Counter({unicode(t[0]):t[1] for t in small[v]}) if v in small else _tborg
+        out[unicode(v)] = sorted([(w,c) for w, c in _tb.iteritems()], key=lambda x:x[1], reverse=True)
+    return out

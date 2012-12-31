@@ -45,6 +45,20 @@ class BCluster(object):
         return _bits
 
 
+sourceF = lambda x: "S:"+x
+targetF = lambda x: "T:"+x
+commonF = lambda x: "C:"+x
+
+def easyadapt(fdic, domain=None):
+    # augF = {commonF(fn):1 for fn in fdic}
+    augF = fdic
+    sF = {sourceF(fn):1 for fn in fdic} if domain == "src" else {}
+    tF = {targetF(fn):1 for fn in fdic} if domain == "tgt" else {}
+    augF.update(sF)
+    augF.update(tF)
+    return augF
+
+
 class FeatureExtractorBase(object):
     nullfeature = {"NULL":1}
     VE_count = 0
