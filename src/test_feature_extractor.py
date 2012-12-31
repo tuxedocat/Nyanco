@@ -2,7 +2,7 @@
 # coding: utf-8
 
 from nose.plugins.attrib import attr
-from feature_extractor import FeatureExtractor
+from feature_extractor import FeatureExtractor, SentenceFeatures
 from datetime import datetime
 import logging
 logfilename = datetime.now().strftime("detector_log_%Y%m%d_%H%M.log")
@@ -15,7 +15,7 @@ from numpy import array
 from pattern.text import en
 from nltk.corpus import wordnet as wn
 from sklearn.feature_extraction import DictVectorizer
-
+from tool.sennaparser import *
 
 class TestFext(object):
     def setUp(self):
@@ -51,6 +51,36 @@ class TestFext(object):
             fe.bcv()
             fe.srl()
             logging.debug(pformat(zip(fe.SUF, fe.POS)))
+            logging.debug(pformat(fe.features))
+
+            vec = DictVectorizer(sparse=True)
+            array_f = vec.fit_transform(fe.features).toarray()
+            # logging.debug(pformat(array_f))
+
+        raise Exception
+
+    @attr("feature_simple2")
+    def test_single2(self):
+        sp = unicode(os.environ["SENNAPATH"])
+        sp = u"/Users/tuxedocat/Research/tools/senna/"
+        parser = SennaParser(sp)
+        txt = open("/Users/tuxedocat/Documents/workspace/Nyanco/sandbox/recognize100.txt").read().split("\n")
+        txt = [s for s in txt if not s == ""]
+        # testdata = open("/Users/tuxedocat/Documents/workspace/precure/src/test/sennatags.txt").read()
+        testdata = []
+        for s in txt:
+            testdata.append(parser.parseSentence(s))
+        for t in testdata:
+            fe = SentenceFeatures(t, "recognize")
+            fe.ngrams(n=5)
+            fe.chunk()
+            # fe.dependency()
+            # fe.ne()
+            # fe.bcv()
+            # fe.srl()
+            logging.debug(pformat((fe.SUF, fe.CHK, fe.NER)))
+            logging.debug(" ".join(fe.SUF))
+            logging.debug(fe.v_idx)
             logging.debug(pformat(fe.features))
 
             vec = DictVectorizer(sparse=True)
