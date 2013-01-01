@@ -4,7 +4,7 @@ import subprocess
 import os
 
 
-class SennaWrap(object):
+class SennaParser(object):
     def __init__(self, bin):
         assert isinstance(bin, unicode)
         subproc_args = { 'stdin': subprocess.PIPE,
@@ -12,7 +12,7 @@ class SennaWrap(object):
                          'stderr': subprocess.STDOUT,  # not subprocess.PIPE
                          'cwd': '.',
                          'close_fds' : True}
-        args = [bin + 'senna', '-path', bin]
+        args = [os.path.join(bin, 'senna'), '-path', bin]
         try:
             self.p = subprocess.Popen(args, **subproc_args)
         except OSError:
@@ -42,7 +42,7 @@ class SennaWrap(object):
 
 if __name__ == '__main__':
     sennapath = unicode(os.environ["SENNAPATH"])
-    senna = SennaWrap(sennapath)
+    senna = SennaParser(sennapath)
     import sys 
     while True:
         string = raw_input('input: ')
