@@ -413,6 +413,8 @@ class SupervisedDetector(DetectorBase):
         self.MRR_All = []
         self.setnames = []
         self.suggestion_results = defaultdict(dict)
+        self.report_each_verb_fine = defaultdict(list)
+        self.report_each_verb = defaultdict(list)
         for id, case in self.testcases.iteritems():
             try:
                 setname = case["incorrect_label"]
@@ -451,6 +453,10 @@ class SupervisedDetector(DetectorBase):
                     self.suggestion_results[id] = {"setname": setname, "suggestion": _suggestion, 
                                                    "detected": sysout, "gold": case["gold_text"], 
                                                    "incorr": case["test_text"]}
+                    self.report_each_verb_fine[setname].append({"docid": id, "detected": sysout, 
+                                                                "gold": case["gold_text"], 
+                                                                "incorr": case["test_text"]})
+                    self.report_each_verb[setname].append({"docid": id, "detected": sysout})
                     try:
                         if sysout == 1:
                             self.MRR_RV.append(RR)
@@ -619,6 +625,7 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
             detector.detect()
             if k == 5:
                 results["suggestion_eval"] = detector.suggestion_results
+                results["analysis_each_verb_detail"] = detector.report_each_verb_fine
             expconf["detector_info"] = "Classifier %s (k=%d)"%(d_algo, k)
             _r = detector.mk_report(expconf)
             results["Acc"].append((k, _r["Acc"]))
@@ -632,6 +639,8 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
             results["FN"].append((k, _r["FN"]))
             results["MRR_RV"].append((k, _r["MRR_RV"]))
             results["MRR_All"].append((k, _r["MRR_All"]))
+            results["analysis_each_verb"].append((k, detector.report_each_verb))
+   
     except Exception, e:
         print pformat(e)
         # raise
@@ -639,7 +648,7 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
         _n = datetime.now().strftime("result_%Y%m%d_%H%M.pkl2")
         with open(os.path.join(reportout, _n), "wb") as rf:
             pickle.dump(results, rf)
-        with open(os.path.join("CPnames.pkl2"), "wb") as rf:
+        with open(os.path.join(reportout, "CPnames.pkl2"), "wb") as rf:
             pickle.dump(detector.setnames, rf)
 
 
