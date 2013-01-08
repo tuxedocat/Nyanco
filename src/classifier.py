@@ -43,7 +43,7 @@ try:
     import scipy as sp
 except:
     raise ImportError
-from feature_extractor import FeatureExtractor
+from feature_extractor import FeatureExtractor, proc_easyadapt
 from tool.sparse_matrices import *
 from tool.seq_chunker import chunk_gen
 
@@ -109,7 +109,7 @@ class CaseMaker(object):
         return _corpusdict
 
 
-    def _get_features(self, v="", v_corpus=None, cls2id=None):
+    def _get_features(self, v="", v_corpus=None, cls2id=None, domain="src"):
         _flist = []
         _labellist_int = []
         _labellist_str = []
@@ -136,7 +136,11 @@ class CaseMaker(object):
                         pass
                     if "topic" in self.featuretypes:
                         pass
-                    _flist.append(fe.features)
+                    if tgtdomain:
+                        augf = proc_easyadapt(fe.features, domain="tgt")
+                    else:
+                        augf = proc_easyadapt(fe.features, domain="src")
+                    _flist.append(augf)
                     _labellist_int.append(_labelid)
                     _labellist_str.append(v)
                 except ValueError:
@@ -150,12 +154,56 @@ class CaseMaker(object):
             _labellist_str.append(v)
         return _flist, _labellist_str, _labellist_int
 
+    def _get_features_tgt(self, v_corpus=None, cls2id=None, domain="tgt"):
+        _flist = []
+        _labellist_int = []
+        _labellist_str = []
+        for sid, sdic in enumerate(v_corpus):
+            try:
+                fe = SentenceFeatures(sdic["parsed_corr"], verb=sdic["label_corr"], v_idx=sdic["vidx_corr"])
+                if "chunk" in self.featuretypes:
+                    fe.chunk()
+                if "3gram" in self.featuretypes:
+                    fe.ngrams(n=3)
+                if "5gram" in self.featuretypes:
+                    fe.ngrams(n=5)
+                if "7gram" in self.featuretypes:
+                    fe.ngrams(n=7)
+                if "dep" in self.featuretypes:
+                    fe.dependency()
+                if "srl" in self.featuretypes:
+                    fe.srl()
+                if "ne" in self.featuretypes:
+                    fe.ne()
+                if "errorprob" in self.featuretypes:
+                    pass
+                if "topic" in self.featuretypes:
+                    pass
+                if tgtdomain:
+                    augf = proc_easyadapt(fe.features, domain="tgt")
+                else:
+                    augf = proc_easyadapt(fe.features, domain="src")
+                _flist.append(augf)
+                _labellist_int.append(_labelid)
+                _labellist_str.append(v)
+            except ValueError:
+                logging.debug(pformat("CaseMaker feature extraction: couldn't find the verb"))
+            except:
+                print v
+                raise
+        else:
+            _flist.append(self.nullfeature)
+            _labellist_int.append(_labelid)
+            _labellist_str.append(v)
+        return _flist, _labellist_str, _labellist_int
+
 
     def make_fvectors(self):
         """
         Create feature vectors for given datasets, save dataset as numpy npz files
         """
-        pbar = ProgressBar(widgets=[Percentage(), '(', SimpleProgress(), ')  ', Bar()], maxval=len(self.verbsets)).start()
+        pbar = ProgressBar(widgets=[Percentage(),'(', SimpleProgress(), ')  ', Bar()], 
+                           maxval=len(self.verbsets)).start()
         for _i, (setname, vset) in enumerate(self.verbsets.iteritems()): # setname is str, vset is list of tuples e.g. ("get", 25)
             if vset:
                 # print "CaseMaker make_fvectors: working on set '%s'"%setname
@@ -168,7 +216,7 @@ class CaseMaker(object):
                 # Get feature vector for each sentence 
                 for v, v_corpus in _corpusdict.iteritems():
                     try:
-                        _flist, _labellist_str, _labellist_int = self._get_features(v, v_corpus, _classname2id)
+                        _flist, _labellist_str, _labellist_int = self._get_features(v, v_corpus, _classname2id, "src")
                     except:
                         print v
                         raise
@@ -176,6 +224,17 @@ class CaseMaker(object):
                     _casedict["Y_str"] += _labellist_str
                     _casedict["Y"] += _labellist_int
                 del(_corpusdict)
+
+                if self.easyadapt:
+                    _tgtcorpus = self.tgtcorpus[setname]
+                    try:
+                        _flist, _labellist_str, _labellist_int = self._get_features_tgt(tgtc, _classname2id, "tgt")
+                    except:
+                        print tgtc
+                        raise
+                    _casedict["X_str"] += _flist
+                    _casedict["Y_str"] += _labellist_str
+                    _casedict["Y"] += _labellist_int
 
                 try:
                     X = vectorizer.fit_transform(_casedict["X_str"])
@@ -246,7 +305,8 @@ class CaseMaker(object):
 
 
 class ParallelCaseMaker(CaseMaker):
-    def __init__(self, vcdir=None, vs={}, dsdir=None, f_types=None, instance_num=30000, easyadapt=False):
+
+    def __init__(self, vcdir=None, vs={}, dsdir=None, f_types=None, instance_num=30000, easyadapt=False, tgtcorpus={}):
         if not vcdir and vs and dsdir and f_types:
             print "ParallelCaseMaker: Invalid data path(s)... aborted."
             raise TypeError
@@ -268,28 +328,40 @@ class ParallelCaseMaker(CaseMaker):
         self.featuretypes = f_types # list like object is expected
         self.numts = instance_num
         self.DA = easyadapt
+        self.tgtcorpus = tgtcorpus
 
 
-def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_types=None, pool_num=2, instance_num=30000):
+def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, 
+                  f_types=None, pool_num=2, instance_num=30000, easyadapt=False, tgtcorpus_path=None):
     args = []
     argd = {}
     with open(verbset_path, "rb") as f:
         vs_full = pickle.load(f)
+    if easyadapt:
+        with open(tgtcorpus_path, "rb") as f:
+            tgtc_full = pickle.load(f)
+    else:
+        tgtc_full = None
     sep_keys = [wl for wl in chunk_gen(vs_full.keys(), (len(vs_full)/(pool_num*4))+1)]
     vs_chunks = []
+    tgtc_chunks = []
     for wl in sep_keys:
         vs_chunks.append({w:vs_full[w] for w in wl})
-    for vs in vs_chunks:
+        tgtc_chunks.append({w:tgtc_full[w] for w in wl})
+    if not tgtc_full:
+        tgtc_chunks = [None for item in vs_chunks]
+    for vs, tgtc in zip(vs_chunks, tgtc_chunks):
         args.append({"vcdir":verbcorpus_dir, 
                      "dsdir":dataset_dir, 
                      "f_types":f_types, 
                      "vs":vs, 
-                     "numts":instance_num})
+                     "numts":instance_num,
+                     "easyadapt":easyadapt,
+                     "tgtcorpus":tgtc})
     mp = Pool(processes=pool_num, maxtasksperchild=1)
     mp.map(_make_fvectors_p, args)
     mp.close()
     mp.join()
-
 
 
 def _make_fvectors_p(argd):
@@ -298,7 +370,15 @@ def _make_fvectors_p(argd):
     dsdir = argd["dsdir"]
     f_types = argd["f_types"]
     numts = argd["numts"]
-    CMP = ParallelCaseMaker(vcdir=vcdir, vs=vs, dsdir=dsdir, f_types=f_types, instance_num=numts)
+    easyadapt = argd["easyadapt"]
+    tgtcorpus = argd["tgtcorpus"]
+    CMP = ParallelCaseMaker(vcdir=vcdir, 
+                            vs=vs, 
+                            dsdir=dsdir, 
+                            f_types=f_types, 
+                            instance_num=numts, 
+                            easyadapt=easyadapt,
+                            tgtcorpus=tgtcorpus)
     try:
         CMP.make_fvectors()
     except Exception, e:

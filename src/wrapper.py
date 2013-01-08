@@ -50,6 +50,8 @@ class Experiment(object):
                 self.vcdir = conf["verbcorpus_dir"]
             self.dsdir = conf["dir_models"] 
             self.numts = conf["num_tsamples"]
+            self.easyadapt = True if "easyadapt" in conf else False
+            self.tgtcorpus_path = conf["tgtcorpus"] if "tgtcorpus" in conf else None
         if "train" in self.pl:
             self.dsdir = conf["dir_models"] 
             self.modeldir = conf["dir_models"]
@@ -79,7 +81,10 @@ class Experiment(object):
                                      verbset_path=self.vs,
                                      dataset_dir=self.dsdir,
                                      f_types=self.features,
-                                     pool_num=self.parallel_num, instance_num=self.numts)
+                                     pool_num=self.parallel_num, 
+                                     instance_num=self.numts,
+                                     easyadapt=self.easyadapt, 
+                                     tgtcorpus_path=self.tgtcorpus_path)
         if "train" in self.pl:
             if self.toolkit == "bolt":
                 classifier.train_boltclassifier_batch(dataset_dir=self.dsdir, 

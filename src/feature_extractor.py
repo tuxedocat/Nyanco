@@ -50,7 +50,7 @@ sourceF = lambda x: "S:"+x
 targetF = lambda x: "T:"+x
 commonF = lambda x: "C:"+x
 
-def easyadapt(fdic, domain=None):
+def proc_easyadapt(fdic, domain=None):
     # augF = {commonF(fn):1 for fn in fdic}
     augF = fdic
     sF = {sourceF(fn):1 for fn in fdic} if domain == "src" else {}
