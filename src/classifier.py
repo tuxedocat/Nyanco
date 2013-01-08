@@ -292,12 +292,12 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_ty
 
 
 
-def _make_fvectors_p(**argd):
-    # vcdir = argd["vcdir"]
-    # vs = argd["vs"]
-    # dsdir = argd["dsdir"]
-    # f_types = argd["f_types"]
-    # numts = argd["numts"]
+def _make_fvectors_p(argd):
+    vcdir = argd["vcdir"]
+    vs = argd["vs"]
+    dsdir = argd["dsdir"]
+    f_types = argd["f_types"]
+    numts = argd["numts"]
     CMP = ParallelCaseMaker(vcdir=vcdir, vs=vs, dsdir=dsdir, f_types=f_types, instance_num=numts)
     try:
         CMP.make_fvectors()
