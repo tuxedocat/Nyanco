@@ -246,7 +246,7 @@ class CaseMaker(object):
 
 
 class ParallelCaseMaker(CaseMaker):
-    def __init__(self, vcdir=None, vs={}, dsdir=None, f_types=None, instance_num=30000):
+    def __init__(self, vcdir=None, vs={}, dsdir=None, f_types=None, instance_num=30000, easyadapt=False):
         if not vcdir and vs and dsdir and f_types:
             print "ParallelCaseMaker: Invalid data path(s)... aborted."
             raise TypeError
@@ -267,6 +267,7 @@ class ParallelCaseMaker(CaseMaker):
         self.nullfeature = {"NULL":1}
         self.featuretypes = f_types # list like object is expected
         self.numts = instance_num
+        self.DA = easyadapt
 
 
 def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_types=None, pool_num=2, instance_num=30000):
@@ -279,7 +280,11 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_ty
     for wl in sep_keys:
         vs_chunks.append({w:vs_full[w] for w in wl})
     for vs in vs_chunks:
-        args.append({"vcdir":verbcorpus_dir, "dsdir":dataset_dir, "f_types":f_types, "vs":vs, "numts":instance_num})
+        args.append({"vcdir":verbcorpus_dir, 
+                     "dsdir":dataset_dir, 
+                     "f_types":f_types, 
+                     "vs":vs, 
+                     "numts":instance_num})
     mp = Pool(processes=pool_num, maxtasksperchild=1)
     mp.map(_make_fvectors_p, args)
     mp.close()
@@ -287,12 +292,12 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None, f_ty
 
 
 
-def _make_fvectors_p(argd={}):
-    vcdir = argd["vcdir"]
-    vs = argd["vs"]
-    dsdir = argd["dsdir"]
-    f_types = argd["f_types"]
-    numts = argd["numts"]
+def _make_fvectors_p(**argd):
+    # vcdir = argd["vcdir"]
+    # vs = argd["vs"]
+    # dsdir = argd["dsdir"]
+    # f_types = argd["f_types"]
+    # numts = argd["numts"]
     CMP = ParallelCaseMaker(vcdir=vcdir, vs=vs, dsdir=dsdir, f_types=f_types, instance_num=numts)
     try:
         CMP.make_fvectors()
