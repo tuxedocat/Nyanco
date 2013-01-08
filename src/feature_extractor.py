@@ -436,8 +436,8 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
             self.features.update(r_nearestNN)
             lnnbc = BCluster.getbits(lnn)
             rnnbc = BCluster.getbits(rnn)
-            l_nearestNN = {"NNLBC%d_%s"%(d,lnnbc[:d]):1 for d in [8, 9]} if lnnbc else {}
-            r_nearestNN = {"NNRBC%d_%s"%(d,rnnbc[:d]):1 for d in [8, 9]} if rnnbc else {}
+            l_nearestNN = {"NNLBC%d_%s"%(d,lnnbc[:d]):1 for d in [4,5,6,7,8,9]} if lnnbc else {}
+            r_nearestNN = {"NNRBC%d_%s"%(d,rnnbc[:d]):1 for d in [4,5,6,7,8,9]} if rnnbc else {}
             self.features.update(l_nearestNN)
             self.features.update(r_nearestNN)
         except:

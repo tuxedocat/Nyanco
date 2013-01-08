@@ -12,7 +12,7 @@ class SennaParser(object):
                          'stderr': subprocess.STDOUT,  # not subprocess.PIPE
                          'cwd': '.',
                          'close_fds' : True}
-        args = [os.path.join(bin, 'senna'), '-path', bin]
+        args = [bin + 'senna', '-path', bin]
         try:
             self.p = subprocess.Popen(args, **subproc_args)
         except OSError:
@@ -29,6 +29,17 @@ class SennaParser(object):
             pass
 
 
+    # def parseSentence(self, sentence):
+        # self.p.stdin.write(sentence + "\n")
+        # result = []
+        # while True:
+            # line = self.stdouterr.readline()[:-1]
+            # if not line:
+                # break
+            # result.append(line.split())
+        # return result
+
+
     def parseSentence(self, sentence):
         self.p.stdin.write(sentence + "\n")
         result = []
@@ -37,13 +48,15 @@ class SennaParser(object):
             if not line:
                 break
             result.append(line.split())
+        self.stdouterr.flush()
         return result
 
 
+
 if __name__ == '__main__':
-    sennapath = unicode(os.environ["SENNAPATH"])
-    senna = SennaParser(sennapath)
     import sys 
+    sennapath = unicode(os.environ["SENNAPATH"]) + u"/"
+    senna = SennaParser(sennapath)
     while True:
         string = raw_input('input: ')
         if len(string) == 0:
