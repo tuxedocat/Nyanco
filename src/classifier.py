@@ -374,7 +374,7 @@ class SklearnClassifier(BaseClassifier):
 
     def trainSGD(self):
         sgd = SGDClassifier(loss=self.loss, penalty=self.reg, alpha=self.alpha, n_iter=self.epochs,
-                            shuffle=True, n_jobs=self.multicpu)
+                            shuffle=True, n_jobs=self.multicpu, class_weight='auto')
         # print "Classifier (sklearn SGD): training the model \t(%s)"%self.dspath
         if self.kernel_approx is True:
             rbf_feature = RBFSampler(gamma=1, n_components=100.0, random_state=1)
