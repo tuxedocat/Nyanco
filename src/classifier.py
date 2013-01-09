@@ -136,10 +136,7 @@ class CaseMaker(object):
                         pass
                     if "topic" in self.featuretypes:
                         pass
-                    if tgtdomain:
-                        augf = proc_easyadapt(fe.features, domain="tgt")
-                    else:
-                        augf = proc_easyadapt(fe.features, domain="src")
+                    augf = proc_easyadapt(fe.features, domain=domain)
                     _flist.append(augf)
                     _labellist_int.append(_labelid)
                     _labellist_str.append(v)
@@ -179,10 +176,7 @@ class CaseMaker(object):
                     pass
                 if "topic" in self.featuretypes:
                     pass
-                if tgtdomain:
-                    augf = proc_easyadapt(fe.features, domain="tgt")
-                else:
-                    augf = proc_easyadapt(fe.features, domain="src")
+                augf = proc_easyadapt(fe.features, domain=domain)
                 _flist.append(augf)
                 _labellist_int.append(_labelid)
                 _labellist_str.append(v)
@@ -327,7 +321,7 @@ class ParallelCaseMaker(CaseMaker):
         self.nullfeature = {"NULL":1}
         self.featuretypes = f_types # list like object is expected
         self.numts = instance_num
-        self.DA = easyadapt
+        self.easyadapt = easyadapt
         self.tgtcorpus = tgtcorpus
 
 
@@ -459,7 +453,7 @@ class SklearnClassifier(BaseClassifier):
 
     def trainSGD(self):
         sgd = SGDClassifier(loss=self.loss, penalty=self.reg, alpha=self.alpha, n_iter=self.epochs,
-                            shuffle=True, n_jobs=self.multicpu)
+                            shuffle=True, n_jobs=self.multicpu, class_weight='auto')
         # print "Classifier (sklearn SGD): training the model \t(%s)"%self.dspath
         if self.kernel_approx is True:
             rbf_feature = RBFSampler(gamma=1, n_components=100.0, random_state=1)
@@ -709,31 +703,6 @@ def train_bolt_classifier_p(args={}):
         raise NotImplementedError
     modelfilename = os.path.join(output_path, "model_%s.pkl2"%modeltype)
     classifier.save_model(modelfilename)
-
-
-# def train_boltclassifier_batch(dataset_dir="", modeltype="sgd", verbset_path="", selftest=True, 
-#                                 cls_option={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
-#     vs_file = pickle.load(open(verbset_path, "rb"))
-#     verbs = vs_file.keys()
-#     verbsets = deepcopy(vs_file)
-#     set_names = [os.path.join(dataset_dir, v) for v in verbs]
-#     for idd, dir in enumerate(set_names):
-#         modelfilename = os.path.join(dir, "model_%s.pkl2"%modeltype)
-#         dspath = os.path.join(dir, "dataset.svmlight")
-#         print "Batch trainer (bolt %s):started\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
-#         train_boltclassifier(dataset_path=dspath, output_path=modelfilename, modeltype=modeltype)
-#         print "Batch trainer (bolt %s):done!\t dir= %s (%d out of %d)"%(modeltype, dir, idd+1, len(set_names))
-#         if selftest:
-#             print "Batch trainer selftest..."
-#             _selftest(modelfilename, dspath)
-#             print "Batch trainer selftest... done!"
-# 
-# def train_boltclassifier(dataset_path="", output_path="", modeltype="sgd", 
-#                             cls_option={"loss":"hinge", "epochs":10, "lambda":0.0001, "reg":"L2"}):
-#     classifier = BoltClassifier()
-#     classifier.read_traincases(dataset_path)
-#     classifier.train(model=modeltype, opt=cls_option)
-#     classifier.save_model(output_path)
 
 
 
