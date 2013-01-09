@@ -43,7 +43,7 @@ try:
     import scipy as sp
 except:
     raise ImportError
-from feature_extractor import FeatureExtractor, proc_easyadapt
+from feature_extractor import FeatureExtractor, SentenceFeatures, proc_easyadapt
 from tool.sparse_matrices import *
 from tool.seq_chunker import chunk_gen
 
@@ -156,8 +156,10 @@ class CaseMaker(object):
         _labellist_int = []
         _labellist_str = []
         for sid, sdic in enumerate(v_corpus):
+            v = sdic["label_corr"]
+            _labelid = cls2id[v]
             try:
-                fe = SentenceFeatures(sdic["parsed_corr"], verb=sdic["label_corr"], v_idx=sdic["vidx_corr"])
+                fe = SentenceFeatures(sdic["parsed_corr"], verb=v, v_idx=sdic["vidx_corr"])
                 if "chunk" in self.featuretypes:
                     fe.chunk()
                 if "3gram" in self.featuretypes:
@@ -177,6 +179,7 @@ class CaseMaker(object):
                 if "topic" in self.featuretypes:
                     pass
                 augf = proc_easyadapt(fe.features, domain=domain)
+                assert augf and _labelid and v
                 _flist.append(augf)
                 _labellist_int.append(_labelid)
                 _labellist_str.append(v)
@@ -184,11 +187,10 @@ class CaseMaker(object):
                 logging.debug(pformat("CaseMaker feature extraction: couldn't find the verb"))
             except:
                 print v
-                raise
-        else:
-            _flist.append(self.nullfeature)
-            _labellist_int.append(_labelid)
-            _labellist_str.append(v)
+        # else:
+            # _flist.append(self.nullfeature)
+            # _labellist_int.append(_labelid)
+            # _labellist_str.append(v)
         return _flist, _labellist_str, _labellist_int
 
 
@@ -220,11 +222,11 @@ class CaseMaker(object):
                 del(_corpusdict)
 
                 if self.easyadapt:
-                    _tgtcorpus = self.tgtcorpus[setname]
+                    _tgtc = self.tgtcorpus[setname]
                     try:
-                        _flist, _labellist_str, _labellist_int = self._get_features_tgt(tgtc, _classname2id, "tgt")
+                        _flist, _labellist_str, _labellist_int = self._get_features_tgt(_tgtc, _classname2id, "tgt")
                     except:
-                        print tgtc
+                        print _tgtc
                         raise
                     _casedict["X_str"] += _flist
                     _casedict["Y_str"] += _labellist_str
@@ -318,7 +320,7 @@ class ParallelCaseMaker(CaseMaker):
         vcorpus_filenames = glob.glob(os.path.join(self.corpusdir, "*.pkl2"))
         v_names = [os.path.basename(path).split(".")[0] for path in vcorpus_filenames]
         self.vcorpus_filedic = {vn : fn for (vn, fn) in zip(v_names, vcorpus_filenames)}
-        self.nullfeature = {"NULL":1}
+        self.nullfeature = {"NULL":0}
         self.featuretypes = f_types # list like object is expected
         self.numts = instance_num
         self.easyadapt = easyadapt
@@ -336,7 +338,8 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None,
             tgtc_full = pickle.load(f)
     else:
         tgtc_full = None
-    sep_keys = [wl for wl in chunk_gen(vs_full.keys(), (len(vs_full)/(pool_num*4))+1)]
+    # sep_keys = [wl for wl in chunk_gen(vs_full.keys(), (len(vs_full)/(pool_num*8))+1)]
+    sep_keys = [wl for wl in chunk_gen(vs_full.keys(), 2)]
     vs_chunks = []
     tgtc_chunks = []
     for wl in sep_keys:
