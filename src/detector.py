@@ -374,7 +374,7 @@ class SupervisedDetector(DetectorBase):
                 RR = float(1.0/rank_gold)
             except:
                 RR = 0.0
-            return (1, RR, suggestion) if rank_org > _k else (0, RR, suggestion)
+            return (1, RR, suggestion) if rank_org > k else (0, RR, suggestion)
         except IndexError:
             raise WordNotInCsetError
 
