@@ -372,16 +372,17 @@ class SupervisedDetector(DetectorBase):
     def _kbest_detector_loose(self, probdist=None, k=5, orgidx=None, goldidx=None):
         try:
             probdist = probdist.tolist()
+            _k = int(float(len(probdist)*(float(k)/50))) + 1
             probs = [(i, p) for i, p in enumerate(probdist)]
             probs.sort(key=lambda x: x[1], reverse=True)
             rank_org = [i for i, t in enumerate(probs) if t[0] == orgidx][0]
             suggestion = probs[:k]
             try:
                 rank_gold = [i for i, t in enumerate(probs) if t[0] == goldidx][0]
-                RR = float(1.0/rank_gold) if rank_gold < k else 0.0
+                RR = float(1.0/rank_gold)
             except:
                 RR = 0.0
-            return (1, RR, suggestion) if rank_org > k else (0, RR, None)
+            return (1, RR, suggestion) if rank_org > _k else (0, RR, suggestion)
         except IndexError:
             raise WordNotInCsetError
 
@@ -458,8 +459,9 @@ class SupervisedDetector(DetectorBase):
                                                                 "incorr": case["test_text"]})
                     self.report_each_verb[setname].append({"docid": id, "detected": sysout})
                     try:
-                        if sysout == 1:
-                            self.MRR_RV.append(RR)
+                        # if sysout == 1:
+                            # self.MRR_RV.append(RR)
+                        self.MRR_RV.append(RR)
                         self.list_oov_cp.append(case["oov_cp"])
                     except:
                         pass
@@ -475,6 +477,7 @@ class SupervisedDetector(DetectorBase):
                     # print case["test_text"]
                     # print "\n"
                     # traceback.print_exc(file=sys.stdout)
+                    self.MRR_RV.append(0.0)
                     self.syslabels.append(0)
                     self.truelabels.append(1)
                     self.listRV.append(1)
@@ -486,6 +489,7 @@ class SupervisedDetector(DetectorBase):
             except WordNotInCsetError:
                 if case["type"] == "RV":
                     # print "detector:: Error in RV case (perhaps WordNotInCsetError): %s"%setname
+                    self.MRR_RV.append(0.0)
                     self.syslabels.append(0)
                     self.truelabels.append(1)
                     self.listRV.append(1)
