@@ -45,6 +45,7 @@ class BCluster(object):
             raise
         return _bits
 
+
 # just add prefix to given feature name
 sourceF = lambda x: "S:"+x
 targetF = lambda x: "T:"+x
@@ -53,8 +54,8 @@ commonF = lambda x: "C:"+x
 def proc_easyadapt(fdic, domain=None):
     # augF = {commonF(fn):1 for fn in fdic}
     augF = fdic
-    sF = {sourceF(fn):1 for fn in fdic} if domain == "src" else {}
-    tF = {targetF(fn):1 for fn in fdic} if domain == "tgt" else {}
+    sF = {sourceF(fn): 1 for fn in fdic} if domain == "src" else {}
+    tF = {targetF(fn): 1 for fn in fdic} if domain == "tgt" else {}
     augF.update(sF)
     augF.update(tF)
     return augF
@@ -107,7 +108,6 @@ class SentenceFeatures(object):
             logging.debug(pformat(tags))
             raise
 
-
     def _find_verb_idx(self):
         verbpos = [idx for idx, sufpos in enumerate(zip(self.SUF, self.POS)) 
                     if sufpos[0] == self.v and "VB" in sufpos[1]]
@@ -122,20 +122,16 @@ class SentenceFeatures(object):
             else:
                 return None
 
-
     def getfeatures(self):
         self.bow()
         self.length()
         return self.features
 
-
     def gen_fn(self, l=None):
         return "_".join(l)
 
-
     def is_withoffset(self, tag=None):
         return True if tag[1].split()[0].isdigit() else False
-
 
     def get_SRL(self):
         _t = [t[self.col_pre] for t in self.tags if not t[self.col_pre] == "-"]
@@ -144,7 +140,6 @@ class SentenceFeatures(object):
             srl.append(self.get_BIEStag(self.col_pre+i+1, self.tags))
         print srl
         return srl
-
 
     def get_BIEStag(self, col=None, tag=None):
         _col = [t[col] for t in self.tags]
@@ -157,7 +152,6 @@ class SentenceFeatures(object):
             return sorted(_be + _s, key=lambda x:x[1])
         except:
             return None
-
 
     def ngrams(self, n=5, v_idx=None):
         """
@@ -436,8 +430,8 @@ class SimpleFeatureExtractor(FeatureExtractorBase):
             self.features.update(r_nearestNN)
             lnnbc = BCluster.getbits(lnn)
             rnnbc = BCluster.getbits(rnn)
-            l_nearestNN = {"NNLBC%d_%s"%(d,lnnbc[:d]):1 for d in [4,5,6,7,8,9]} if lnnbc else {}
-            r_nearestNN = {"NNRBC%d_%s"%(d,rnnbc[:d]):1 for d in [4,5,6,7,8,9]} if rnnbc else {}
+            l_nearestNN = {"NNLBC%d_%s"%(d,lnnbc[:d]):1 for d in [7,8,9]} if lnnbc else {}
+            r_nearestNN = {"NNRBC%d_%s"%(d,rnnbc[:d]):1 for d in [7,8,9]} if rnnbc else {}
             self.features.update(l_nearestNN)
             self.features.update(r_nearestNN)
         except:

@@ -21,7 +21,7 @@ import cPickle as pickle
 import numpy as np
 from sklearn.datasets import svmlight_format
 from sklearn import cross_validation
-from feature_extractor import FeatureExtractor
+from feature_extractor import FeatureExtractor, SentenceFeatures, proc_easyadapt
 import bolt
 import tool.altword_generator as altgen
 from tool.sparse_matrices import *
@@ -226,7 +226,7 @@ class SupervisedDetector(DetectorBase):
             fe.ep()
         # print pformat(fe.features)
         self.FE_errorC = fe.VE_count
-        return fe.features
+        return proc_easyadapt(fe.features, domain="tgt")
 
 
     def _bolt_pred(self, model=None):
@@ -352,18 +352,10 @@ class SupervisedDetector(DetectorBase):
         """
         try:
             probdist = probdist.tolist()
-            # logging.debug(pformat(("kbest_detector: probdist = ", probdist)))
-            # logging.debug(pformat(("kbest_detector: original word's idx = ", orgidx)))
             orgscore = probdist[orgidx]
-            probs = [(i, p) for i, p in enumerate(probdist) if i != orgidx]#
+            probs = [(i, p) for i, p in enumerate(probdist) if i != orgidx]
             probs.sort(key=lambda x: x[1], reverse=True)
-            # logging.debug(pformat(("kbest_detector: probdist without orgidx = ", str(probs))))
             kbscore = sum([p[1] for p in probs[:k]])
-            # logging.debug(pformat(("kbest_detector: original word's score = ", orgidx)))
-            # logging.debug(pformat(("kbest_detector: original word's score = ", orgidx)))
-            # print pformat(("kbest_detector: org words score sum = ", orgscore))
-            # print pformat(("kbest_detector: kbest words score sum = ", kbscore))
-            # print
             return 1 if kbscore > orgscore else 0
         except IndexError:
             raise WordNotInCsetError
@@ -401,7 +393,6 @@ class SupervisedDetector(DetectorBase):
             named = None
         finally:
             return named
-
 
     def detect(self):
         self.truelabels = []
@@ -514,8 +505,6 @@ class SupervisedDetector(DetectorBase):
             return {"TP": TP, "FP":FP, "TN":TN, "FN":FN}
         else:
             return None
-
-
 
     def mk_report(self, expconf={}):
         """
