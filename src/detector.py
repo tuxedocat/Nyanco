@@ -118,25 +118,26 @@ class SupervisedDetector(DetectorBase):
         self.features = features
         self.FE_errorC = 0
         self.k = ranker_k
+        self.modeltype = modeltype
         if os.path.basename(self.tempdir) == "dataset":
             self.tempdir = os.path.join(path_dataset_root, os.pardir)
         if not os.path.exists(self.tempdir):
             os.makedirs(self.tempdir)
     
-        widgets = ['SupervisedDetector: loading models...  ', 'loaded ', progressbar.Counter(), ' model(s), (', progressbar.Timer(), ')']
-        pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(self.verb2modelpath)).start()
-        for i, (setname, modelroot) in enumerate(self.verb2modelpath.iteritems()):
-            try:
-                with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
-                    # print "SupervisedDetector reading models... %d / %d"%(i+1, len(self.verb2modelpath))
-                    self.models[setname] = pickle.load(mf)
-            except:
-                self.models[setname] = None
-            with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
-                self.fmaps[setname] = pickle.load(mf)
-            with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
-                self.label2id[setname] = pickle.load(mf)
-            pbar.update(i+1)
+        # widgets = ['SupervisedDetector: loading models...  ', 'loaded ', progressbar.Counter(), ' model(s), (', progressbar.Timer(), ')']
+        # pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(self.verb2modelpath)).start()
+        # for i, (setname, modelroot) in enumerate(self.verb2modelpath.iteritems()):
+            # try:
+                # with open(os.path.join(modelroot,"model_"+modeltype+".pkl2"), "rb") as mf:
+                    # # print "SupervisedDetector reading models... %d / %d"%(i+1, len(self.verb2modelpath))
+                    # self.models[setname] = pickle.load(mf)
+            # except:
+                # self.models[setname] = None
+            # with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
+                # self.fmaps[setname] = pickle.load(mf)
+            # with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
+                # self.label2id[setname] = pickle.load(mf)
+            # pbar.update(i+1)
         if self.toolkit == "sklearn":
             self.datapath = [os.path.join(self.tempdir, "X.npz"), os.path.join(self.tempdir, "Y.npy")]
         elif self.toolkit == "bolt":
@@ -176,7 +177,7 @@ class SupervisedDetector(DetectorBase):
                         self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
                         self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
                         self.testcases[testkey]["type"] = "RV"
-                        self.testcases[testkey]["features"] = self.mk_features(tags=test_tags[cpid], v=incorr)
+                        self.testcases[testkey]["features"] = self.mk_features(tags=test_tags[cpid], v=incorr, v_idx=cp_pos)
                         self.case_keys.append(testkey)
                 else:
                     checkpoints = self.__addcheckpoints(doc)
@@ -197,15 +198,15 @@ class SupervisedDetector(DetectorBase):
                                     self.testcases[testkey]["incorrect_label"] = altgen.AlternativeReader.get_lemma(incorr)
                                     self.testcases[testkey]["gold_label"] = altgen.AlternativeReader.get_lemma(gold)
                                     self.testcases[testkey]["type"] = ""
-                                    self.testcases[testkey]["features"] = self.mk_features(tags=test_tags[s_id], v=incorr)
+                                    self.testcases[testkey]["features"] = self.mk_features(tags=test_tags[s_id], v=incorr, v_idx=cp_pos)
                                     self.case_keys.append(testkey)
             except Exception, e:
                 logging.debug(pformat(("error catched in _mk_cases, docname", docname, e)))
                 print pformat(e)
                 raise
 
-    def mk_features(self, tags=[], v=""):
-        fe = FeatureExtractor(tags=tags, verb=v)
+    def mk_features(self, tags=[], v="", v_idx=None):
+        fe = FeatureExtractor(tags=tags, verb=v, v_idx=v_idx)
         if "chunk" in self.features:
             fe.chunk()
         if "3gram" in self.features:
@@ -246,25 +247,21 @@ class SupervisedDetector(DetectorBase):
             return model.predict_prob(X)[0]
     
     def _load_model(self, setname):
+        m = None
+        fm = None
+        l2id = None
         try:
-            assert self.models[setname] and self.models[setname] is not None
-        except AssertionError:
-            try:
-                modelroot = self.verb2modelpath[setname]
-                with open(os.path.join(modelroot,"model_"+self.modeltype+".pkl2"), "rb") as mf:
-                    self.models[setname] = pickle.load(mf)
-                with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
-                    self.fmaps[setname] = pickle.load(mf)
-                with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
-                    self.label2id[setname] = pickle.load(mf)
-            except:
-                print pformat("Setname %s : model is not found")
-                self.models[setname] = None
-                self.fmaps[setname] = None
-                self.label2id[setname] = None
-
-        finally:
-            return (self.models[setname], self.fmaps[setname], self.label2id[setname])
+            modelroot = self.verb2modelpath[setname]
+            print os.path.join(modelroot,"model_"+self.modeltype+".pkl2")
+            with open(os.path.join(modelroot,"model_"+self.modeltype+".pkl2"), "rb") as mf:
+                m = pickle.load(mf)
+            with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
+                fm = pickle.load(mf)
+            with open(os.path.join(modelroot,"label2id.pkl2"), "rb") as mf:
+                l2id = pickle.load(mf)
+        except Exception, e:
+            pass
+        return m, fm, l2id
 
 
     def get_classification(self):
@@ -272,69 +269,72 @@ class SupervisedDetector(DetectorBase):
         get classification results
         """
         print "\nFeatureExtraction:: num. of value errors is %d \n\n"%FeatureExtractor.VE_count
-        widgets = ['SupervisedDetector: getting prediction from the model... ', progressbar.Counter(), ' instance(s) processed, (', progressbar.Timer(), ')']
-        pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(self.case_keys)).start()
-        for n, testid in enumerate(self.case_keys):
-            case = self.testcases[testid]
-            strfeature = case["features"]
-            setname = case["incorrect_label"]
-            y = case["gold_label"]
-            try:
-                # model, fmap, lmap = self._load_model(setname)
-                # assert model is not None
-                model = self.models[setname] 
-                fmap = self.fmaps[setname]
-                lmap = self.label2id[setname]
-                # logging.debug("SupervisedDetector: model for %s is found :)"%setname)
-                case["incorr_classid"] = lmap[setname]
-                case["is_cp_in_set"] = True
-            except KeyError, AssertionError:
-                # logging.debug("SupervisedDetector: model for %s is not found :("%setname)
-                model = None
-                fmap = None
-                lmap = None
-                case["incorr_classid"] = None
-                case["is_cp_in_set"] = False
-                if case["type"] == "RV":
-                    case["oov_cp"] = True
-            try:
-                classid = lmap[y]
-                case["gold_classid"] = classid
-                case["is_gold_in_Vset"] = True
-            except (KeyError, TypeError):
-                case["gold_classid"] = None
-                case["is_gold_in_Vset"] = False
-            if model and fmap:
+        snames = defaultdict(list)
+        for cpid, cdic in self.testcases.iteritems():
+            snames[cdic["incorrect_label"]].append(cpid)
+        for sn, testidlist in snames.iteritems():
+            model, fmap, lmap = self._load_model(sn)
+            self.label2id[sn] = lmap
+            for testid in testidlist:
+                case = self.testcases[testid]
+                strfeature = case["features"]
+                setname = case["incorrect_label"]
+                y = case["gold_label"]
                 try:
-                    _X = fmap.transform(strfeature)
-                    _Y = np.array([classid])
-                    if self.toolkit == "bolt":
-                        with open(self.datapath+"temp", "wb") as f:
-                            svmlight_format.dump_svmlight_file(_X, _Y, f, comment=None)
-                        with open(self.datapath+"temp", "rb") as f:
-                            cleaned = f.readlines()[2:]
-                        with open(self.datapath, "wb") as f:
-                            f.writelines(cleaned)
-                            os.remove(self.datapath+"temp")
-                        output = self._bolt_pred(model)
-                    elif self.toolkit == "sklearn":
-                        output = self._sklearn_pred(model, _X, _Y)
-                        output_classprob = self._sklearn_pred_prob(model, _X, _Y)
-                        case["classifier_output"] = output
-                        case["classifier_classprob"] = output_classprob
-                    else:
-                        case["classifier_output"] = None
-                        case["classifier_classprob"] = None
-                except WordNotInCsetError:
-                    logging.debug(pformat("Word is not in Cset...?"))
-                    case["classifier_output"] = None 
-                    case["classifier_classprob"] = None 
-                except Exception, e:
-                    print pformat(e)
-            else:
-                case["classifier_output"] = None
-                case["classifier_classprob"] = None
-            pbar.update(n+1)
+                    # model, fmap, lmap = self._load_model(setname)
+                    assert model is not None
+                    # model = self.models[setname] 
+                    # fmap = self.fmaps[setname]
+                    # lmap = self.label2id[setname]
+                    # logging.debug("SupervisedDetector: model for %s is found :)"%setname)
+                    case["incorr_classid"] = lmap[setname]
+                    case["is_cp_in_set"] = True
+                except (KeyError, AssertionError):
+                    # logging.debug("SupervisedDetector: model for %s is not found :("%setname)
+                    # model = None
+                    # fmap = None
+                    # lmap = None
+                    case["incorr_classid"] = None
+                    case["is_cp_in_set"] = False
+                    if case["type"] == "RV":
+                        case["oov_cp"] = True
+                try:
+                    classid = lmap[y]
+                    case["gold_classid"] = classid
+                    case["is_gold_in_Vset"] = True
+                except (KeyError, TypeError):
+                    case["gold_classid"] = None
+                    case["is_gold_in_Vset"] = False
+                if model and fmap:
+                    try:
+                        _X = fmap.transform(strfeature)
+                        _Y = np.array([classid])
+                        if self.toolkit == "bolt":
+                            with open(self.datapath+"temp", "wb") as f:
+                                svmlight_format.dump_svmlight_file(_X, _Y, f, comment=None)
+                            with open(self.datapath+"temp", "rb") as f:
+                                cleaned = f.readlines()[2:]
+                            with open(self.datapath, "wb") as f:
+                                f.writelines(cleaned)
+                                os.remove(self.datapath+"temp")
+                            output = self._bolt_pred(model)
+                        elif self.toolkit == "sklearn":
+                            output = self._sklearn_pred(model, _X, _Y)
+                            output_classprob = self._sklearn_pred_prob(model, _X, _Y)
+                            case["classifier_output"] = output
+                            case["classifier_classprob"] = output_classprob
+                        else:
+                            case["classifier_output"] = None
+                            case["classifier_classprob"] = None
+                    except WordNotInCsetError:
+                        logging.debug(pformat("Word is not in Cset...?"))
+                        case["classifier_output"] = None 
+                        case["classifier_classprob"] = None 
+                    except Exception, e:
+                        print pformat(e)
+                else:
+                    case["classifier_output"] = None
+                    case["classifier_classprob"] = None
 
 
     def _kbest_detector(self, probdist=None, k=5, orgidx=None):
@@ -372,16 +372,17 @@ class SupervisedDetector(DetectorBase):
     def _kbest_detector_loose(self, probdist=None, k=5, orgidx=None, goldidx=None):
         try:
             probdist = probdist.tolist()
+            _k = int(float(len(probdist)*(float(k)/50))) + 1
             probs = [(i, p) for i, p in enumerate(probdist)]
             probs.sort(key=lambda x: x[1], reverse=True)
             rank_org = [i for i, t in enumerate(probs) if t[0] == orgidx][0]
             suggestion = probs[:k]
             try:
                 rank_gold = [i for i, t in enumerate(probs) if t[0] == goldidx][0]
-                RR = float(1.0/rank_gold) if rank_gold < k else 0.0
+                RR = float(1.0/rank_gold)
             except:
                 RR = 0.0
-            return (1, RR, suggestion) if rank_org > k else (0, RR, None)
+            return (1, RR, suggestion) if rank_org > _k else (0, RR, suggestion)
         except IndexError:
             raise WordNotInCsetError
 
@@ -458,8 +459,9 @@ class SupervisedDetector(DetectorBase):
                                                                 "incorr": case["test_text"]})
                     self.report_each_verb[setname].append({"docid": id, "detected": sysout})
                     try:
-                        if sysout == 1:
-                            self.MRR_RV.append(RR)
+                        # if sysout == 1:
+                            # self.MRR_RV.append(RR)
+                        self.MRR_RV.append(RR)
                         self.list_oov_cp.append(case["oov_cp"])
                     except:
                         pass
@@ -475,6 +477,7 @@ class SupervisedDetector(DetectorBase):
                     # print case["test_text"]
                     # print "\n"
                     # traceback.print_exc(file=sys.stdout)
+                    self.MRR_RV.append(0.0)
                     self.syslabels.append(0)
                     self.truelabels.append(1)
                     self.listRV.append(1)
@@ -486,6 +489,7 @@ class SupervisedDetector(DetectorBase):
             except WordNotInCsetError:
                 if case["type"] == "RV":
                     # print "detector:: Error in RV case (perhaps WordNotInCsetError): %s"%setname
+                    self.MRR_RV.append(0.0)
                     self.syslabels.append(0)
                     self.truelabels.append(1)
                     self.listRV.append(1)
