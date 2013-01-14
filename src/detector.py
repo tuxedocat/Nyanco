@@ -252,7 +252,7 @@ class SupervisedDetector(DetectorBase):
         l2id = None
         try:
             modelroot = self.verb2modelpath[setname]
-            print os.path.join(modelroot,"model_"+self.modeltype+".pkl2")
+            # print os.path.join(modelroot,"model_"+self.modeltype+".pkl2")
             with open(os.path.join(modelroot,"model_"+self.modeltype+".pkl2"), "rb") as mf:
                 m = pickle.load(mf)
             with open(os.path.join(modelroot,"featuremap.pkl2"), "rb") as mf:
@@ -272,7 +272,9 @@ class SupervisedDetector(DetectorBase):
         snames = defaultdict(list)
         for cpid, cdic in self.testcases.iteritems():
             snames[cdic["incorrect_label"]].append(cpid)
-        for sn, testidlist in snames.iteritems():
+        widgets = ['SupervisedDetector: get model scores... done for ', progressbar.Counter(), ' model(s), (', progressbar.Timer(), ')']
+        pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(snames)).start()
+        for i, (sn, testidlist) in enumerate(snames.iteritems()):
             model, fmap, lmap = self._load_model(sn)
             self.label2id[sn] = lmap
             for testid in testidlist:
@@ -335,6 +337,7 @@ class SupervisedDetector(DetectorBase):
                 else:
                     case["classifier_output"] = None
                     case["classifier_classprob"] = None
+            pbar.update(i+1)
 
 
     def _kbest_detector(self, probdist=None, k=5, orgidx=None):
@@ -411,7 +414,8 @@ class SupervisedDetector(DetectorBase):
             try:
                 setname = case["incorrect_label"]
                 self.setnames.append(setname)
-                if setname in self.NonTargetCP:
+                # if setname in self.NonTargetCP:
+                if not setname in self.verbset:
                     raise NonTargetCP
                 assert case["is_cp_in_set"] == True
                 assert (case["classifier_output"] is not None) or (case["classifier_classprob"] is not None)
@@ -474,7 +478,6 @@ class SupervisedDetector(DetectorBase):
                     self.listRV.append(1)
                     self.listRV_sys.append(0)
                 else:
-                    pass
                     self.syslabels.append(0)
                     self.truelabels.append(0)
             except WordNotInCsetError:
@@ -486,7 +489,6 @@ class SupervisedDetector(DetectorBase):
                     self.listRV.append(1)
                     self.listRV_sys.append(0)
                 else:
-                    pass
                     self.syslabels.append(0)
                     self.truelabels.append(0)
             except NonTargetCP:
