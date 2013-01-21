@@ -1,0 +1,29 @@
+E1_L8r50_SGDMHLossL2_5gram: 
+    pipeline: 
+        # - make_features
+        # - train
+        - detect
+    confusion_set: ../sandbox/classify/ConfusionSets_Lang8_FceVoc500Only_r50.pkl2
+    dir_ukwac: ../../../cl/nldata/ukWaC/parsed/
+    num_tsamples: 20000
+    dir_out: ../sandbox/classify/
+    parallel_num: 18
+    verbcorpus_dir: ../sandbox/classify/vc_fceVoc_ukwac_30000/
+    features: #ngram, dep, ne, srl
+        - 5gram
+        - chunk
+        # - dep
+        # - srl
+        # - ne
+    classifier: sgd_modifiedhuber_l2
+    toolkit: sklearn
+    # easyadapt: True
+    # tgtcorpus: ../sandbox/lang8/l8_parsed_fine.pkl2
+    classifier_args: {loss: modified_huber, reg: l2, epochs: 7, alpha : 0.0001, multicpu: -1} # loss: huber, reg: l1, epoch: 5
+    dir_models: ../sandbox/classify/models_l8r50_5gram
+    fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
+    detector: classifier_ranker # 1best, kbest, ranker
+    detector_options: {ranker_k: 5, grid_k: [1, 50]}
+    dir_log: ../log/Test_large/
+
+

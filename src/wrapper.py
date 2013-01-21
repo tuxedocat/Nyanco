@@ -102,6 +102,8 @@ class Experiment(object):
                     d_algo = "kbest"
                 elif "rank" in self.dtype:
                     d_algo = "ranker"
+                elif "conf" in self.dtype:
+                    d_algo = "confidence"
                 else:
                     d_algo = "suddendeath"
                 log_conf = {"__exp_name__": self.name, "features": str(self.features), 

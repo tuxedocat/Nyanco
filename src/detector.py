@@ -387,11 +387,31 @@ class SupervisedDetector(DetectorBase):
             raise WordNotInCsetError
 
 
+    def _confidence_detector(self, probdist=None, k=5, orgidx=None, goldidx=None):
+        try:
+            probdist = probdist.tolist()
+            _k = sorted([0.02*i for i in range(1,51)], reverse=True)[k-1]
+            probs = [(i, p) for i, p in enumerate(probdist)]
+            probs.sort(key=lambda x: x[1], reverse=True)
+            rank_org = [i for i, t in enumerate(probs) if t[0] == orgidx][0] + 1
+            conf_org = probdist[orgidx] 
+            suggestion = probs[:k]
+            try:
+                rank_gold = [i for i, t in enumerate(probs) if t[0] == goldidx][0] + 1
+                RR = float(1.0/rank_gold)
+            except:
+                RR = 0.0
+            return (1, RR, suggestion) if conf_org < _k else (0, RR, suggestion)
+        except IndexError:
+            raise WordNotInCsetError
+
+
     def _basedetector(self, org=None, cls_out=None):
         if org == cls_out:
             return 0
         else:
             return 1
+
 
     def _postprocess_suggestion(self, suggestions=None, label2id=None):
         try:
@@ -436,6 +456,8 @@ class SupervisedDetector(DetectorBase):
                     sysout = self._kbest_detector(probdist=probdist, k=self.k, orgidx=org)
                 elif self.d_algo == "ranker":
                     sysout, RR, suggestion = self._kbest_detector_loose(probdist=probdist, k=self.k, orgidx=org, goldidx=gold)
+                elif self.d_algo == "confidence":
+                    sysout, RR, suggestion = self._confidence_detector(probdist=probdist, k=self.k, orgidx=org, goldidx=gold)
                 else:
                     sysout = self._basedetector(org=org, cls_out=cls_out)
                 self.syslabels.append(sysout)
