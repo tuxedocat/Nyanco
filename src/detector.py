@@ -434,8 +434,8 @@ class SupervisedDetector(DetectorBase):
             try:
                 setname = case["incorrect_label"]
                 self.setnames.append(setname)
-                # if setname in self.NonTargetCP:
-                if not setname in self.verbset:
+                if setname in self.NonTargetCP:
+                # if not setname in self.verbset:
                     raise NonTargetCP
                 assert case["is_cp_in_set"] == True
                 assert (case["classifier_output"] is not None) or (case["classifier_classprob"] is not None)
@@ -468,10 +468,13 @@ class SupervisedDetector(DetectorBase):
                     self.listRV.append(1)
                     self.listRV_sys.append(sysout)
                     _suggestion = self._postprocess_suggestion(suggestion, l2id)
-                    self.suggestion_results[id] = {"setname": setname, "suggestion": _suggestion, 
-                                                   "detected": sysout, "gold": case["gold_text"], 
-                                                   "incorr": case["test_text"]}
+                    self.suggestion_results[id] = {"setname": setname, "gold_verb":case["gold_label"],
+                                                    "suggestion": _suggestion, 
+                                                    "detected": sysout, "gold": case["gold_text"], 
+                                                    "incorr": case["test_text"]}
                     self.report_each_verb_fine[setname].append({"docid": id, "detected": sysout, 
+                                                                "gold_verb": case["gold_label"],
+                                                                "setname": setname,
                                                                 "gold": case["gold_text"], 
                                                                 "incorr": case["test_text"]})
                     self.report_each_verb[setname].append({"docid": id, "detected": sysout})
