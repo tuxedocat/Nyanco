@@ -24,7 +24,7 @@ E4_L8r50DA_SGDMHLossL2_5gram:
     fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
     detector: classifier_ranker # 1best, kbest, ranker
     detector_options: {ranker_k: 5, grid_k: [1, 50]}
-    dir_log: ../log_thesis/E4_L8r50DA_SGDMHLossL2_5gramchunkbc
+    dir_log: ../log_thesis/E4_L8r50DA_SGDMHLossL2_5gramchunkbc_2
 
 
 

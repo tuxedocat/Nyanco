@@ -1,7 +1,7 @@
 tiny_test: 
     pipeline: 
-        # - make_features
-        # - train
+        - make_features
+        - train
         - detect
     confusion_set: ../sandbox/classify/ConfusionSets_forTest.pkl2 
     dir_ukwac: ../sandbox/classify/tiny/

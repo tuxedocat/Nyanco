@@ -226,8 +226,9 @@ class CaseMaker(object):
                     try:
                         _flist, _labellist_str, _labellist_int = self._get_features_tgt(_tgtc, _classname2id, "tgt")
                     except:
-                        print _tgtc
-                        raise
+                        # print _tgtc
+                        # raise
+                        pass
                     _casedict["X_str"] += _flist
                     _casedict["Y_str"] += _labellist_str
                     _casedict["Y"] += _labellist_int
@@ -302,7 +303,8 @@ class CaseMaker(object):
 
 class ParallelCaseMaker(CaseMaker):
 
-    def __init__(self, vcdir=None, vs={}, dsdir=None, f_types=None, instance_num=30000, easyadapt=False, tgtcorpus={}):
+    def __init__(self, vcdir=None, vs={}, dsdir=None, f_types=None, instance_num=30000, 
+                 easyadapt=False, tgtcorpus={}):
         if not vcdir and vs and dsdir and f_types:
             print "ParallelCaseMaker: Invalid data path(s)... aborted."
             raise TypeError
@@ -344,9 +346,13 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None,
     tgtc_chunks = []
     for wl in sep_keys:
         vs_chunks.append({w:vs_full[w] for w in wl})
-        tgtc_chunks.append({w:tgtc_full[w] for w in wl})
-    if not tgtc_full:
+    if tgtc_full:
+        for wl in sep_keys:
+            tgtc_chunks.append({w:tgtc_full[w] for w in wl})
+    else:
         tgtc_chunks = [None for item in vs_chunks]
+    print vs_chunks[:5]
+    print tgtc_chunks[:5]
     for vs, tgtc in zip(vs_chunks, tgtc_chunks):
         args.append({"vcdir":verbcorpus_dir, 
                      "dsdir":dataset_dir, 
@@ -355,6 +361,7 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None,
                      "numts":instance_num,
                      "easyadapt":easyadapt,
                      "tgtcorpus":tgtc})
+    print pformat(args)
     mp = Pool(processes=pool_num, maxtasksperchild=1)
     mp.map(_make_fvectors_p, args)
     mp.close()
