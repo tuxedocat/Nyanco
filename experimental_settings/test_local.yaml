@@ -1,0 +1,25 @@
+test_local: 
+    pipeline: 
+        - make_features
+        - train
+        - detect
+    confusion_set: ../sandbox/classify/ConfusionSets_forTest.pkl2 
+    dir_ukwac: ../sandbox/classify/vc_test_moc/
+    dir_out: ../sandbox/classify/vc_test_moc/
+    parallel_num: 1
+    features: 
+        - 5gram
+        - chunk
+        # - dep
+        # - srl
+        # - ne
+    classifier: sgd
+    toolkit: sklearn
+    classifier_args: {loss: log, reg: l2, epochs: 10, alpha : 0.0001, multicpu: -1} # loss: huber, reg: l1, epoch: 5
+    verbcorpus_dir: ../sandbox/classify/vc_test/
+    dir_models: ../sandbox/classify/models_localtest/
+    num_tsamples: 100
+    fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
+    detector: classifier_ranker
+    detector_options: {ranker_k: 5, grid_k: [1, 16]}
+    dir_log: ../log/localtest/
