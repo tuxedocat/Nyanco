@@ -32,16 +32,16 @@ def suggest_for_testset(corpuspath="", cspath="",
         testdata = pickle.load(f)
     with open(cspath) as f:
         confusionsets = pickle.load(f)
-    sennapath = unicode(os.environ["SENNAPATH"]) + u"/"
+    sennapath = unicode(os.environ["SENNAPATH"])
     parser = SennaParser(sennapath)
     for case in testdata:
         try:
             result = suggestone(confusionsets, case, modelrootpath, modeltype, features, parser)
             results.append(result)
         except AssertionError:
-            pass
-        except:
-            print "exception: ", pformat(case)
+            print "AssertionError in cp:: \n", pformat(case)
+        except Exception, e:
+            print pformat(e)
     return results
 
 
@@ -56,7 +56,7 @@ def suggestone(cs=None, case=None, modelroot="", modeltype="", features=None, pa
     modelroot: string
         path to root dir. of models
     features: list
-        e.g., ["5-gram", "chunk"]
+        e.g., ["5gram", "chunk"]
     """
     raw_sent = case[0]
     v_idx = case[1]
@@ -65,26 +65,28 @@ def suggestone(cs=None, case=None, modelroot="", modeltype="", features=None, pa
     assert setname in cs
     parsed = parser.parseSentence(" ".join(raw_sent))
     features = get_features(parsed, setname, v_idx, features)
+    print pformat(features)
     model, fmap, label2id = _load_model(setname, modelroot, modeltype)
     if model and fmap and label2id:
         ic_clsid = label2id[setname]
         X = fmap.transform(features)
         Y = label2id[gold] if gold in label2id else None
         probdist = model.predict_prob(X)[0]
-        if probdist:
+        if probdist is not None:
             detected, RR, suggestion = _kbest_rank_detector(probdist, 5, ic_clsid, Y)
+            suggestion = _postprocess_suggestion(suggestion, label2id)
             return detected, RR, suggestion
 
 
 
-def _kbest_rank_detector(self, probdist=None, k=5, orgidx=None, goldidx=None):
+def _kbest_rank_detector(probdist=None, k=5, orgidx=None, goldidx=None):
     try:
         probdist = probdist.tolist()
         _k = int(float(len(probdist)*(float(k)/50))) + 1
         probs = [(i, p) for i, p in enumerate(probdist)]
         probs.sort(key=lambda x: x[1], reverse=True)
-        rank_org = [i for i, t in enumerate(probs) if t[0] == orgidx][0] + 1
         suggestion = probs[:k]
+        rank_org = [i for i, t in enumerate(probs) if t[0] == orgidx][0] + 1
         try:
             rank_gold = [i for i, t in enumerate(probs) if t[0] == goldidx][0] + 1
             RR = float(1.0/rank_gold)
@@ -92,7 +94,9 @@ def _kbest_rank_detector(self, probdist=None, k=5, orgidx=None, goldidx=None):
             RR = 0.0
         return (1, RR, suggestion) if rank_org > k else (0, RR, suggestion)
     except IndexError:
-        raise WordNotInCsetError
+        RR = 0.0
+        return (0, RR, suggestion)
+        # raise WordNotInCsetError
 
 
 def _load_model(setname="", modelroot="", modeltype=""):
@@ -111,6 +115,16 @@ def _load_model(setname="", modelroot="", modeltype=""):
     except Exception, e:
         pass
     return m, fm, l2id
+
+
+def _postprocess_suggestion(suggestions=None, label2id=None):
+    try:
+        id2l = {v:k for k,v in label2id.iteritems()}
+        named = [(id2l[i], p) for i, p in suggestions]
+    except:
+        named = None
+    finally:
+        return named
 
 
 def get_features(tags=[], v="", v_idx=None, features=[]):
@@ -782,60 +796,60 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
             pickle.dump(detector.setnames, rf)
 
 
-if __name__=='__main__':
-    import time
-    import sys
-    import argparse
-    starttime = time.time()
-    argv = sys.argv
-    argc = len(argv)
-    description =   """
-                    Nyanco.detector\nthis detects verb replacement errors (RV) in FCE dataset,using several methods.
+# if __name__=='__main__':
+    # import time
+    # import sys
+    # import argparse
+    # starttime = time.time()
+    # argv = sys.argv
+    # argc = len(argv)
+    # description =   """
+                    # Nyanco.detector\nthis detects verb replacement errors (RV) in FCE dataset,using several methods.
 
-                    \n\npython detector.py -M classifier -t sgd -m ../sandbox/classify/tiny/datasets -v ../sandbox/classify/verbset_tiny.pkl2 -c ../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2 -o ../log/classifier_detector_test"""
-    ap = argparse.ArgumentParser(description=description)
-    ap.add_argument("-p", "--pas_lm_path", action="store", 
-                    help="path to PAS_LM (python collections.Counter object, as pickle)")
-    ap.add_argument("-l", '--lm', action="store",
-                    help="path to IRSTLM Language model file")
-    ap.add_argument("-o", '--output_file', action="store",
-                    help="path of output report file")
-    ap.add_argument("-c", '--corpus_pickle_file', action="store",
-                    help="path of pickled corpus made by corpusreader2.py and test_corpushandler.py")
-    ap.add_argument("-M", '--model', action="store",
-                    help="classifier or lm")
-    ap.add_argument("-t", '--model_type', action="store",
-                    help="sgd | pegasos | pa")
-    ap.add_argument("-m", '--model_dir_root', action="store",
-                    help="root path of dataset/model directory")
-    ap.add_argument("-v", '--verbset', action="store",
-                    help="root path of verbset pickle")
-    args = ap.parse_args()
+                    # \n\npython detector.py -M classifier -t sgd -m ../sandbox/classify/tiny/datasets -v ../sandbox/classify/verbset_tiny.pkl2 -c ../sandbox/fce_corpus/fce_dataset_v2_tiny.pkl2 -o ../log/classifier_detector_test"""
+    # ap = argparse.ArgumentParser(description=description)
+    # ap.add_argument("-p", "--pas_lm_path", action="store", 
+                    # help="path to PAS_LM (python collections.Counter object, as pickle)")
+    # ap.add_argument("-l", '--lm', action="store",
+                    # help="path to IRSTLM Language model file")
+    # ap.add_argument("-o", '--output_file', action="store",
+                    # help="path of output report file")
+    # ap.add_argument("-c", '--corpus_pickle_file', action="store",
+                    # help="path of pickled corpus made by corpusreader2.py and test_corpushandler.py")
+    # ap.add_argument("-M", '--model', action="store",
+                    # help="classifier or lm")
+    # ap.add_argument("-t", '--model_type', action="store",
+                    # help="sgd | pegasos | pa")
+    # ap.add_argument("-m", '--model_dir_root', action="store",
+                    # help="root path of dataset/model directory")
+    # ap.add_argument("-v", '--verbset', action="store",
+                    # help="root path of verbset pickle")
+    # args = ap.parse_args()
 
-    if (args.corpus_pickle_file and args.output_file and args.lm and args.pas_lm_path):
-        print "Using both 5gramLM and PAS_triples"
-        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path, verbsetpath=args.verbset)
-        endtime = time.time()
-        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+    # if (args.corpus_pickle_file and args.output_file and args.lm and args.pas_lm_path):
+        # print "Using both 5gramLM and PAS_triples"
+        # detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path, verbsetpath=args.verbset)
+        # endtime = time.time()
+        # print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
-    elif (args.corpus_pickle_file and args.output_file and args.lm and args.model=="lm"):
-        print "Using only 5gramLM"
-        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path, verbsetpath=args.verbset)
-        endtime = time.time()
-        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+    # elif (args.corpus_pickle_file and args.output_file and args.lm and args.model=="lm"):
+        # print "Using only 5gramLM"
+        # detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path, verbsetpath=args.verbset)
+        # endtime = time.time()
+        # print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
-    elif (args.corpus_pickle_file and args.output_file and args.pas_lm_path):
-        print "Using only PAS_triples"
-        detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path, verbsetpath=args.verbset)
-        endtime = time.time()
-        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+    # elif (args.corpus_pickle_file and args.output_file and args.pas_lm_path):
+        # print "Using only PAS_triples"
+        # detectmain(corpuspath=args.corpus_pickle_file, reportout=args.output_file, lmpath=args.lm, paslmpath=args.pas_lm_path, verbsetpath=args.verbset)
+        # endtime = time.time()
+        # print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
-    elif (args.corpus_pickle_file and args.output_file and args.model=='classifier'):
-        print "Using Classifier models"
-        detectmain_c(corpuspath=args.corpus_pickle_file, reportout=args.output_file, verbsetpath=args.verbset, model_root=args.model_dir_root, type=args.model_type)
-        endtime = time.time()
-        print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
+    # elif (args.corpus_pickle_file and args.output_file and args.model=='classifier'):
+        # print "Using Classifier models"
+        # detectmain_c(corpuspath=args.corpus_pickle_file, reportout=args.output_file, verbsetpath=args.verbset, model_root=args.model_dir_root, type=args.model_type)
+        # endtime = time.time()
+        # print("\n\nOverall time %5.3f[sec.]"%(endtime - starttime))
 
-    else:
-        ap.print_help()
-    quit()
+    # else:
+        # ap.print_help()
+    # quit()
