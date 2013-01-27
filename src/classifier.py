@@ -351,8 +351,8 @@ def make_fvectors(verbcorpus_dir=None, verbset_path=None, dataset_dir=None,
             tgtc_chunks.append({w:tgtc_full[w] for w in wl})
     else:
         tgtc_chunks = [None for item in vs_chunks]
-    print vs_chunks[:5]
-    print tgtc_chunks[:5]
+    # print vs_chunks[:5]
+    # print tgtc_chunks[:5]
     for vs, tgtc in zip(vs_chunks, tgtc_chunks):
         args.append({"vcdir":verbcorpus_dir, 
                      "dsdir":dataset_dir, 
