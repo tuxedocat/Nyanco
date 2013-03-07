@@ -1,6 +1,3 @@
-# ! /usr/bin/env python
-# coding: utf-8
-
 from nose.plugins.attrib import attr
 from feature_extractor import FeatureExtractor, SentenceFeatures
 from datetime import datetime
