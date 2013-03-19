@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-# coding: utf-8
+#coding:utf-8
 '''
 Nyanco/src/preprocessor2.py
 Created on 5 Sep. 2012
