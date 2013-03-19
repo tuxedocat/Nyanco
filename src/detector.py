@@ -468,16 +468,16 @@ class SupervisedDetector(DetectorBase):
                     self.listRV.append(1)
                     self.listRV_sys.append(sysout)
                     _suggestion = self._postprocess_suggestion(suggestion, l2id)
-                    self.suggestion_results[id] = {"setname": setname, "gold_verb":case["gold_label"],
-                                                    "suggestion": _suggestion, 
-                                                    "detected": sysout, "gold": case["gold_text"], 
-                                                    "incorr": case["test_text"]}
+                    self.suggestion_results[id] = {"setname": setname, "gold":case["gold_label"],
+                                                    "suggestion": _suggestion, "RR": RR ,
+                                                    "detected": sysout, "goldtext": case["gold_text"], 
+                                                    "incorrtext": case["test_text"]}
                     self.report_each_verb_fine[setname].append({"docid": id, "detected": sysout, 
-                                                                "gold_verb": case["gold_label"],
+                                                                "gold": case["gold_label"], "RR":RR,
                                                                 "setname": setname,
-                                                                "gold": case["gold_text"], 
-                                                                "incorr": case["test_text"]})
-                    self.report_each_verb[setname].append({"docid": id, "detected": sysout})
+                                                                "goldtext": case["gold_text"], 
+                                                                "incorrtext": case["test_text"]})
+                    self.report_each_verb[setname].append({"docid": id, "detected": sysout, "RR": RR})
                     try:
                         # if sysout == 1:
                             # self.MRR_RV.append(RR)
@@ -601,7 +601,7 @@ class SupervisedDetector(DetectorBase):
             rf.write(mrr_all);
             rf.write("\n"*2+"="*80+"\n"*5)
         result = {"CM": _CM, "TP": _CM["TP"], "TN": _CM["TN"], "FP": _CM["FP"], "FN":_CM["FN"], 
-                  "MRR_All": MRR_All, "MRR_RV": MRR_RV,
+                  "MRR_All": MRR_All, "MRR_RV": MRR_RV, "RR_each": self.MRR_RV,
                   "Acc": system_accuracy, "FA": false_alarm, "Prec": detect_precision, "Rec": detect_recall}
         return result
 
@@ -659,6 +659,7 @@ def detectmain_c_gs(corpuspath="", model_root="", type="sgd", reportout="",
             results["FN"].append((k, _r["FN"]))
             results["MRR_RV"].append((k, _r["MRR_RV"]))
             results["MRR_All"].append((k, _r["MRR_All"]))
+            results["RR_each"].append((k, _r["RR_each"]))
             results["analysis_each_verb"].append((k, detector.report_each_verb))
    
     except Exception, e:

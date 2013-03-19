@@ -7,7 +7,7 @@
     # dir_ukwac: ../../../cl/nldata/ukWaC/parsed/
     # num_tsamples: 20000
     # dir_out: ../sandbox/classify/
-    # parallel_num: 18
+    # parallel_num: 12
     # verbcorpus_dir: ../sandbox/classify/vc_fceVoc_ukwac_30000/
     # features: #ngram, dep, ne, srl
         # - 5gram
@@ -24,7 +24,7 @@
     # fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
     # detector: classifier_ranker # 1best, kbest, ranker
     # detector_options: {ranker_k: 5, grid_k: [1, 50]}
-    # dir_log: ../log_thesis/E1_L8r50_SGDMHLossL2_5gramchunkbc/
+    # dir_log: ../log_thesis/E1_L8r50_SGDMHLossL2_5gramchunkbc_stat/
 
 # B1_wncs_SGDMHLossL2_5gramChunkBc: 
     # pipeline: 
@@ -50,7 +50,7 @@
     # fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
     # detector: classifier_ranker # 1best, kbest, ranker
     # detector_options: {ranker_k: 5, grid_k: [1, 50]}
-    # dir_log: ../log_thesis/B1_wncs_SGDMHLossL2_5gramchunkbc/
+    # dir_log: ../log_thesis/B1_wncs_SGDMHLossL2_5gramchunkbc_stat/
 
 # B2_lccs_SGDMHLossL2_5gramChunkBc: 
     # pipeline: 
@@ -76,19 +76,19 @@
     # fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
     # detector: classifier_ranker # 1best, kbest, ranker
     # detector_options: {ranker_k: 5, grid_k: [1, 50]}
-    # dir_log: ../log_thesis/B2_lccs_SGDMHLossL2_5gramchunkbc/
+    # dir_log: ../log_thesis/B2_lccs_SGDMHLossL2_5gramchunkbc_stat/
 
 
 # B3_mtcs_SGDMHLossL2_5gramChunkBc: 
     # pipeline: 
-        # # - make_features
-        # # - train
+        # - make_features
+        # - train
         # - detect
     # confusion_set: ../sandbox/classify/ConfusionSets_RSMT_Fce500r50_2.pkl2
     # dir_ukwac: ../../../cl/nldata/ukWaC/parsed/
     # num_tsamples: 20000
     # dir_out: ../sandbox/classify/
-    # parallel_num: 14
+    # parallel_num: 10
     # verbcorpus_dir: ../sandbox/classify/vc_fceVoc_ukwac_30000/
     # features: #ngram, dep, ne, srl
         # - 5gram
@@ -103,7 +103,7 @@
     # fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
     # detector: classifier_ranker # 1best, kbest, ranker
     # detector_options: {ranker_k: 5, grid_k: [1, 50]}
-    # dir_log: ../log_thesis/B3_mtcs_SGDMHLossL2_5gramchunkbc/
+    # dir_log: ../log_thesis/B3_mtcs_SGDMHLossL2_5gramchunkbc_stat/
 
 
 # B4_mtlccs_SGDMHLossL2_5gramChunkBc: 
@@ -130,30 +130,30 @@
     # fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
     # detector: classifier_ranker # 1best, kbest, ranker
     # detector_options: {ranker_k: 5, grid_k: [1, 50]}
-    # dir_log: ../log_thesis/B4_mtlccs_SGDMHLossL2_5gramchunkbc/
+    # dir_log: ../log_thesis/B4_mtlccs_SGDMHLossL2_5gramchunkbc_stat/
 
-B5_mtwncs_SGDMHLossL2_5gramChunkBc: 
-    pipeline: 
-        - make_features
-        - train
-        - detect
-    confusion_set: ../sandbox/classify/ConfusionSets_RSMTWN_Fce500r50.pkl2
-    dir_ukwac: ../../../cl/nldata/ukWaC/parsed/
-    num_tsamples: 20000
-    dir_out: ../sandbox/classify/
-    parallel_num: 14
-    verbcorpus_dir: ../sandbox/classify/vc_fceVoc_ukwac_30000/
-    features: #ngram, dep, ne, srl
-        - 5gram
-        - chunk
-        # - dep
-        # - srl
-        # - ne
-    classifier: sgd_modifiedhuber_l2
-    toolkit: sklearn
-    classifier_args: {loss: modified_huber, reg: l2, epochs: 7, alpha : 0.0001, multicpu: -1} # loss: huber, reg: l1, epoch: 5
-    dir_models: ../sandbox/classify/models_mtcs_5gram/
-    fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
-    detector: classifier_ranker # 1best, kbest, ranker
-    detector_options: {ranker_k: 5, grid_k: [1, 50]}
-    dir_log: ../log_thesis/B5_mtwncs_SGDMHLossL2_5gramchunkbc
+# B5_mtwncs_SGDMHLossL2_5gramChunkBc: 
+    # pipeline: 
+        # # - make_features
+        # # - train
+        # - detect
+    # confusion_set: ../sandbox/classify/ConfusionSets_RSMTWN_Fce500r50.pkl2
+    # dir_ukwac: ../../../cl/nldata/ukWaC/parsed/
+    # num_tsamples: 20000
+    # dir_out: ../sandbox/classify/
+    # parallel_num: 14
+    # verbcorpus_dir: ../sandbox/classify/vc_fceVoc_ukwac_30000/
+    # features: #ngram, dep, ne, srl
+        # - 5gram
+        # - chunk
+        # # - dep
+        # # - srl
+        # # - ne
+    # classifier: sgd_modifiedhuber_l2
+    # toolkit: sklearn
+    # classifier_args: {loss: modified_huber, reg: l2, epochs: 7, alpha : 0.0001, multicpu: -1} # loss: huber, reg: l1, epoch: 5
+    # dir_models: ../sandbox/classify/models_mtcs_5gram/
+    # fce_path: ../sandbox/fce_corpus/fce_dataset_v2.pkl2
+    # detector: classifier_ranker # 1best, kbest, ranker
+    # detector_options: {ranker_k: 5, grid_k: [1, 50]}
+    # dir_log: ../log_thesis/B5_mtwncs_SGDMHLossL2_5gramchunkbc_stat/
