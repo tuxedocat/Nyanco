@@ -40,8 +40,10 @@ def suggest_for_testset(corpuspath="", cspath="",
             results.append(result)
         except AssertionError:
             print "AssertionError in cp:: \n", pformat(case)
+            results.append( (0, 0.0, None) )
         except Exception, e:
             print pformat(e)
+            results.append( (0, 0.0, None) )
     return results
 
 
@@ -65,7 +67,7 @@ def suggestone(cs=None, case=None, modelroot="", modeltype="", features=None, pa
     assert setname in cs
     parsed = parser.parseSentence(" ".join(raw_sent))
     features = get_features(parsed, setname, v_idx, features)
-    print pformat(features)
+    # print pformat(features)
     model, fmap, label2id = _load_model(setname, modelroot, modeltype)
     if model and fmap and label2id:
         ic_clsid = label2id[setname]
