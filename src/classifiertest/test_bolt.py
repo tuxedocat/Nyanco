@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-# coding: utf-8
 '''
 Nyanco/src/classifier/test_bolt.py
 '''

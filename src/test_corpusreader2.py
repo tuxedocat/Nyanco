@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # coding: utf-8
 '''
 Nyanco/src/test_corpusreader2
