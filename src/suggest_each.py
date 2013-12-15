@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #coding: utf-8
 '''
 Nyanco/src/suggest_each.py
@@ -26,6 +27,33 @@ from tool.sennaparser import *
 
 def suggest_for_testset(corpuspath="", cspath="", 
                         modelrootpath="", modeltype="", features=[]):
+    """
+    Top level function to perform the test on a corpus
+    
+    Prerequisites
+    =============
+    List of dependencies
+
+    * SENNA 
+        This depends on SENNA (SRL parser), 
+        so you will have to set SENNAPATH environmental value.
+
+    * scikit-learn
+
+    Args
+    ------
+    corpuspath: str, path to pickled corpus
+    cspath:     str, path to pickled confusion set
+    modelrootpath: str, path to root dir of the models
+    modeltype:  str, type of model
+        TODO: add detailed description
+    features:   list of str, e.g. ["5gram","chunk"]
+
+    Returns
+    --------
+    results: list of tuples 
+            
+    """
     results = []
     with open(corpuspath) as f:
         testdata = pickle.load(f)
@@ -56,7 +84,7 @@ def suggestone(cs=None, case=None, modelroot="", modeltype="", features=None, pa
         testcase
     modelroot: string
         path to root dir. of models
-    features: list
+    features: list of string
         e.g., ["5gram", "chunk"]
     """
     raw_sent = case[0]
