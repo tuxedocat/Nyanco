@@ -1,5 +1,5 @@
-# ! /usr/bin/env python
-# coding: utf-8
+#!/usr/bin/env python
+#coding: utf-8
 '''
 Nyanco/src/detector.py
 Created on 18 Oct 2012
