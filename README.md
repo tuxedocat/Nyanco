@@ -1,7 +1,6 @@
 Nyanco
 ======
-
-Verb selection error detector and suggestion maker
+Not Yet Another Non-native usage COrrector (focused on verbs)
 
 
 What's this?
