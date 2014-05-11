@@ -37,7 +37,6 @@ Libraries and packages required
 * numpy/scipy
 * SENNA Parser
     * [Get SENNA](http://ml.nec-labs.com/senna/)
-<!-- * fanseparser  -->
 
 
 Method details
